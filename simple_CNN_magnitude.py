@@ -5,7 +5,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 import numpy as np
 import scipy
-from numba import jit, types
+from numba import jit
 import matplotlib.pyplot as plt
 
 @jit(nopython=True)
@@ -42,7 +42,6 @@ def generate_data(num_samples=1000, signal_length=400):
                 numerator = 1j*w*alpha_n
                 
                 H_f += numerator/denominator
-                
                 H_v[j] += H_f
             
             #set label bandwidth to 3db or arbitrary value
@@ -64,8 +63,10 @@ class simple_dataset(Dataset):
         return len(self.labels)
     
     def __getitem__(self, idx):
-        signal = torch.tensor(self.data[idx], dtype=torch.float32)
-        label = torch.tensor(self.labels[idx], dtype=torch.int)
+        #convert to tensor and add channel dimension to signal
+        #convert both signal and label to float 32 datatypes
+        signal = torch.tensor(self.data[idx], dtype=torch.float32).unsqueeze(0)
+        label = torch.tensor(self.labels[idx], dtype=torch.float32)
         return signal, label
 
 class PeakMagCNN(nn.Module):
@@ -80,22 +81,20 @@ class PeakMagCNN(nn.Module):
         self.dropout = nn.Dropout(0.5)
         
     def forward(self,x):
-        x = self.conv1(x)
-        x = F.relu(x)
+        x = F.relu(self.conv1(x))
         x = self.pool(x)
         
-        x = self.conv2(x)
-        x = F.relu(x)
+        x = F.relu(self.conv2(x))
         x = self.pool(x)
         
-        x = self.conv3(x)
-        x = F.relu(x)
+        x = F.relu(self.conv3(x))
         x = self.pool(x)
         
         x = x.view(-1, self.num_flat_features(x))
         
-        x = self.fc1(x)
-        x = F.relu(x)
+        x = F.relu(self.fc1(x))
+        
+        #x = self.dropout(x)
         
         x = self.fc2(x)
         
@@ -125,20 +124,23 @@ dataset = simple_dataset(data, labels)
 dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
 model = PeakMagCNN()
-criterion = nn.BCELoss()
+criterion = nn.BCEWithLogitsLoss() #combines sigmoid and BCE loss
 optimiser = optim.Adam(model.parameters(), lr=0.001)
 
 num_epochs = 10
 for epoch in range(num_epochs):
     model.train()
+    running_loss = 0.0
     for signals,labels in dataloader:
         optimiser.zero_grad()
         outputs = model(signals)
         loss = criterion(outputs, labels)
         loss.backward()
         optimiser.step()
+        running_loss += loss.item()
 
-    print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
+    avg_loss = running_loss/len(dataloader)
+    print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {avg_loss:.4f}')
 
 print('Finished Training')
 
