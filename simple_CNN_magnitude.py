@@ -127,20 +127,32 @@ model = PeakMagCNN()
 criterion = nn.BCEWithLogitsLoss() #combines sigmoid and BCE loss
 optimiser = optim.Adam(model.parameters(), lr=0.001)
 
-num_epochs = 10
-for epoch in range(num_epochs):
-    model.train()
-    running_loss = 0.0
-    for signals,labels in dataloader:
-        optimiser.zero_grad()
-        outputs = model(signals)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimiser.step()
-        running_loss += loss.item()
+def train_model(model, data, labels, num_epochs = 10):
+    for epoch in range(num_epochs):
+        model.train()
+        running_loss = 0.0
+        for data,labels in dataloader:
+            optimiser.zero_grad()
+            outputs = model(data)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimiser.step()
+            running_loss += loss.item()
+        
+        avg_loss = running_loss/len(dataloader)
+        print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {avg_loss:.4f}')
+        #evaluate_model(model, data, labels)   #This doesn't work - why?
+    print('Finished Training')
+    
+def evaluate_model(model, data, labels):
+    model.eval()
+    with torch.no_grad():
+        inputs = torch.tensor(data, dtype=torch.float32).unsqueeze(1)
+        predictions = model(inputs).squeeze()
+        #changing acceptance probability may improve accuracy
+        predicted_labels = (predictions >= 0.5).float()
+        accuracy = (predicted_labels == torch.tensor(labels, dtype=torch.float32)).float().mean()
+        print(f'Accuracy: {accuracy.item():.4f}')
 
-    avg_loss = running_loss/len(dataloader)
-    print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {avg_loss:.4f}')
-
-print('Finished Training')
-
+train_model(model, data, labels, num_epochs=10)
+evaluate_model(model, data, labels)
