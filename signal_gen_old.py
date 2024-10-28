@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import timeit
 from numba import jit
 
-#@jit(nopython=True)
+@jit(nopython=True)
 def generate_data(num_samples=1000, signal_length=400):
     
     data = np.empty((num_samples,signal_length),dtype=np.float64)
@@ -54,7 +54,7 @@ def generate_data(num_samples=1000, signal_length=400):
         
     return data, labels
 
-'''
+
 data, labels = generate_data(num_samples=1000, signal_length=400)
 
 # Visualize a sample signal with labels
@@ -67,9 +67,9 @@ plt.ylabel('Amplitude / Label')
 plt.legend()
 plt.show()
 
-'''
 
-print(timeit.timeit(generate_data,number=10))
+
+#print(timeit.timeit(generate_data,number=10))
 #36s without jit, 1000 signals, 400points, 10 repeats
 #12s with jit, 1000 signals, 400 points, 1000 repeats
 #improvements of ~300x
