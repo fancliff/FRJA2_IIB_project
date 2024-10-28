@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import timeit
 from numba import jit
 
-@jit(nopython=True)
+#@jit(nopython=True)
 def generate_data(num_samples=1000, signal_length=400):
     
     data = np.empty((num_samples,signal_length),dtype=np.float64)
@@ -47,7 +47,7 @@ def generate_data(num_samples=1000, signal_length=400):
                 if omega_n - bandwidth <= w <= omega_n + bandwidth:
                     label[j] = 1
             
-            H_v[i] = H_f
+            H_v[j] = H_f
         
         data[i, :] = np.abs(H_v) #use signal magnitude for now
         labels[i, :] = label
@@ -69,7 +69,7 @@ plt.show()
 
 '''
 
-print(timeit.timeit(generate_data))
+print(timeit.timeit(generate_data,number=100))
 #60s without jit, 1000 signals, 400points, 10 repeats
 #12s with jit, 1000 signals, 400 points, 1000 repeats
 #improvements of ~500x
