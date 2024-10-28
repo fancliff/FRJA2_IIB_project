@@ -157,13 +157,15 @@ def evaluate_model(model, data, labels, acceptance=0.5):
 train_model(model, data, labels, num_epochs=10)
 
 project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project'
-
 save_path = '/Models/simple_CNN_magnitude_' + str(1) + '.pth'
 torch.save(model.state_dict(), project_path+save_path)
 print(f'Model saved to {save_path}')
 
-load_path = '/Models/simple_CNN_magnitude_1.pth'
-model.load_state_dict(torch.load(project_path+load_path,weights_only=True))
+#load an old model for evaluation 
+#can create a new model then load to compare 2 versions
+#load_path = '/Models/simple_CNN_magnitude_1.pth'
+#model.load_state_dict(torch.load(project_path+load_path,weights_only=True))
+
 #generate new random data for model evaluation
 data, labels = generate_data(num_samples=1000, signal_length=400)
 evaluate_model(model, data, labels, acceptance=0.5)
