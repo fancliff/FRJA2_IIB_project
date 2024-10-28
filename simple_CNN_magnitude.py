@@ -158,7 +158,7 @@ train_model(model, data, labels, num_epochs=10)
 
 project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project'
 
-save_path = '/Models/simple_CNN_magnitude_' + str(2) + '.pth'
+save_path = '/Models/simple_CNN_magnitude_' + str(1) + '.pth'
 torch.save(model.state_dict(), project_path+save_path)
 print(f'Model saved to {save_path}')
 
