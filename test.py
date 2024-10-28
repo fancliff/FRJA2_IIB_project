@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader, Dataset
 import numpy as np
 import scipy
 import matplotlib.pyplot as plt
+import timeit
 from numba import jit
 
 @jit(nopython=True)
@@ -54,6 +55,7 @@ def generate_data(num_samples=1000, signal_length=400):
         
     return data, labels
 
+
 data, labels = generate_data(num_samples=1000, signal_length=400)
 
 for x in range(20):
@@ -66,7 +68,8 @@ for x in range(20):
     plt.legend()
     plt.show()
 
-#print(timeit.timeit(generate_data,number=10))
-#60s without jit, 1000 signals, 400points, 10 repeats
-#30s with jit, 1000 signals, 400points, 100 repeats
-#improvements of ~ 20x
+
+#print(timeit.timeit(generate_data, number=1000))
+#60s without jit, 1000 signals, 400 points, 10 repeats
+#12s with jit, 1000 signals, 400 points, 1000 repeats
+#improvements of ~500x

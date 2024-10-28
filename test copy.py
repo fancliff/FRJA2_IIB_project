@@ -29,7 +29,7 @@ def generate_data(num_samples=1000, signal_length=400):
         #no modes at very edge of frequency range
         omegas = np.random.uniform(0.001, 0.999, size=5)
         
-        for i, w in enumerate(frequencies):
+        for j, w in enumerate(frequencies):
             H_f = 0.0j
             for n in range(num_modes):
                 # to improve model add a random sign to alpha_j 
@@ -44,7 +44,8 @@ def generate_data(num_samples=1000, signal_length=400):
                 #set label bandwidth to 3db or arbitrary value
                 #bandwidth = 0.02 #(8 frequency points wide if 400 points)
                 bandwidth = 2*omega_n*zeta_n
-                label[(frequencies >= omega_n - bandwidth) & (frequencies <= omega_n + bandwidth)] = 1
+                if omega_n - bandwidth <= w <= omega_n + bandwidth:
+                    label[j] = 1
             
             H_v[i] = H_f
         
@@ -53,7 +54,7 @@ def generate_data(num_samples=1000, signal_length=400):
         
     return data, labels
 
-# Generate vibration data
+'''
 data, labels = generate_data(num_samples=1000, signal_length=400)
 
 # Visualize a sample signal with labels
@@ -66,7 +67,9 @@ plt.ylabel('Amplitude / Label')
 plt.legend()
 plt.show()
 
-#print(timeit.timeit(generate_data,number=10))
+'''
+
+print(timeit.timeit(generate_data))
 #60s without jit, 1000 signals, 400points, 10 repeats
-#30s with jit, 1000 signals, 400points, 100 repeats
-#improvements of ~ 20x
+#12s with jit, 1000 signals, 400 points, 1000 repeats
+#improvements of ~500x
