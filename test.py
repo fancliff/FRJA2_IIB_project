@@ -6,30 +6,30 @@ import numpy as np
 import scipy
 import matplotlib.pyplot as plt
 import timeit
-from numba import jit, types
+from numba import jit
 
 @jit(nopython=True)
 def jit_signal_gen():
     num_samples=1000
     signal_length=400
+    
+    data = np.empty((num_samples,signal_length),dtype=np.float64)
+    labels = np.empty((num_samples,signal_length),dtype=np.int32)
 
     frequencies = np.linspace(0,1,signal_length)
-    for _ in range(num_samples):
-        alphas = []
-        zetas = []
-        omegas = []
-        H_v = np.zeros(signal_length,dtype=types.complex128)
-        label = np.zeros(signal_length)
+    for i in range(num_samples):
         
-        num_modes = np.random.randint(1,5)
+        H_v = np.zeros(signal_length, dtype=np.complex128)
+        label = np.zeros(signal_length, dtype=np.int32)
+        
+        #max 5 modes
+        num_modes = np.random.randint(1,6)
         #when noise is added change num_modes to include 0
-        for n in range(num_modes):
-            # to improve model add a random sign to alpha_j 
-            alphas.append(np.random.uniform(1,2))
-            zetas.append(np.exp(np.random.uniform(np.log(0.01), np.log(0.1))))
-            #no modes at very edge of frequency range
-            omegas.append(np.random.uniform(0.001,0.999))
-            
+        # to improve model add a random sign to alpha_j 
+        alphas = np.random.uniform(1, 2, size=5)
+        zetas = np.exp(np.random.uniform(np.log(0.01), np.log(0.1), size=5))
+        #no modes at very edge of frequency range
+        omegas = np.random.uniform(0.001, 0.999, size=5)
         
         for i, w in enumerate(frequencies):
             H_f = 0.0j
@@ -50,19 +50,10 @@ def jit_signal_gen():
             
             H_v[i] = H_f
         
-        '''
-        plt.figure(figsize=(10, 6))
-        plt.plot(frequencies, np.abs(H_v), label='|H_v(f)|', color='blue')
-        plt.plot(frequencies, np.real(H_v), label='Re[H_v(f)]', linestyle='--', color='orange')
-        plt.plot(frequencies, np.imag(H_v), label='Im[H_v(f)]', linestyle=':', color='green')
-        plt.scatter(frequencies, label, label='Label')
-        plt.xlabel('Frequency (Hz)')
-        plt.ylabel('Velocity Transfer Function')
-        plt.title('Modal Sum Velocity Transfer Function')
-        plt.grid(True)
-        plt.legend()
-        plt.show()
-        '''
+        data[i] = np.abs(H_v) #use signal magnitude for now
+        labels[i] = label
+        
+    return data, labels
 
 
 
@@ -111,6 +102,6 @@ def no_jit_signal_gen():
 
 print(timeit.timeit(jit_signal_gen,number=100))
 #60s without jit, 1000 signals, 400points, 10 repeats
-#27s with jit, 1000 signals, 400points, 100 repeats
+#30s with jit, 1000 signals, 400points, 100 repeats
 #improvements of ~ 20x
 
