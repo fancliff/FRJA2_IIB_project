@@ -53,23 +53,25 @@ def generate_data(num_samples=1000, signal_length=400):
         data[i, :] = np.abs(H_v) #use signal magnitude for now
         labels[i, :] = label
         
+        
+        #plotting for first 20 samples
+        if i<20:
+            plt.figure(figsize=(12, 6))
+            plt.plot(frequencies, data[i], label='|H_v(f)|', color='blue')
+            plt.plot(frequencies, np.real(H_v), label='Re[H_v(f)]', linestyle='--', color='orange')
+            plt.plot(frequencies, np.imag(H_v), label='Im[H_v(f)]', linestyle=':', color='green')
+            plt.plot(frequencies, labels[i] * 5, label='Labels (scaled)', linestyle='--')  # Scale labels for visibility
+            plt.title('Sample Vibration Signal with Labels')
+            plt.xlabel('Normalised Frequency')
+            plt.ylabel('Amplitude / Label')
+            plt.legend()
+            plt.show()
+    
     return data, labels
 
-'''
-data, labels = generate_data(num_samples=1000, signal_length=400)
+_,_ = generate_data(num_samples=20, signal_length=400)
 
-for x in range(20):
-    plt.figure(figsize=(12, 6))
-    plt.plot(data[x], label='Signal')
-    plt.plot(labels[x] * 5, label='Labels (scaled)', linestyle='--')  # Scale labels for visibility
-    plt.title('Sample Vibration Signal with Labels')
-    plt.xlabel('Normalised Frequency')
-    plt.ylabel('Amplitude / Label')
-    plt.legend()
-    plt.show()
-'''
-
-print(timeit.timeit(generate_data, number=10))
+#print(timeit.timeit(generate_data, number=10))
 #32s without jit, 1000 signals, 400 points, 10 repeats
 #12s with jit, 1000 signals, 400 points, 1000 repeats
 #improvements of ~300x
