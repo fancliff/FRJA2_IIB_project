@@ -51,3 +51,40 @@ class simple_dataset(Dataset):
                 
             self.data.append(np.abs(H_v)) #use signal magnitude for now
             self.labels.append(label)
+    
+    def __len__(self):
+        return self.num_samples
+    
+    def __getitem__(self, index):
+        return self.data[index], self.labels[index]
+    
+class PeakMagCNN(nn.module):
+    def __init__(self):
+        super(PeakMagCNN, self).__init__()
+        #insert neural net architecture
+        
+        
+        
+    def forward(self,x):
+        #more model architecture
+        
+        return x
+    
+dataset = simple_dataset(num_samples=100, signal_length=400)
+dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+
+model = PeakMagCNN()
+criterion = nn.BCELoss()
+optimiser = optim.Adam(model.parameters(), lr=0.001)
+
+num_epochs = 10
+for epoch in range(num_epochs):
+    
+    for signals,labels in dataloader:
+        optimiser.zero_grad()
+        outputs = model(signals)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimiser.step()
+        
+        
