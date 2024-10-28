@@ -69,7 +69,7 @@ plt.show()
 
 '''
 
-print(timeit.timeit(generate_data,number=100))
-#60s without jit, 1000 signals, 400points, 10 repeats
+print(timeit.timeit(generate_data,number=10))
+#36s without jit, 1000 signals, 400points, 10 repeats
 #12s with jit, 1000 signals, 400 points, 1000 repeats
-#improvements of ~500x
+#improvements of ~300x
