@@ -6,7 +6,7 @@ import numpy as np
 import scipy
 import matplotlib.pyplot as plt
 
-num_samples=30
+num_samples=5
 signal_length=400
 
 frequencies = np.linspace(0,1,signal_length)
@@ -15,6 +15,7 @@ for _ in range(num_samples):
     zetas = []
     omegas = []
     H_v = np.zeros(signal_length,dtype=np.complex128)
+    label = np.zeros(signal_length,dtype=int)
     
     num_modes = np.random.randint(1,5)
     #when noise is added change num_modes to include 0
@@ -38,14 +39,18 @@ for _ in range(num_samples):
             numerator = 1j*w*alpha_n
             
             H_f += numerator/denominator
+            #set label bandwidth to 3db or arbitrary value
+            #bandwidth = 0.02 #(8 frequency points wide if 400 points)
+            bandwidth = 2*omega_n*zeta_n
+            label[(frequencies >= omega_n - bandwidth) & (frequencies <= omega_n + bandwidth)] = 1
         
         H_v[i] = H_f
         
     plt.figure(figsize=(10, 6))
-
     plt.plot(frequencies, np.abs(H_v), label='|H_v(f)|', color='blue')
     plt.plot(frequencies, np.real(H_v), label='Re[H_v(f)]', linestyle='--', color='orange')
     plt.plot(frequencies, np.imag(H_v), label='Im[H_v(f)]', linestyle=':', color='green')
+    plt.scatter(frequencies, label, label='Label')
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Velocity Transfer Function')
     plt.title('Modal Sum Velocity Transfer Function')
