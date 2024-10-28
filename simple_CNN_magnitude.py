@@ -108,7 +108,7 @@ class PeakMagCNN(nn.Module):
         return num_features
 
 # Generate vibration data
-data, labels = generate_data(num_samples=1000, signal_length=400)
+data, labels = generate_data(num_samples=10000, signal_length=400)
 
 # Visualize a sample signal with labels
 plt.figure(figsize=(12, 6))
@@ -144,15 +144,18 @@ def train_model(model, data, labels, num_epochs = 10):
         #evaluate_model(model, data, labels)   #This doesn't work - why?
     print('Finished Training')
     
-def evaluate_model(model, data, labels):
+def evaluate_model(model, data, labels, acceptance=0.5):
     model.eval()
     with torch.no_grad():
         inputs = torch.tensor(data, dtype=torch.float32).unsqueeze(1)
         predictions = model(inputs).squeeze()
         #changing acceptance probability may improve accuracy
-        predicted_labels = (predictions >= 0.5).float()
+        predicted_labels = (predictions >= acceptance).float()
         accuracy = (predicted_labels == torch.tensor(labels, dtype=torch.float32)).float().mean()
         print(f'Accuracy: {accuracy.item():.4f}')
 
 train_model(model, data, labels, num_epochs=10)
-evaluate_model(model, data, labels)
+
+#generate new random data for model evaluation
+data, labels = generate_data(num_samples=1000, signal_length=400)
+evaluate_model(model, data, labels, acceptance=0.5)
