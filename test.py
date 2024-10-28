@@ -42,9 +42,12 @@ for _ in range(num_samples):
         H_v[i] = H_f
         
     plt.figure(figsize=(10, 6))
-    plt.plot(frequencies, np.abs(H_v), label='|H_v(f)|')
+
+    plt.plot(frequencies, np.abs(H_v), label='|H_v(f)|', color='blue')
+    plt.plot(frequencies, np.real(H_v), label='Re[H_v(f)]', linestyle='--', color='orange')
+    plt.plot(frequencies, np.imag(H_v), label='Im[H_v(f)]', linestyle=':', color='green')
     plt.xlabel('Frequency (Hz)')
-    plt.ylabel('Velocity Transfer Function Magnitude |H_v(f)|')
+    plt.ylabel('Velocity Transfer Function')
     plt.title('Modal Sum Velocity Transfer Function')
     plt.grid(True)
     plt.legend()
