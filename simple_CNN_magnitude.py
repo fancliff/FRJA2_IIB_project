@@ -173,7 +173,7 @@ def plot_predictions(model, dataloader, num_samples=5, acceptance=0.5):
                 
                 plt.plot(data[i].squeeze().cpu().numpy(), label="Signal", color="blue")
                 plt.plot(labels[i].cpu().numpy() * 5, label="Actual Labels (scaled)", linestyle="--", color="green")
-                plt.plot(probabilities[i].cpu().numpy(), label="Prediction Probability", color="orange")
+                plt.plot(probabilities[i].cpu().numpy() * 10, label="Prediction Probability (scaled)", color="orange")
                 plt.plot(predicted_labels[i].cpu().numpy() * 5, label="Predicted Labels (scaled)", linestyle=":", color="red")
 
                 plt.title(f'Sample {i+1}')
