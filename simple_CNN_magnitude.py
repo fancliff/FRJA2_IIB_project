@@ -127,7 +127,7 @@ model = PeakMagCNN()
 criterion = nn.BCEWithLogitsLoss() #combines sigmoid and BCE loss
 optimiser = optim.Adam(model.parameters(), lr=0.001)
 
-def train_model(model, data, labels, num_epochs = 10):
+def train_model(model, dataloader, num_epochs = 10):
     for epoch in range(num_epochs):
         model.train()
         running_loss = 0.0
@@ -141,20 +141,52 @@ def train_model(model, data, labels, num_epochs = 10):
         
         avg_loss = running_loss/len(dataloader)
         print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {avg_loss:.4f}')
-        #evaluate_model(model, data, labels)   #This doesn't work - why?
+        evaluate_model(model, dataloader, acceptance=0.5)
     print('Finished Training')
     
-def evaluate_model(model, data, labels, acceptance=0.5):
+def evaluate_model(model, dataloader, acceptance=0.5):
     model.eval()
+    total_correct = 0
+    total_labels = 0
     with torch.no_grad():
-        inputs = torch.tensor(data, dtype=torch.float32).unsqueeze(1)
-        predictions = model(inputs).squeeze()
-        #changing acceptance probability may improve accuracy
-        predicted_labels = (predictions >= acceptance).float()
-        accuracy = (predicted_labels == torch.tensor(labels, dtype=torch.float32)).float().mean()
-        print(f'Accuracy: {accuracy.item():.4f}')
+        for data, labels in dataloader:
+            predictions = model(data).squeeze()
+            probabilities = torch.sigmoid(predictions)
+            predicted_labels = (probabilities >= acceptance).float()
+            correct = (predicted_labels == labels).float().sum()
+            total_correct += correct.item()
+            total_labels += labels.numel()
+    accuracy = total_correct/total_labels
+    print(f'Accuracy: {accuracy:.4f}')
+    
+def plot_predictions(model, dataloader, num_samples=5, acceptance=0.5):
+    model.eval()
+    samples_plotted = 0
+    with torch.no_grad():
+        for data, labels in dataloader:
+            predictions = model(data).squeeze()
+            probabilities = torch.sigmoid(predictions)
+            predicted_labels = (probabilities >= acceptance).float()
 
-train_model(model, data, labels, num_epochs=10)
+            for i in range(min(num_samples, len(data))):
+                plt.figure(figsize=(12, 6))
+                
+                plt.plot(data[i].squeeze().cpu().numpy(), label="Signal", color="blue")
+                plt.plot(labels[i].cpu().numpy() * 5, label="Actual Labels (scaled)", linestyle="--", color="green")
+                plt.plot(probabilities[i].cpu().numpy(), label="Prediction Probability", color="orange")
+                plt.plot(predicted_labels[i].cpu().numpy() * 5, label="Predicted Labels (scaled)", linestyle=":", color="red")
+
+                plt.title(f'Sample {i+1}')
+                plt.xlabel('Frequency (Normalized)')
+                plt.ylabel('Amplitude / Label')
+                plt.legend()
+                plt.show()
+
+                samples_plotted += 1
+                if samples_plotted >= num_samples:
+                    return  # Exit after plotting specified number of samples
+
+train_model(model, dataloader, num_epochs=10)
 
 project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project'
 save_path = '/Models/simple_CNN_magnitude_' + str(1) + '.pth'
@@ -168,4 +200,7 @@ print(f'Model saved to {save_path}')
 
 #generate new random data for model evaluation
 data, labels = generate_data(num_samples=1000, signal_length=400)
-evaluate_model(model, data, labels, acceptance=0.5)
+dataset = simple_dataset(data, labels)
+dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+#evaluate_model(model, data, labels, acceptance=0.5)
+plot_predictions(model, dataloader, num_samples=10, acceptance=0.5)
