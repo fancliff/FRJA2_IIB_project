@@ -9,7 +9,7 @@ import timeit
 from numba import jit
 
 #@jit(nopython=True)
-def generate_data(num_samples=1000, signal_length=400):
+def generate_data(num_samples=1000, signal_length=1000):
     
     data = np.empty((num_samples,signal_length),dtype=np.float64)
     labels = np.empty((num_samples,signal_length),dtype=np.int32)
@@ -69,7 +69,7 @@ def generate_data(num_samples=1000, signal_length=400):
     
     return data, labels
 
-_,_ = generate_data(num_samples=20, signal_length=400)
+_,_ = generate_data(num_samples=5, signal_length=1000)
 
 #print(timeit.timeit(generate_data, number=10))
 #32s without jit, 1000 signals, 400 points, 10 repeats
