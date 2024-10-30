@@ -58,9 +58,9 @@ def generate_data(num_samples=1000, signal_length=1000):
         if i<20:
             plt.figure(figsize=(12, 6))
             plt.plot(frequencies, data[i], label='|H_v(f)|', color='blue')
-            plt.plot(frequencies, np.real(H_v), label='Re[H_v(f)]', linestyle='--', color='orange')
-            plt.plot(frequencies, np.imag(H_v), label='Im[H_v(f)]', linestyle=':', color='green')
-            plt.plot(frequencies, labels[i] * 5, label='Labels (scaled)', linestyle='--')  # Scale labels for visibility
+            #plt.plot(frequencies, np.real(H_v), label='Re[H_v(f)]', linestyle='--', color='orange')
+            #plt.plot(frequencies, np.imag(H_v), label='Im[H_v(f)]', linestyle=':', color='green')
+            #plt.plot(frequencies, labels[i] * 5, label='Labels (scaled)', linestyle='--')
             plt.title('Sample Vibration Signal with Labels')
             plt.xlabel('Normalised Frequency')
             plt.ylabel('Amplitude / Label')
