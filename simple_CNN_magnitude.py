@@ -9,7 +9,7 @@ from numba import jit
 import matplotlib.pyplot as plt
 
 @jit(nopython=True)
-def generate_data(num_samples=1000, signal_length=400):
+def generate_data(num_samples=1000, signal_length=1024):
     
     data = np.empty((num_samples,signal_length),dtype=np.float64)
     labels = np.empty((num_samples,signal_length),dtype=np.int32)
@@ -76,8 +76,8 @@ class PeakMagCNN(nn.Module):
         self.conv2 = nn.Conv1d(16, 32, kernel_size=5, padding=2)
         self.conv3 = nn.Conv1d(32, 64, kernel_size=5, padding=2)
         self.pool = nn.MaxPool1d(kernel_size=2)
-        self.fc1 = nn.Linear(64*50,128) #adjust based on output size after convolution and pooling
-        self.fc2 = nn.Linear(128,400) #output size for a signal length of 400
+        self.fc1 = nn.Linear(64*128,2048) #adjust based on output size after convolution and pooling
+        self.fc2 = nn.Linear(2048,1024) #output size for a signal length of 400
         self.dropout = nn.Dropout(0.5)
         
     def forward(self,x):
@@ -108,7 +108,7 @@ class PeakMagCNN(nn.Module):
         return num_features
 
 # Generate vibration data
-data, labels = generate_data(num_samples=1000, signal_length=400)
+data, labels = generate_data(num_samples=1000, signal_length=1024)
 
 # Visualize a sample signal with labels
 plt.figure(figsize=(12, 6))
@@ -199,7 +199,7 @@ print(f'Model saved to {save_path}')
 #model.load_state_dict(torch.load(project_path+load_path,weights_only=True))
 
 #generate new random data for model evaluation
-data, labels = generate_data(num_samples=1000, signal_length=400)
+data, labels = generate_data(num_samples=1000, signal_length=1024)
 dataset = simple_dataset(data, labels)
 dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 #evaluate_model(model, data, labels, acceptance=0.5)
