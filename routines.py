@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 from numba import jit
 
 
-
 def train_model_binary(model, train_dataloader, val_dataloader, num_epochs, acceptance):
     
     criterion = nn.BCEWithLogitsLoss() #combines sigmoid and BCE loss
@@ -52,7 +51,6 @@ def train_model_binary(model, train_dataloader, val_dataloader, num_epochs, acce
     return result_dict
 
 
-
 def training_step(model, dataloader, criterion, optimiser, acceptance):
     #remember to set model to training mode 
     #before running this function
@@ -84,7 +82,6 @@ def training_step(model, dataloader, criterion, optimiser, acceptance):
     return avg_loss, avg_recall, avg_precision
 
 
-
 def validation_loss_recall_precision(model, dataloader, criterion, acceptance):
     #remember to set model to eval mode 
     #before running this function IF using validation data
@@ -110,7 +107,6 @@ def validation_loss_recall_precision(model, dataloader, criterion, acceptance):
     #recall is total correct positive predictions/total positive labels
     #precision is total correct positive predictions/total positive predictions
     return avg_loss, avg_recall, avg_precision
-
 
 
 def plot_predictions(model, dataloader, num_samples, acceptance):
@@ -140,15 +136,18 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
                 if samples_plotted >= num_samples:
                     return  # Exit after plotting specified number of samples
 
+
 def load_model(model_path):
     model = torch.load(f'{model_path}.pth')
     return model
+
 
 def save_model(model, save_name):
     project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/Models'
     model_path = project_path + save_name
     torch.save(model, f'{model_path}.pth')
     print(f'Model saved to {model_path}.pth')
+
 
 def compare_models(model1, model2, dataloader, acceptance):
     model1.eval()
@@ -177,6 +176,7 @@ def compare_models(model1, model2, dataloader, acceptance):
     accuracy2 = true_positives2/total_labels
     print(f'Model 1 Accuracy: {accuracy1:.4f}')
     print(f'Model 2 Accuracy: {accuracy2:.4f}')
+
 
 def calculate_precision_recall_binary(outputs, labels, acceptance):
     #only works if labels are binary
