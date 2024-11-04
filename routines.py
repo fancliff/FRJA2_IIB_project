@@ -9,10 +9,22 @@ import matplotlib.pyplot as plt
 from numba import jit
 
 
-def train_model_binary(model, train_dataloader, val_dataloader, num_epochs, acceptance):
+def train_model_binary(model, train_dataloader, val_dataloader, num_epochs, acceptance, plotting=True):
     
     criterion = nn.BCEWithLogitsLoss() #combines sigmoid and BCE loss
     optimiser = optim.Adam(model.parameters(), lr=0.001)
+    
+    if plotting:
+        # Initialize the plot
+        plt.ion()
+        fig, ax = plt.subplots()
+        ax.set_xlabel('Epoch')
+        ax.set_ylabel('Loss')
+        ax.set_title('Training and Validation Loss')
+        ax.set_yscale('log')
+        train_loss_line, = ax.plot([], [], label='Training Loss', color='blue')
+        val_loss_line, = ax.plot([], [], label='Validation Loss', color='orange')
+        ax.legend()
     
     result_dict = {
         "training_loss": [],
@@ -42,11 +54,26 @@ def train_model_binary(model, train_dataloader, val_dataloader, num_epochs, acce
         result_dict["validation_precision"].append(val_precision)
         result_dict["validation_recall"].append(val_recall)
         result_dict["epochs"].append(epoch + 1)
+        
+        if plotting:
+            # Update the plot
+            train_loss_line.set_xdata(result_dict["epochs"])
+            train_loss_line.set_ydata(result_dict["training_loss"])
+            val_loss_line.set_xdata(result_dict["epochs"])
+            val_loss_line.set_ydata(result_dict["validation_loss"])
+            ax.relim()
+            ax.autoscale_view()
+            plt.draw()
+            plt.pause(0.01)
     
     print()
     print('Finished Training')
     
     save_model(model, 'PeakMag1')
+    
+    if plotting:
+        plt.ioff()
+        plt.show()
     
     return result_dict
 
@@ -107,6 +134,19 @@ def validation_loss_recall_precision(model, dataloader, criterion, acceptance):
     #recall is total correct positive predictions/total positive labels
     #precision is total correct positive predictions/total positive predictions
     return avg_loss, avg_recall, avg_precision
+
+
+def plot_losses(result_dict, log_scale=True):
+    plt.figure(figsize=(8, 4))
+    plt.plot(result_dict["epochs"], result_dict["training_loss"], label="Training Loss", color="blue")
+    plt.plot(result_dict["epochs"], result_dict["validation_loss"], label="Validation Loss", color="orange")
+    plt.title('Training and Validation Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    if log_scale:
+        plt.yscale('log')
+    plt.legend()
+    plt.show()
 
 
 def plot_predictions(model, dataloader, num_samples, acceptance):
