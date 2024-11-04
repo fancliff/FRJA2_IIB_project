@@ -9,19 +9,19 @@ import matplotlib.pyplot as plt
 from numba import jit
 
 from generators import mag_1D_no_noise as generate_data
-from models import simple_dataset, PeakMag1
+from models import simple_dataset, PeakMag1, PeakMag2
 from routines import train_model_binary, plot_losses, compare_models, load_model
 
-data, labels = generate_data(num_samples=1000, signal_length=1024)
+data, labels = generate_data(num_samples=10000, signal_length=1024)
 train_dataset = simple_dataset(data, labels)
 train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
-data, labels = generate_data(num_samples=100, signal_length=1024)
+data, labels = generate_data(num_samples=1000, signal_length=1024)
 val_dataset = simple_dataset(data, labels)
 val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=True)
 
 model1 = PeakMag1()
-model2 = PeakMag1()
+model2 = PeakMag2()
 
 plot_during = False
 plot_after = True
@@ -30,8 +30,8 @@ result_dict1 = train_model_binary(
                 model1, 
                 train_dataloader, 
                 val_dataloader, 
-                save_name='PeakMag1_1', #None if no save required
-                num_epochs = 10, 
+                save_name='PeakMag1_2', #None if no save required
+                num_epochs = 20, 
                 acceptance=0.5, 
                 plotting=plot_during
                 )
@@ -40,7 +40,7 @@ result_dict2 = train_model_binary(
                 model2, 
                 train_dataloader, 
                 val_dataloader, 
-                save_name=None, #None if no save required
+                save_name='PeakMag2_1', #None if no save required
                 num_epochs = 10, 
                 acceptance=0.5, 
                 plotting=plot_during
