@@ -137,15 +137,18 @@ def validation_loss_recall_precision(model, dataloader, criterion, acceptance):
     return avg_loss, avg_recall, avg_precision
 
 
-def plot_losses(result_dict, log_scale=True):
+def plot_losses(results, log_scale=True):
     plt.figure(figsize=(8, 4))
-    plt.plot(result_dict["epochs"], result_dict["training_loss"], label="Training Loss", color="blue")
-    plt.plot(result_dict["epochs"], result_dict["validation_loss"], label="Validation Loss", color="orange")
     plt.title('Training and Validation Loss')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     if log_scale:
         plt.yscale('log')
+    
+    for i, result_dict in enumerate(results):
+        plt.plot(result_dict["epochs"], result_dict["training_loss"], label=f"Model {i+1}: Training Loss")
+        plt.plot(result_dict["epochs"], result_dict["validation_loss"], label=f"Model {i+1} Validation Loss")
+
     plt.legend()
     plt.show()
 
@@ -192,33 +195,15 @@ def save_model(model, save_name):
     print(f'Model saved to {model_path}.pth')
 
 
-def compare_models(model1, model2, dataloader, acceptance):
+def compare_models(model1, model2, dataloader, criterion, acceptance1, acceptance2):
     model1.eval()
     model2.eval()
-    total_loss1 = 0.0
-    total_loss2 = 0.0
-    total_precision1 = 0.0
-    total_precision2 = 0.0
-    total_recall1 = 0.0
-    total_recall2 = 0.0
-    total_samples = 0
-    with torch.no_grad():
-        for data, labels in dataloader:
-            output1 = model1(data).squeeze()
-            output2 = model2(data).squeeze()
-            probabilities1 = torch.sigmoid(output1)
-            probabilities2 = torch.sigmoid(output2)
-            batch_precision, batch_recall = calculate_precision_recall_binary(probabilities1, labels, acceptance)
-            batch_precision, batch_recall = calculate_precision_recall_binary(probabilities2, labels, acceptance)
-            
-            total_loss += loss.item() * len(data)
-            total_precision += batch_precision * len(data)
-            total_recall += batch_recall * len(data)
-            total_samples += len(data)
-    accuracy1 = true_positives1/total_labels
-    accuracy2 = true_positives2/total_labels
-    print(f'Model 1 Accuracy: {accuracy1:.4f}')
-    print(f'Model 2 Accuracy: {accuracy2:.4f}')
+    loss1, recall1, precision1 = validation_loss_recall_precision(model1, dataloader, criterion, acceptance1)
+    loss2, recall2, precision2 = validation_loss_recall_precision(model2, dataloader, criterion, acceptance2)
+    print('Model 1:')
+    print(f'Loss: {loss1:.4f}, Precision: {precision1:.4f}, Recall: {recall1:.4f}\n')
+    print('Model 2:')
+    print(f'Loss: {loss2:.4f}, Precision: {precision2:.4f}, Recall: {recall2:.4f}\n')
 
 
 def calculate_precision_recall_binary(outputs, labels, acceptance):

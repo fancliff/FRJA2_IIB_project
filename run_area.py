@@ -21,11 +21,12 @@ val_dataset = simple_dataset(data, labels)
 val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=True)
 
 model1 = PeakMag1()
+model2 = PeakMag1()
 
 plot_during = False
 plot_after = True
 
-result_dict = train_model_binary(
+result_dict1 = train_model_binary(
                 model1, 
                 train_dataloader, 
                 val_dataloader, 
@@ -35,11 +36,22 @@ result_dict = train_model_binary(
                 plotting=plot_during
                 )
 
+result_dict2 = train_model_binary(
+                model2, 
+                train_dataloader, 
+                val_dataloader, 
+                save_name=None, #None if no save required
+                num_epochs = 10, 
+                acceptance=0.5, 
+                plotting=plot_during
+                )
+
 if plot_after:
-    plot_losses(result_dict,log_scale=True)
+    plot_losses([result_dict1,result_dict2],log_scale=True)
 
 #load models from save files or train above
 #model1 = load_model('PeakMag1_1')
 #model2 = load_model('PeakMag1_2')
 
-compare_models(model1, model1, val_dataloader, acceptance=0.5)
+criterion=nn.BCEWithLogitsLoss()
+compare_models(model1, model2, val_dataloader, criterion, acceptance1=0.5, acceptance2=0.5)
