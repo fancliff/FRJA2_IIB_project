@@ -8,7 +8,7 @@ import scipy
 import matplotlib.pyplot as plt
 from numba import jit
 
-from data_gen import mag_1D_no_noise as generate_data
+from generators import mag_1D_no_noise as generate_data
 from models import simple_dataset, PeakMag1
 from routines import train_model_binary, plot_losses, compare_models, load_model
 
