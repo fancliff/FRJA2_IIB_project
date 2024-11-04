@@ -25,12 +25,13 @@ def train_model_binary(model, train_dataloader, val_dataloader, num_epochs, acce
         "epochs": []}
     
     for epoch in range(num_epochs):
-        model.train()
+        model.train() #!!!
         train_loss, train_recall, train_precision = training_step(model, train_dataloader, criterion, optimiser, acceptance)
         
-        model.eval()
+        model.eval() #!!!
         val_loss, val_recall, val_precision = validation_loss_recall_precision(model, val_dataloader, criterion, acceptance)
         
+        print()
         print(f'Epoch [{epoch+1}/{num_epochs}]')
         print(f'Training Loss: {train_loss:.4f}, Training Precision: {train_precision:.4f}, Training Recall: {val_recall:.4f}')
         print(f'Validation Loss: {val_loss:.4f}, Validation Precision: {val_precision:.4f}, Validation Recall: {val_recall:.4f}')
@@ -42,7 +43,8 @@ def train_model_binary(model, train_dataloader, val_dataloader, num_epochs, acce
         result_dict["validation_precision"].append(val_precision)
         result_dict["validation_recall"].append(val_recall)
         result_dict["epochs"].append(epoch + 1)
-        
+    
+    print()
     print('Finished Training')
     
     save_model(model, 'PeakMag1')
@@ -52,27 +54,27 @@ def train_model_binary(model, train_dataloader, val_dataloader, num_epochs, acce
 
 
 def training_step(model, dataloader, criterion, optimiser, acceptance):
-    #remember to set model to eval mode 
-    #before running this function IF using validation data
+    #remember to set model to training mode 
+    #before running this function
     total_loss = 0.0
     total_precision = 0.0
     total_recall = 0.0
-    total_samples = len(dataloader)
+    total_samples = 0
     
     for data, labels in dataloader:
         optimiser.zero_grad()
-        outputs = model(data)
-        loss = criterion(outputs, labels)
+        outputs = model(data).squeeze()
+        loss = criterion(outputs, labels.float())
         loss.backward()
         optimiser.step()
         
-        outputs = outputs.squeeze()
         probabilities = torch.sigmoid(outputs)
         batch_precision, batch_recall = calculate_precision_recall_binary(probabilities, labels, acceptance)
-        loss = criterion(outputs, labels)
+        loss = criterion(outputs, labels.float())
         total_loss += loss.item() * len(data)
         total_precision += batch_precision * len(data)
         total_recall += batch_recall * len(data)
+        total_samples += len(data)
     avg_loss = total_loss / total_samples
     avg_recall = total_recall / total_samples
     avg_precision = total_precision / total_samples
@@ -81,23 +83,26 @@ def training_step(model, dataloader, criterion, optimiser, acceptance):
     #precision is total correct positive predictions/total positive predictions
     return avg_loss, avg_recall, avg_precision
 
+
+
 def validation_loss_recall_precision(model, dataloader, criterion, acceptance):
     #remember to set model to eval mode 
     #before running this function IF using validation data
     total_loss = 0.0
     total_precision = 0.0
     total_recall = 0.0
-    total_samples = len(dataloader)
+    total_samples = 0
     
     with torch.no_grad():
         for data, labels in dataloader:
             outputs = model(data).squeeze()
             probabilities = torch.sigmoid(outputs)
             batch_precision, batch_recall = calculate_precision_recall_binary(probabilities, labels, acceptance)
-            loss = criterion(outputs, labels)
+            loss = criterion(outputs, labels.float())
             total_loss += loss.item() * len(data)
             total_precision += batch_precision * len(data)
             total_recall += batch_recall * len(data)
+            total_samples += len(data)
     avg_loss = total_loss / total_samples
     avg_recall = total_recall / total_samples
     avg_precision = total_precision / total_samples
@@ -105,6 +110,7 @@ def validation_loss_recall_precision(model, dataloader, criterion, acceptance):
     #recall is total correct positive predictions/total positive labels
     #precision is total correct positive predictions/total positive predictions
     return avg_loss, avg_recall, avg_precision
+
 
 
 def plot_predictions(model, dataloader, num_samples, acceptance):
@@ -177,14 +183,11 @@ def calculate_precision_recall_binary(outputs, labels, acceptance):
 
     predicted = (outputs > acceptance).float()
     true_positives = (predicted * labels).sum().item()
-    #false_positives = (predicted * (1 - labels)).sum().item()
-    #false_negatives = ((1 - predicted) * labels).sum().item()
+
     total_predictions = predicted.sum().item() # Total positive predictions
     total_labels = labels.sum().item() # Total positive labels
-    precision = ( true_positives / total_predictions
-        if total_predictions > 0
-        else 0)
-    recall = ( true_positives / total_labels
-        if total_labels > 0
-        else 0 )
+
+    precision = true_positives / total_predictions if total_predictions > 0 else 0
+    recall = true_positives / total_labels if total_labels > 0 else 0
+
     return precision, recall
