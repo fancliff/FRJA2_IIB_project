@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from numba import jit
 
 
-def train_model_binary(model, train_dataloader, val_dataloader, num_epochs, acceptance, plotting=True):
+def train_model_binary(model, train_dataloader, val_dataloader, save_name, num_epochs, acceptance, plotting=True):
     
     criterion = nn.BCEWithLogitsLoss() #combines sigmoid and BCE loss
     optimiser = optim.Adam(model.parameters(), lr=0.001)
@@ -69,7 +69,8 @@ def train_model_binary(model, train_dataloader, val_dataloader, num_epochs, acce
     print()
     print('Finished Training')
     
-    save_model(model, 'PeakMag1')
+    #save the model if a save name is provided
+    save_name is not None and save_model(model, save_name)
     
     if plotting:
         plt.ioff()
@@ -177,13 +178,15 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
                     return  # Exit after plotting specified number of samples
 
 
-def load_model(model_path):
+def load_model(save_name):
+    project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/Models/'
+    model_path = project_path + save_name
     model = torch.load(f'{model_path}.pth')
     return model
 
 
 def save_model(model, save_name):
-    project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/Models'
+    project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/Models/'
     model_path = project_path + save_name
     torch.save(model, f'{model_path}.pth')
     print(f'Model saved to {model_path}.pth')

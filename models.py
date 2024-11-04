@@ -23,9 +23,9 @@ class simple_dataset(Dataset):
         label = torch.tensor(self.labels[idx], dtype=torch.float32)
         return signal, label
 
-class PeakMagCNN(nn.Module):
+class PeakMag1(nn.Module):
     def __init__(self):
-        super(PeakMagCNN, self).__init__()
+        super(PeakMag1, self).__init__()
         self.conv1 = nn.Conv1d(1, 16, kernel_size=5, padding=2)
         self.conv2 = nn.Conv1d(16, 32, kernel_size=5, padding=2)
         self.conv3 = nn.Conv1d(32, 64, kernel_size=5, padding=2)
