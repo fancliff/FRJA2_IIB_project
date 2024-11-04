@@ -13,8 +13,8 @@ from models import simple_dataset, PeakMagCNN
 from routines import train_model_binary, evaluate_model, plot_predictions, save_model, load_model
 
 data, labels = generate_data(num_samples=1000, signal_length=1024)
-dataset = simple_dataset(data, labels)
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+train_dataset = simple_dataset(data, labels)
+train_dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
 data, labels = generate_data(num_samples=100, signal_length=1024)
 val_dataset = simple_dataset(data, labels)
