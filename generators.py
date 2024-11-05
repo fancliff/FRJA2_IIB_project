@@ -19,7 +19,7 @@ def mag_1D_noise(num_samples=1000, signal_length=1000, sigma_max=0.1):
         label = np.zeros(signal_length, dtype=np.int32)
         
         #max 5 modes
-        num_modes = np.random.randint(1,6)
+        num_modes = np.random.randint(0,6)
         #when noise is added change num_modes to include 0
         # to improve model add a random sign to alpha_j 
         alphas = np.random.uniform(1, 2, size=5)
@@ -61,7 +61,7 @@ def mag_1D_noise(num_samples=1000, signal_length=1000, sigma_max=0.1):
         data[i, :] = np.abs(H_v) #use signal magnitude for now
         labels[i, :] = label
 
-    return data, labels, ws, zs, a_s
+    return data, labels
 
 
 
