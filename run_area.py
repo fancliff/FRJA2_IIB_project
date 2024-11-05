@@ -66,3 +66,4 @@ plot_recall_history([result_dict1,result_dict2],log_scale=True)
 
 criterion=nn.BCEWithLogitsLoss()
 compare_models(model1, model2, val_dataloader, criterion, acceptance1=0.5, acceptance2=0.5)
+compare_models(model1, model2, val_dataloader_no_noise, criterion, acceptance1=0.5, acceptance2=0.5)
