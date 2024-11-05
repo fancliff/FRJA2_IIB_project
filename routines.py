@@ -137,7 +137,7 @@ def validation_loss_recall_precision(model, dataloader, criterion, acceptance):
     return avg_loss, avg_recall, avg_precision
 
 
-def plot_losses(results, log_scale=True):
+def plot_loss_history(results, log_scale=True):
     plt.figure(figsize=(8, 4))
     plt.title('Training and Validation Loss')
     plt.xlabel('Epoch')
@@ -148,6 +148,38 @@ def plot_losses(results, log_scale=True):
     for i, result_dict in enumerate(results):
         plt.plot(result_dict["epochs"], result_dict["training_loss"], label=f"Model {i+1}: Training Loss")
         plt.plot(result_dict["epochs"], result_dict["validation_loss"], label=f"Model {i+1} Validation Loss")
+
+    plt.legend()
+    plt.show()
+
+
+def plot_precision_history(results, log_scale=True):
+    plt.figure(figsize=(8, 4))
+    plt.title('Training and Validation Precision')
+    plt.xlabel('Epoch')
+    plt.ylabel('Precision')
+    if log_scale:
+        plt.yscale('log')
+    
+    for i, result_dict in enumerate(results):
+        plt.plot(result_dict["epochs"], result_dict["training_precision"], label=f"Model {i+1}: Training Precision")
+        plt.plot(result_dict["epochs"], result_dict["validation_precision"], label=f"Model {i+1} Validation Precision")
+
+    plt.legend()
+    plt.show()
+
+
+def plot_recall_history(results, log_scale=True):
+    plt.figure(figsize=(8, 4))
+    plt.title('Training and Validation Recall')
+    plt.xlabel('Epoch')
+    plt.ylabel('Recall')
+    if log_scale:
+        plt.yscale('log')
+    
+    for i, result_dict in enumerate(results):
+        plt.plot(result_dict["epochs"], result_dict["training_recall"], label=f"Model {i+1}: Training Recall")
+        plt.plot(result_dict["epochs"], result_dict["validation_recall"], label=f"Model {i+1} Validation Recall")
 
     plt.legend()
     plt.show()
@@ -179,6 +211,23 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
                 samples_plotted += 1
                 if samples_plotted >= num_samples:
                     return  # Exit after plotting specified number of samples
+
+
+def plot_samples(dataloader, num_samples):
+    samples_plotted = 0
+    for data, labels in dataloader:
+        for i in range(min(num_samples, len(data))):
+            plt.figure(figsize=(12, 6))
+            plt.plot(data[i].squeeze().cpu().numpy(), label="Signal", color="blue")
+            plt.plot(labels[i].cpu().numpy() * 5, label="Labels (scaled)", linestyle="--", color="green")
+            plt.title(f'Sample {i+1}')
+            plt.xlabel('Frequency (Normalized)')
+            plt.ylabel('Amplitude / Label')
+            plt.legend()
+            plt.show()
+            samples_plotted += 1
+            if samples_plotted >= num_samples:
+                return  # Exit after plotting specified number of samples
 
 
 def load_model(save_name):
