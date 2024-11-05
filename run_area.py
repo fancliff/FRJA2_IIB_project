@@ -25,22 +25,23 @@ data, labels = generate_data_no_noise(num_samples=4000, signal_length=1024)
 train_dataset_no_noise = simple_dataset(data, labels)
 train_dataloader_no_noise = DataLoader(train_dataset_no_noise, batch_size=32, shuffle=True)
 
+data, labels = generate_data_no_noise(num_samples=400, signal_length=1024)
+val_dataset_no_noise = simple_dataset(data, labels)
+val_dataloader_no_noise = DataLoader(val_dataset_no_noise, batch_size=32, shuffle=True)
 
-plot_samples(train_dataloader, 3)
+#plot_samples(train_dataloader, 3)
 
 model1 = PeakMag2()
 model2 = PeakMag2()
 
 plot_during = False
 
-'''
-
 result_dict1 = train_model_binary(
                 model1, 
-                train_dataloader, 
-                val_dataloader, 
-                save_name='PeakMag1_2', #None if no save required
-                num_epochs = 6, 
+                train_dataloader_no_noise, 
+                val_dataloader_no_noise, 
+                save_name='PeakMagNoNoise1', #None if no save required
+                num_epochs = 10, 
                 acceptance=0.5, 
                 plotting=plot_during
                 )
@@ -49,8 +50,8 @@ result_dict2 = train_model_binary(
                 model2, 
                 train_dataloader, 
                 val_dataloader, 
-                save_name='PeakMag2_1', #None if no save required
-                num_epochs = 6, 
+                save_name='PeakMagNoise1', #None if no save required
+                num_epochs = 10, 
                 acceptance=0.5, 
                 plotting=plot_during
                 )
@@ -65,5 +66,3 @@ plot_recall_history([result_dict1,result_dict2],log_scale=True)
 
 criterion=nn.BCEWithLogitsLoss()
 compare_models(model1, model2, val_dataloader, criterion, acceptance1=0.5, acceptance2=0.5)
-
-'''
