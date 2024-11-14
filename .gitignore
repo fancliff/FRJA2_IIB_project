@@ -6,6 +6,9 @@
 #Ignore all .pth files
 *.pth
 
+#Ignore all .png files
+*.png
+
 # User-specific files
 *.rsuser
 *.suo
