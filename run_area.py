@@ -31,8 +31,10 @@ test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=True)
 #model1 = rt.load_model('PeakMagNoNoise1')
 #print(rt.count_parameters(model1))
 
-model1 = PeakMag2()
-model2 = PeakMag3()
+model1 = PeakMag3()
+#model2 = PeakMag3()
+
+results = []
 
 plot_during = True
 
@@ -40,12 +42,15 @@ result_dict1 = rt.train_model_binary(
                 model1, 
                 train_dataloader, 
                 val_dataloader, 
-                save_name='PeakMag2_2', #None if no save required
+                save_name='PeakMag3_3_025', #None if no save required
                 num_epochs = 20, 
                 acceptance=0.5, 
                 plotting=plot_during
                 )
+results.append(result_dict1)
 
+
+'''
 result_dict2 = rt.train_model_binary(
                 model2, 
                 train_dataloader, 
@@ -55,14 +60,16 @@ result_dict2 = rt.train_model_binary(
                 acceptance=0.5, 
                 plotting=plot_during
                 )
+results.append(result_dict2)
+'''
 
-rt.plot_loss_history([result_dict1,result_dict2],log_scale=True)
-rt.plot_precision_history([result_dict1,result_dict2],log_scale=True)
-rt.plot_recall_history([result_dict1,result_dict2],log_scale=True)
+rt.plot_loss_history(results,log_scale=True)
+rt.plot_precision_history(results,log_scale=True)
+rt.plot_recall_history(results,log_scale=True)
 
 #load models from save files or train above
-#model1 = load_model('PeakMag1_1')
-#model2 = load_model('PeakMag1_2')
+#model1 = rt.load_model('PeakMag1_1')
+model2 = rt.load_model('PeakMag3_2_020')
 
 criterion=nn.BCEWithLogitsLoss()
 rt.compare_models(model1, model2, val_dataloader, criterion, acceptance1=0.5, acceptance2=0.5)
