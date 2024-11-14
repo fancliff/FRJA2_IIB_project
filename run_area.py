@@ -34,14 +34,14 @@ test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=True)
 model1 = PeakMag2()
 model2 = PeakMag3()
 
-plot_during = False
+plot_during = True
 
 result_dict1 = rt.train_model_binary(
                 model1, 
                 train_dataloader, 
                 val_dataloader, 
                 save_name='PeakMag2_2', #None if no save required
-                num_epochs = 10, 
+                num_epochs = 20, 
                 acceptance=0.5, 
                 plotting=plot_during
                 )
@@ -51,7 +51,7 @@ result_dict2 = rt.train_model_binary(
                 train_dataloader, 
                 val_dataloader, 
                 save_name='PeakMag3_2', #None if no save required
-                num_epochs = 10, 
+                num_epochs = 20, 
                 acceptance=0.5, 
                 plotting=plot_during
                 )
