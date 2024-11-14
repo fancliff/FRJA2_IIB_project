@@ -219,7 +219,7 @@ def plot_samples(dataloader, num_samples):
         for i in range(min(num_samples, len(data))):
             plt.figure(figsize=(12, 6))
             plt.plot(data[i].squeeze().cpu().numpy(), label="Signal", color="blue")
-            plt.plot(labels[i].cpu().numpy() * 5, label="Labels (scaled)", linestyle="--", color="green")
+            plt.plot(labels[i].cpu().numpy() * 2, label="Labels (scaled)", linestyle="--", color="green")
             plt.title(f'Sample {i+1}')
             plt.xlabel('Frequency (Normalized)')
             plt.ylabel('Amplitude / Label')
@@ -268,3 +268,10 @@ def calculate_precision_recall_binary(outputs, labels, acceptance):
     recall = true_positives / total_labels if total_labels > 0 else 0
 
     return precision, recall
+
+
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+
