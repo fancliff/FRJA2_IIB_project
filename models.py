@@ -24,6 +24,50 @@ class simple_dataset(Dataset):
         return signal, label
 
 
+class PeakMag3(nn.Module):
+    #wider kernel size than PeakMag1
+    #dropout of p=0.2 at each layer
+    def __init__(self):
+        super(PeakMag2, self).__init__()
+        self.conv1 = nn.Conv1d(1, 16, kernel_size=21, padding=10)
+        self.conv2 = nn.Conv1d(16, 32, kernel_size=21, padding=10)
+        self.conv3 = nn.Conv1d(32, 64, kernel_size=21, padding=10)
+        self.pool = nn.MaxPool1d(kernel_size=2)
+        self.fc1 = nn.Linear(64*128,2048) 
+        self.fc2 = nn.Linear(2048,1024) 
+        self.dropout = nn.Dropout(0.2)
+        
+    def forward(self,x):
+        x = F.relu(self.conv1(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = F.relu(self.conv2(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = F.relu(self.conv3(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = x.view(-1, self.num_flat_features(x))
+        
+        x = F.relu(self.fc1(x))
+        
+        x = self.dropout(x)
+        
+        x = self.fc2(x)
+        
+        return x
+    
+    def num_flat_features(self, x):
+        size = x.size()[1:]  # all dimensions except the batch dimension
+        num_features = 1
+        for s in size:
+            num_features *= s
+        return num_features
+
+
 class PeakMag2(nn.Module):
     #wider kernel size than PeakMag1
     def __init__(self):
