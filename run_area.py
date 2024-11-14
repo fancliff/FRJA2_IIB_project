@@ -24,12 +24,12 @@ data, labels = generate_data(num_samples=400, signal_length=1024, sigma_max=0.1,
 test_dataset = simple_dataset(data, labels)
 test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=True)
 
-#plot_samples(train_dataloader, 20)
+rt.plot_samples(train_dataloader, 20)
+#rt.plot_samples(val_dataloader, 20)
 
-#plot_samples(val_dataloader, 20)
-
-#model1 = rt.load_model('PeakMagNoNoise1')
+#model1 = rt.load_model('PeakMag3_4_030')
 #print(rt.count_parameters(model1))
+
 
 model1 = PeakMag3()
 #model2 = PeakMag3()
