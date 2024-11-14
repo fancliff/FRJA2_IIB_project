@@ -31,7 +31,8 @@ def mag_1D_noise_normalised(
         num_modes = np.random.randint(0,6)
         #when noise is added change num_modes to include 0
         # to improve model generalisation add a random sign to alpha_j 
-        alphas = np.random.choice([-1,1],size=5)*np.random.uniform(1, 2, size=5)
+        #alphas = np.random.choice(np.array([-1,1]),size=5)*np.random.uniform(1, 2, size=5)
+        alphas = np.random.uniform(1, 2, size=5)
         zetas = 10**(np.random.uniform(-2, -1, size=5))
         #no modes at very edge of frequency range
         omegas = np.random.uniform(0.001, 0.999, size=5)
