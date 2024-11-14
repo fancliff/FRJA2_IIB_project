@@ -6,7 +6,14 @@ from numba import jit
 #finish adding normalisation function
 #see vaibhavs report for best normalisation function
 @jit(nopython=True)
-def mag_1D_noise_normalised(num_samples=1000, signal_length=1000, sigma_max=0.1):
+def mag_1D_noise_normalised(
+    num_samples: int,
+    signal_length: int,
+    sigma_max: float = 0.1,
+    normalise = None,
+    norm_95: bool = False,
+    min_max: bool = False,
+    ):
     
     data = np.empty((num_samples,signal_length),dtype=np.float64)
     labels = np.empty((num_samples,signal_length),dtype=np.int32)
@@ -57,10 +64,28 @@ def mag_1D_noise_normalised(num_samples=1000, signal_length=1000, sigma_max=0.1)
             bandwidth = 2*omega_n*zeta_n
             label[(frequencies >= omega_n - bandwidth) & (frequencies <= omega_n + bandwidth)] = 1
         
+        mag = np.abs(H_v)
+        out = np.abs(H_v)
+        
+        if normalise is not None:
+            out = normalise(out)
+        
+        if norm_95:
+            max = np.max(mag)
+            mag = mag/(0.95*max)
+            out = out/(0.95*max)
+        
+        if min_max:
+            #aim is to maintain the phase of out if using real and imaginary parts
+            max_mag = np.max(mag)
+            min_mag = np.min(mag)
+            mag_normed = (mag - min_mag)/(max_mag - min_mag)
+            out = out * mag_normed/mag 
+        
         #ws[i] = omegas[:num_modes]
         #zs[i] = zetas[:num_modes]
         #a_s[i] = alphas[:num_modes]
-        data[i, :] = np.abs(H_v) #use signal magnitude for now
+        data[i, :] = out 
         labels[i, :] = label
 
     return data, labels
