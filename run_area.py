@@ -42,7 +42,7 @@ result_dict1 = rt.train_model_binary(
                 model1, 
                 train_dataloader, 
                 val_dataloader, 
-                save_name='PeakMag3_3_025', #None if no save required
+                save_name='PeakMag3_4_030', #None if no save required
                 num_epochs = 20, 
                 acceptance=0.5, 
                 plotting=plot_during
@@ -63,13 +63,15 @@ result_dict2 = rt.train_model_binary(
 results.append(result_dict2)
 '''
 
+'''
 rt.plot_loss_history(results,log_scale=True)
 rt.plot_precision_history(results,log_scale=True)
 rt.plot_recall_history(results,log_scale=True)
+'''
 
 #load models from save files or train above
 #model1 = rt.load_model('PeakMag1_1')
-model2 = rt.load_model('PeakMag3_2_020')
+model2 = rt.load_model('PeakMag3_3_025')
 
 criterion=nn.BCEWithLogitsLoss()
 rt.compare_models(model1, model2, val_dataloader, criterion, acceptance1=0.5, acceptance2=0.5)
