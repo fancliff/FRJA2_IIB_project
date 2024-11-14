@@ -28,7 +28,7 @@ class PeakMag3(nn.Module):
     #wider kernel size than PeakMag1
     #dropout of p=0.2 at each layer
     def __init__(self):
-        super(PeakMag2, self).__init__()
+        super(PeakMag3, self).__init__()
         self.conv1 = nn.Conv1d(1, 16, kernel_size=21, padding=10)
         self.conv2 = nn.Conv1d(16, 32, kernel_size=21, padding=10)
         self.conv3 = nn.Conv1d(32, 64, kernel_size=21, padding=10)
