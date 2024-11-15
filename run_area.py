@@ -9,19 +9,19 @@ import matplotlib.pyplot as plt
 from numba import jit
 
 from generators import mag_1D_noise_normalised as generate_data
-from models import simple_dataset, PeakMag1, PeakMag2, PeakMag3
+import models as md
 import routines as rt 
 
 data, labels = generate_data(num_samples=4000, signal_length=1024, sigma_max=0.1, min_max=True)
-train_dataset = simple_dataset(data, labels)
+train_dataset = md.one_channel_dataset(data, labels)
 train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
 data, labels = generate_data(num_samples=400, signal_length=1024, sigma_max=0.1, min_max=True)
-val_dataset = simple_dataset(data, labels)
+val_dataset = md.one_channel_dataset(data, labels)
 val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=True)
 
 data, labels = generate_data(num_samples=400, signal_length=1024, sigma_max=0.1, min_max=True)
-test_dataset = simple_dataset(data, labels)
+test_dataset = md.one_channel_dataset(data, labels)
 test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=True)
 
 rt.plot_samples(train_dataloader, 20)
@@ -31,7 +31,7 @@ rt.plot_samples(train_dataloader, 20)
 #print(rt.count_parameters(model1))
 
 
-model1 = PeakMag3()
+model1 = md.PeakMag3()
 #model2 = PeakMag3()
 
 results = []
