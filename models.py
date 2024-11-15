@@ -24,9 +24,57 @@ class simple_dataset(Dataset):
         return signal, label
 
 
+#as PeakMag3 but with 2 input channels
+class PeakMag4(nn.Module):
+    def __init__(self, input_length: int = 1024):
+        super(PeakMag4, self).__init__()
+        self.conv1 = nn.Conv1d(2, 16, kernel_size=21, padding=10)
+        self.conv2 = nn.Conv1d(16, 32, kernel_size=21, padding=10)
+        self.conv3 = nn.Conv1d(32, 64, kernel_size=21, padding=10)
+        self.pool = nn.MaxPool1d(kernel_size=2)
+        self.fc1 = nn.Linear(64*128,2048) 
+        self.fc2 = nn.Linear(2048,input_length) 
+        self.dropout = nn.Dropout(0.3)
+        
+    def forward(self,x):
+        x = F.relu(self.conv1(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = F.relu(self.conv2(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = F.relu(self.conv3(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = x.view(-1, self.num_flat_features(x))
+        
+        x = F.relu(self.fc1(x))
+        
+        x = self.dropout(x)
+        
+        x = self.fc2(x)
+        
+        x = torch.sigmoid(x)
+        
+        return x
+    
+    def num_flat_features(self, x):
+        size = x.size()[1:]  # all dimensions except the batch dimension
+        num_features = 1
+        for s in size:
+            num_features *= s
+        return num_features
+    
+    #more thought on this required
+    #def compute_fc_input_size(self, input_length):
+
+
+#wider kernel size than PeakMag1
+#dropout of p=0.2 at each layer
 class PeakMag3(nn.Module):
-    #wider kernel size than PeakMag1
-    #dropout of p=0.2 at each layer
     def __init__(self):
         super(PeakMag3, self).__init__()
         self.conv1 = nn.Conv1d(1, 16, kernel_size=21, padding=10)
@@ -57,6 +105,9 @@ class PeakMag3(nn.Module):
         x = self.dropout(x)
         
         x = self.fc2(x)
+        
+        x = torch.sigmoid(x)
+        #convert to probabilities for binary classfication
         
         return x
     
@@ -98,6 +149,8 @@ class PeakMag2(nn.Module):
         
         x = self.fc2(x)
         
+        x = torch.sigmoid(x)
+        
         return x
     
     def num_flat_features(self, x):
@@ -136,6 +189,8 @@ class PeakMag1(nn.Module):
         #x = self.dropout(x)
         
         x = self.fc2(x)
+        
+        x = torch.sigmoid(x)
         
         return x
     

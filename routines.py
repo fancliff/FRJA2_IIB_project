@@ -94,8 +94,7 @@ def training_step(model, dataloader, criterion, optimiser, acceptance):
         loss.backward()
         optimiser.step()
         
-        probabilities = torch.sigmoid(outputs)
-        batch_precision, batch_recall = calculate_precision_recall_binary(probabilities, labels, acceptance)
+        batch_precision, batch_recall = calculate_precision_recall_binary(outputs, labels, acceptance)
         loss = criterion(outputs, labels.float())
         total_loss += loss.item() * len(data)
         total_precision += batch_precision * len(data)
@@ -121,8 +120,7 @@ def validation_loss_recall_precision(model, dataloader, criterion, acceptance):
     with torch.no_grad():
         for data, labels in dataloader:
             outputs = model(data).squeeze()
-            probabilities = torch.sigmoid(outputs)
-            batch_precision, batch_recall = calculate_precision_recall_binary(probabilities, labels, acceptance)
+            batch_precision, batch_recall = calculate_precision_recall_binary(outputs, labels, acceptance)
             loss = criterion(outputs, labels.float())
             total_loss += loss.item() * len(data)
             total_precision += batch_precision * len(data)
