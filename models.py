@@ -92,7 +92,7 @@ class PeakMag4(nn.Module):
         self.pool = nn.MaxPool1d(kernel_size=2)
         self.fc1 = nn.Linear(64*128,2048) 
         self.fc2 = nn.Linear(2048,input_length) 
-        self.dropout = nn.Dropout(0.00001)
+        self.dropout = nn.Dropout(0.3)
         
     def forward(self,x):
         x = F.relu(self.conv1(x))

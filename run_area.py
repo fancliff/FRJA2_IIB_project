@@ -15,7 +15,7 @@ import routines as rt
 import time
 
 
-data, labels = real_imag(num_samples=1000, signal_length=1024, sigma_max=0.1, min_max=True)
+data, labels = real_imag(num_samples=4000, signal_length=1024, sigma_max=0.1, min_max=True)
 train_dataset_1 = md.two_channel_dataset(data, labels)
 train_dataloader_1 = DataLoader(train_dataset_1, batch_size=32, shuffle=True)
 
@@ -24,7 +24,7 @@ val_dataset_1 = md.two_channel_dataset(data, labels)
 val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 
-data, labels = real_imag(num_samples=2000, signal_length=1024, sigma_max=0.1, min_max=True)
+data, labels = real_imag(num_samples=4000, signal_length=1024, sigma_max=0.1, min_max=True)
 train_dataset_2 = md.two_channel_dataset(data, labels)
 train_dataloader_2 = DataLoader(train_dataset_2, batch_size=32, shuffle=True)
 
@@ -61,7 +61,7 @@ result_dict1,_ = rt.train_model_binary(
                 num_epochs = 20, 
                 acceptance=0.5, 
                 plotting=plot_during,
-                patience = 10,
+                patience = 4,
                 )
 results.append(result_dict1)
 end1 = time.time()
@@ -75,7 +75,7 @@ result_dict2,_ = rt.train_model_binary(
                 num_epochs = 20, 
                 acceptance=0.5, 
                 plotting=plot_during,
-                patience = 10,
+                patience = 4,
                 )
 results.append(result_dict2)
 end2 = time.time()
