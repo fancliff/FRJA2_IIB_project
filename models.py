@@ -45,6 +45,38 @@ class one_channel_dataset(Dataset):
         return signal, label
 
 
+class EarlyStopping:
+    def __init__(self, patience=4, verbose=False, delta=0, path='checkpoint.pth'):
+        self.patience = patience
+        self.verbose = verbose
+        self.counter = 0
+        self.best_loss = None
+        self.early_stop = False
+        self.delta = delta
+        self.path = path
+    
+    def __call__(self, val_loss, model):
+        if self.best_loss is None:
+            self.best_loss = val_loss
+            self.save_checkpoint(model, val_loss)
+        elif val_loss < self.best_loss + self.delta:
+            self.best_loss = val_loss
+            self.save_checkpoint(model, val_loss)
+            self.counter = 0
+        else:
+            self.counter += 1
+            if self.counter >= self.patience:
+                self.early_stop = True
+    
+    def save_checkpoint(self, model, val_loss):
+        if self.verbose:
+            print(f'Validation loss decreased ({self.best_loss:.4f} --> {val_loss:.4f}).  Saving model ...')
+        torch.save(model.state_dict(), self.path)
+    
+    def load_checkpoint(self, model):
+        model.load_state_dict(torch.load(self.path))
+
+
 #as PeakMag3 but with 2 input channels
 class PeakMag4(nn.Module):
     def __init__(self, input_length: int = 1024):
