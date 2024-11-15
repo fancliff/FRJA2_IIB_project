@@ -7,9 +7,11 @@ import numpy as np
 import scipy
 import matplotlib.pyplot as plt
 from numba import jit
+from models import EarlyStopping
 
 
-def train_model_binary(model, train_dataloader, val_dataloader, save_name, num_epochs, acceptance, plotting=True):
+def train_model_binary(model, train_dataloader, val_dataloader, save_name, num_epochs, acceptance, plotting=True, patience=4):
+    early_stopping = EarlyStopping(patience=patience, verbose=True)
     
     criterion = nn.BCELoss() 
     #No longer need BCE with logits.
@@ -69,9 +71,20 @@ def train_model_binary(model, train_dataloader, val_dataloader, save_name, num_e
             ax.autoscale_view()
             plt.draw()
             plt.pause(0.01)
+        
+        early_stopping(val_loss, model)
+        
+        if early_stopping.early_stop:
+            print('Early stopping triggered, stopping training...')
+            #early_stopping.load_checkpoint(model)
+            break
     
     print()
     print('Finished Training')
+    
+    #load the best model using EarlyStopping class 
+    #do this regardless of whether training was stopped early
+    early_stopping.load_checkpoint(model)
     
     #save the model if a save name is provided
     save_name is not None and save_model(model, save_name)
@@ -80,7 +93,7 @@ def train_model_binary(model, train_dataloader, val_dataloader, save_name, num_e
         plt.ioff()
         plt.show()
     
-    return result_dict
+    return result_dict, model
 
 
 def training_step(model, dataloader, criterion, optimiser, acceptance):
