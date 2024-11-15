@@ -94,8 +94,8 @@ for i in range(num_samples):
     #plt.plot(frequencies, phase_95, label='Phase 95', color='red', linestyle='--')
     #plt.plot(frequencies, phase_no_norm, label='Phase no norm', color='green', linestyle='--')
     
-    plt.plot(frequencies, out_min_max[0], label='Re[H_v(f)] min_max', linestyle='--', color='orange')
-    plt.plot(frequencies, out_min_max[1], label='Im[H_v(f)] min_max', linestyle=':', color='green')
+    #plt.plot(frequencies, out_min_max[0], label='Re[H_v(f)] min_max', linestyle='--', color='orange')
+    #plt.plot(frequencies, out_min_max[1], label='Im[H_v(f)] min_max', linestyle=':', color='green')
     
     #plt.plot(frequencies, out_95[0], label='Re[H_v(f)] 0.95', linestyle='--', color='blue')
     #plt.plot(frequencies, out_95[1], label='Im[H_v(f)] 0.95', linestyle=':', color='red')
