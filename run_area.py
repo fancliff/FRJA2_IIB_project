@@ -15,7 +15,7 @@ import routines as rt
 import time
 
 
-data, labels = mag_1D_noise_normalised(num_samples=8000, signal_length=1024, sigma_max=0.1, min_max=True)
+data, labels = mag_1D_noise_normalised(num_samples=4000, signal_length=1024, sigma_max=0.1, min_max=True)
 train_dataset_1 = md.one_channel_dataset(data, labels)
 train_dataloader_1 = DataLoader(train_dataset_1, batch_size=32, shuffle=True)
 
@@ -49,7 +49,7 @@ print(f'Model 2 trainable parameters: {rt.count_parameters(model2)}')
 
 results = []
 
-plot_during = False
+plot_during = True
 
 
 start1 = time.time()
@@ -61,7 +61,7 @@ result_dict1,_ = rt.train_model_binary(
                 num_epochs = 20, 
                 acceptance=0.5, 
                 plotting=plot_during,
-                patience = 20,
+                patience = 4,
                 )
 results.append(result_dict1)
 end1 = time.time()
@@ -71,11 +71,11 @@ result_dict2,_ = rt.train_model_binary(
                 model2, 
                 train_dataloader_2, 
                 val_dataloader_2, 
-                save_name='PeakMag4_1', #None if no save required
+                save_name=None, #None if no save required
                 num_epochs = 20, 
                 acceptance=0.5, 
                 plotting=plot_during,
-                patience = 20,
+                patience = 4,
                 )
 results.append(result_dict2)
 end2 = time.time()
