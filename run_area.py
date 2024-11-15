@@ -61,7 +61,7 @@ result_dict1,_ = rt.train_model_binary(
                 num_epochs = 20, 
                 acceptance=0.5, 
                 plotting=plot_during,
-                patience = 4,
+                patience = 10,
                 )
 results.append(result_dict1)
 end1 = time.time()
@@ -75,7 +75,7 @@ result_dict2,_ = rt.train_model_binary(
                 num_epochs = 20, 
                 acceptance=0.5, 
                 plotting=plot_during,
-                patience = 4,
+                patience = 10,
                 )
 results.append(result_dict2)
 end2 = time.time()
