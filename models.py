@@ -46,7 +46,12 @@ class one_channel_dataset(Dataset):
 
 
 class EarlyStopping:
-    def __init__(self, patience=4, verbose=False, delta=0, path='checkpoint.pth'):
+    def __init__(self, 
+                patience=4, 
+                verbose=False, 
+                delta=0, 
+                path='C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/checkpoint.pth'
+                ):
         self.patience = patience
         self.verbose = verbose
         self.counter = 0
