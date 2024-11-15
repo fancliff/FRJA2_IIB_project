@@ -8,28 +8,32 @@ import scipy
 import matplotlib.pyplot as plt
 from numba import jit
 
-from generators import mag_1D_noise_normalised, real_imag
+from generators import n_channels_gen
 import models as md
 import routines as rt 
 
 import time
 
 
-data, labels = real_imag(num_samples=4000, signal_length=1024, sigma_max=0.1, min_max=True)
-train_dataset_1 = md.two_channel_dataset(data, labels)
+#                      mag, real, imag, phase, log_mag
+outputs1 = np.array([False, True, True, False, False])
+outputs2 = np.array([True, True, True, False, False])
+
+data, labels = n_channels_gen(num_samples=4000, signal_length=1024, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
+train_dataset_1 = md.n_channel_dataset(data, labels)
 train_dataloader_1 = DataLoader(train_dataset_1, batch_size=32, shuffle=True)
 
-data, labels = real_imag(num_samples=400, signal_length=1024, sigma_max=0.1, min_max=True)
-val_dataset_1 = md.two_channel_dataset(data, labels)
+data, labels = n_channels_gen(num_samples=400, signal_length=1024, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
+val_dataset_1 = md.n_channel_dataset(data, labels)
 val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 
-data, labels = real_imag(num_samples=4000, signal_length=1024, sigma_max=0.1, min_max=True)
-train_dataset_2 = md.two_channel_dataset(data, labels)
+data, labels = n_channels_gen(num_samples=4000, signal_length=1024, sigma_max=0.1, min_max=True, enabled_outputs=outputs2)
+train_dataset_2 = md.n_channel_dataset(data, labels)
 train_dataloader_2 = DataLoader(train_dataset_2, batch_size=32, shuffle=True)
 
-data, labels = real_imag(num_samples=400, signal_length=1024, sigma_max=0.1, min_max=True)
-val_dataset_2 = md.two_channel_dataset(data, labels)
+data, labels = n_channels_gen(num_samples=400, signal_length=1024, sigma_max=0.1, min_max=True, enabled_outputs=outputs2)
+val_dataset_2 = md.n_channel_dataset(data, labels)
 val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 
 
@@ -40,11 +44,10 @@ val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 #model1 = rt.load_model('PeakMag4_1')
 #print(rt.count_parameters(model1))
 
-
-model1 = md.PeakMag4()
+model1 = md.PeakMag5(data_channels=np.sum(outputs1))
 print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
 
-model2 = md.PeakMag4()
+model2 = md.PeakMag5(data_channels=np.sum(outputs2))
 print(f'Model 2 trainable parameters: {rt.count_parameters(model2)}')
 
 results = []
@@ -57,7 +60,7 @@ result_dict1,_ = rt.train_model_binary(
                 model1, 
                 train_dataloader_1, 
                 val_dataloader_1, 
-                save_name=None, #None if no save required
+                save_name='PeakMag5_real_imag', #None if no save required
                 num_epochs = 20, 
                 acceptance=0.5, 
                 plotting=plot_during,
@@ -71,7 +74,7 @@ result_dict2,_ = rt.train_model_binary(
                 model2, 
                 train_dataloader_2, 
                 val_dataloader_2, 
-                save_name=None, #None if no save required
+                save_name='PeakMag5_mag_real_imag', #None if no save required
                 num_epochs = 20, 
                 acceptance=0.5, 
                 plotting=plot_during,
@@ -87,7 +90,6 @@ rt.plot_recall_history(results,log_scale=True)
 
 print('Time taken for model 1 training: ', end1-start1)
 print('Time taken for model 2 training: ', end2-start2)
-
 
 #load models from save files or train above
 #model1 = rt.load_model('PeakMag1_1')
