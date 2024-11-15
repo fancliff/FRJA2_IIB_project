@@ -17,7 +17,7 @@ import time
 
 #                      mag, real, imag, phase, log_mag
 outputs1 = np.array([False, True, True, False, False])
-outputs2 = np.array([True, True, True, False, False])
+outputs2 = np.array([False, True, True, True, False])
 
 data, labels = n_channels_gen(num_samples=4000, signal_length=1024, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
 train_dataset_1 = md.n_channel_dataset(data, labels)
@@ -54,7 +54,7 @@ results = []
 
 plot_during = False
 
-
+'''
 start1 = time.time()
 result_dict1,_ = rt.train_model_binary(
                 model1, 
@@ -68,13 +68,16 @@ result_dict1,_ = rt.train_model_binary(
                 )
 results.append(result_dict1)
 end1 = time.time()
+'''
+
+
 
 start2 = time.time()
 result_dict2,_ = rt.train_model_binary(
                 model2, 
                 train_dataloader_2, 
                 val_dataloader_2, 
-                save_name='PeakMag5_mag_real_imag', #None if no save required
+                save_name='PeakMag5_real_imag_phase', #None if no save required
                 num_epochs = 20, 
                 acceptance=0.5, 
                 plotting=plot_during,
@@ -88,7 +91,7 @@ rt.plot_loss_history(results,log_scale=True)
 rt.plot_precision_history(results,log_scale=True)
 rt.plot_recall_history(results,log_scale=True)
 
-print('Time taken for model 1 training: ', end1-start1)
+#print('Time taken for model 1 training: ', end1-start1)
 print('Time taken for model 2 training: ', end2-start2)
 
 #load models from save files or train above
