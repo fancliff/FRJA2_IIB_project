@@ -8,7 +8,28 @@ import scipy
 import matplotlib.pyplot as plt
 from numba import jit
 
-class simple_dataset(Dataset):
+class two_channel_dataset(Dataset):
+    """
+    data: numpy array or similar of shape (num_samples, 2, signal_length).
+        2 represents two channels (real and imaginary parts by default).
+    labels: numpy array or similar of shape (num_samples, signal_length).
+    """
+    def __init__(self, data, labels):
+        self.data = data
+        self.labels = labels
+    
+    def __len__(self):
+        return len(self.labels)
+    
+    def __getitem__(self, idx):
+        #convert signal to tensor with shape (channels, signal_length)
+        signal = torch.tensor(self.data[idx], dtype=torch.float32)
+        #convert label to tensor with shape (signal_length)
+        label = torch.tensor(self.labels[idx], dtype=torch.float32)
+        return signal, label
+
+
+class one_channel_dataset(Dataset):
     def __init__(self, data, labels):
         self.data = data
         self.labels = labels
