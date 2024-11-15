@@ -45,6 +45,28 @@ class one_channel_dataset(Dataset):
         return signal, label
 
 
+#can be used for one, two or more channel datasets
+class n_channel_dataset(Dataset):
+    def __init__(self, data, labels):
+        self.data = data
+        self.labels = labels
+    
+    def __len__(self):
+        return len(self.labels)
+    
+    def __getitem__(self, idx):
+        #convert signal to tensor with shape (channels, signal_length)
+        signal = torch.tensor(self.data[idx], dtype=torch.float32)
+        
+        # If there's only one channel, unsqueeze to add a channel dimension
+        if signal.ndim == 1:  # Check if signal is 1D
+            signal = signal.unsqueeze(0)  # Add a channel dimension
+        
+        #convert label to tensor with shape (signal_length)
+        label = torch.tensor(self.labels[idx], dtype=torch.float32)
+        return signal, label
+
+
 class EarlyStopping:
     def __init__(self, 
                 patience=4, 
@@ -80,6 +102,54 @@ class EarlyStopping:
     
     def load_checkpoint(self, model):
         model.load_state_dict(torch.load(self.path))
+
+
+#as PeakMag4 but with flexible number of input channels
+class PeakMag5(nn.Module):
+    def __init__(self, data_channels: int, input_length: int = 1024):
+        super(PeakMag5, self).__init__()
+        self.conv1 = nn.Conv1d(data_channels, 16, kernel_size=21, padding=10)
+        self.conv2 = nn.Conv1d(16, 32, kernel_size=21, padding=10)
+        self.conv3 = nn.Conv1d(32, 64, kernel_size=21, padding=10)
+        self.pool = nn.MaxPool1d(kernel_size=2)
+        self.fc1 = nn.Linear(64*128,2048) 
+        self.fc2 = nn.Linear(2048,input_length) 
+        self.dropout = nn.Dropout(0.3)
+        
+    def forward(self,x):
+        x = F.relu(self.conv1(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = F.relu(self.conv2(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = F.relu(self.conv3(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = x.view(-1, self.num_flat_features(x))
+        
+        x = F.relu(self.fc1(x))
+        
+        x = self.dropout(x)
+        
+        x = self.fc2(x)
+        
+        x = torch.sigmoid(x)
+        
+        return x
+    
+    def num_flat_features(self, x):
+        size = x.size()[1:]  # all dimensions except the batch dimension
+        num_features = 1
+        for s in size:
+            num_features *= s
+        return num_features
+    
+    #more thought on this required
+    #def compute_fc_input_size(self, input_length):
 
 
 #as PeakMag3 but with 2 input channels
