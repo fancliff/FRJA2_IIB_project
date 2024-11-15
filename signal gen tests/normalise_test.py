@@ -4,26 +4,17 @@ from numba import jit
 
 import routines as rt
 
-num_samples: int = 10
-signal_length: int = 8192
+num_samples: int = 5
+signal_length: int = 1024
 sigma_max: float = 0.1
-normalise = None
-norm_95: bool = False
-min_max: bool = False
-
 
 data1 = np.empty((num_samples,signal_length),dtype=np.float64)
-data2 = np.empty((num_samples,signal_length),dtype=np.float64)
 labels = np.empty((num_samples,signal_length),dtype=np.int32)
-#ws = np.empty((num_samples),dtype=np.float64)
-#zs = np.empty((num_samples),dtype=np.float64)
-#a_s = np.empty((num_samples),dtype=np.float64)
 
 frequencies = np.linspace(0,1,signal_length)
 for i in range(num_samples):
     
     H_v = np.zeros(signal_length, dtype=np.complex128)
-    H_v_2 = np.zeros(signal_length, dtype=np.complex128)
     label = np.zeros(signal_length, dtype=np.int32)
     
     #max 5 modes
@@ -40,13 +31,10 @@ for i in range(num_samples):
     #noise for each sample is different and random
     sigma = np.random.uniform(0.01, sigma_max)
     
-    '''
     #add noise to real and imaginary parts
     noise = np.random.normal(0, np.exp(sigma), signal_length) + 1j*np.random.normal(0, np.exp(sigma), signal_length)
-    H_v += noise
-    H_v_2 += noise
-    '''
-    
+    #H_v += noise
+
     for n in range(num_modes):
         # to improve model add a random sign to alpha_j 
         alpha_n = alphas[n]
@@ -55,54 +43,64 @@ for i in range(num_samples):
         
         for j, w in enumerate(frequencies):
             H_f = 0.0j
-            H_f_2 = 0.0j
             
             denominator = omega_n**2 - w**2 + 2j * zeta_n * w
             numerator = 1j*w*alpha_n
             
             H_f += numerator/denominator
-            H_f_2 += abs(numerator)/denominator
             
             H_v[j] += H_f
-            H_v_2[j] += H_f_2
         
         #set label bandwidth to 3db or arbitrary value
         #bandwidth = 0.02 #(8 frequency points wide if 400 points)
-        bandwidth = 2*omega_n*zeta_n
+        #bandwidth = 2*omega_n*zeta_n
+        bandwidth = 0.005
         label[(frequencies >= omega_n - bandwidth) & (frequencies <= omega_n + bandwidth)] = 1
+        
+        #label[(frequencies >= omega_n - bandwidth) & (frequencies <= omega_n + bandwidth)] += 1
     
-    #mag = np.abs(H_v)
-    #out = (np.real(H_v),np.imag(H_v))
+    mag = np.abs(H_v)
+    phase_no_norm = np.angle(H_v)
     
-    if normalise is not None:
-        out = normalise(out)
+    out_95 = [np.real(H_v),np.imag(H_v)]
+    out_min_max = [np.real(H_v),np.imag(H_v)]
     
-    if norm_95:
-        max = np.max(mag)
-        mag = mag/(0.95*max)
-        out = out/(0.95*max)
     
-    if min_max:
-        #aim is to maintain the phase of out if using real and imaginary parts
-        max_mag = np.max(mag)
-        min_mag = np.min(mag)
-        mag_normed = (mag - min_mag)/(max_mag - min_mag)
-        out = out * mag_normed/mag 
+    max_mag = np.max(mag)
+    min_mag  = np.min(mag)
     
-    #ws[i] = omegas[:num_modes]
-    #zs[i] = zetas[:num_modes]
-    #a_s[i] = alphas[:num_modes]
+    mag_95 = mag/(0.95*max_mag)
+    out_95 = out_95/(0.95*max_mag)
+    
+    #aim is to maintain the phase of out if using real and imaginary parts
+    mag_min_max = (mag - min_mag)/(max_mag - min_mag)
+    out_min_max = out_min_max * mag_min_max/mag 
+
     #data1[i, :] = out
-    #labels[i, :] = label
+    labels[i, :] = label
+    
+    phase_min_max = np.angle(out_min_max[0] + 1j*out_min_max[1])
+    phase_95 = np.angle(out_95[0] + 1j*out_95[1])
     
     plt.figure(figsize=(12, 6))
-    #plt.plot(frequencies, np.abs(H_v), label='|H_v(f)|', color='blue')
-    #plt.plot(frequencies, np.abs(H_v_2), label='|H_v_2(f)|', color='red')
-    plt.plot(frequencies, 20*np.log10(np.abs(H_v)), label='20log10|H_v(f)|', color='blue', linestyle='--')
-    plt.plot(frequencies, 20*np.log10(np.abs(H_v_2)), label='20log10|H_v_2(f)|', color='red', linestyle='--')
-    #plt.plot(frequencies, np.real(H_v), label='Re[H_v(f)]', linestyle='--', color='orange')
-    #plt.plot(frequencies, np.imag(H_v), label='Im[H_v(f)]', linestyle=':', color='green')
-    #plt.plot(frequencies, labels[i] * 5, label='Labels (scaled)', linestyle='--')
+    #plt.plot(frequencies, np.zeros(len(frequencies)), color='black')
+    #plt.plot(frequencies, np.ones(len(frequencies)), color='black')
+    
+    #plt.plot(frequencies, mag_95, label='|H_v(f)| 0.95', color='blue')
+    #plt.plot(frequencies, mag_min_max, label='|H_v(f)| min_max', color='red')
+    
+    plt.plot(frequencies, phase_min_max, label='Phase min_max', color='blue', linestyle='--')
+    plt.plot(frequencies, phase_95, label='Phase 95', color='red', linestyle='--')
+    plt.plot(frequencies, phase_no_norm, label='Phase no norm', color='green', linestyle='--')
+    
+    #plt.plot(frequencies, out_min_max[0], label='Re[H_v(f)] min_max', linestyle='--', color='orange')
+    #plt.plot(frequencies, out_min_max[1], label='Im[H_v(f)] min_max', linestyle=':', color='green')
+    
+    #plt.plot(frequencies, out_95[0], label='Re[H_v(f)] 0.95', linestyle='--', color='blue')
+    #plt.plot(frequencies, out_95[1], label='Im[H_v(f)] 0.95', linestyle=':', color='red')
+    
+    plt.plot(frequencies, labels[i] * 0.5, label='Labels (scaled)', linestyle='--')
+    
     plt.title('Sample Vibration Signal with Labels')
     plt.xlabel('Normalised Frequency')
     plt.ylabel('Amplitude / Label')
