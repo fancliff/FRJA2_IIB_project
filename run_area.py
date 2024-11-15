@@ -12,8 +12,10 @@ from generators import mag_1D_noise_normalised, real_imag
 import models as md
 import routines as rt 
 
+import time
 
-data, labels = mag_1D_noise_normalised(num_samples=4000, signal_length=1024, sigma_max=0.1, min_max=True)
+
+data, labels = mag_1D_noise_normalised(num_samples=8000, signal_length=1024, sigma_max=0.1, min_max=True)
 train_dataset_1 = md.one_channel_dataset(data, labels)
 train_dataloader_1 = DataLoader(train_dataset_1, batch_size=32, shuffle=True)
 
@@ -35,7 +37,7 @@ val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 #rt.plot_samples(train_dataloader, 20)
 #rt.plot_samples(val_dataloader, 20)
 
-#model1 = rt.load_model('PeakMag3_4_030')
+#model1 = rt.load_model('PeakMag4_1')
 #print(rt.count_parameters(model1))
 
 
@@ -47,39 +49,44 @@ print(rt.count_parameters(model2))
 
 results = []
 
-plot_during = True
+plot_during = False
 
-result_dict1 = rt.train_model_binary(
+
+start1 = time.time()
+result_dict1,_ = rt.train_model_binary(
                 model1, 
                 train_dataloader_1, 
                 val_dataloader_1, 
                 save_name=None, #None if no save required
                 num_epochs = 20, 
                 acceptance=0.5, 
-                plotting=plot_during
+                plotting=plot_during,
+                patience = 20,
                 )
 results.append(result_dict1)
+end1 = time.time()
 
-
-
-result_dict2 = rt.train_model_binary(
+start2 = time.time()
+result_dict2,_ = rt.train_model_binary(
                 model2, 
                 train_dataloader_2, 
                 val_dataloader_2, 
                 save_name='PeakMag4_1', #None if no save required
                 num_epochs = 20, 
                 acceptance=0.5, 
-                plotting=plot_during
+                plotting=plot_during,
+                patience = 20,
                 )
 results.append(result_dict2)
-
+end2 = time.time()
 
 
 rt.plot_loss_history(results,log_scale=True)
 rt.plot_precision_history(results,log_scale=True)
 rt.plot_recall_history(results,log_scale=True)
 
-
+print('Time taken for model 1 training: ', end1-start1)
+print('Time taken for model 2 training: ', end2-start2)
 
 '''
 #load models from save files or train above
