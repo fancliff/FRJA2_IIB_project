@@ -42,10 +42,10 @@ val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 
 
 model1 = md.PeakMag3()
-print(rt.count_parameters(model1))
+print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
 
 model2 = md.PeakMag4()
-print(rt.count_parameters(model2))
+print(f'Model 2 trainable parameters: {rt.count_parameters(model2)}')
 
 results = []
 
