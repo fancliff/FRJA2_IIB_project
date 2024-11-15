@@ -16,7 +16,7 @@ def real_imag(
     min_max: bool = False,
     ):
     
-    data = np.empty((num_samples, signal_length, 2),dtype=np.float64)
+    data = np.empty((num_samples, 2, signal_length),dtype=np.float64)
     labels = np.empty((num_samples,signal_length),dtype=np.int32)
 
     frequencies = np.linspace(0,1,signal_length)
@@ -87,8 +87,8 @@ def real_imag(
             real_pt = real_pt * mag_normed/mag
             imag_pt = imag_pt * mag_normed/mag
 
-        data[i, :, 0] = real_pt
-        data[i, :, 1] = imag_pt
+        data[i, 0, :] = real_pt
+        data[i, 1, :] = imag_pt
         labels[i, :] = label
 
     return data, labels
