@@ -8,23 +8,31 @@ import scipy
 import matplotlib.pyplot as plt
 from numba import jit
 
-from generators import mag_1D_noise_normalised as generate_data
+from generators import mag_1D_noise_normalised, real_imag
 import models as md
 import routines as rt 
 
-data, labels = generate_data(num_samples=4000, signal_length=1024, sigma_max=0.1, min_max=True)
-train_dataset = md.one_channel_dataset(data, labels)
-train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
-data, labels = generate_data(num_samples=400, signal_length=1024, sigma_max=0.1, min_max=True)
-val_dataset = md.one_channel_dataset(data, labels)
-val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=True)
+data, labels = mag_1D_noise_normalised(num_samples=4000, signal_length=1024, sigma_max=0.1, min_max=True)
+train_dataset_1 = md.one_channel_dataset(data, labels)
+train_dataloader_1 = DataLoader(train_dataset_1, batch_size=32, shuffle=True)
 
-data, labels = generate_data(num_samples=400, signal_length=1024, sigma_max=0.1, min_max=True)
-test_dataset = md.one_channel_dataset(data, labels)
-test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=True)
+data, labels = mag_1D_noise_normalised(num_samples=400, signal_length=1024, sigma_max=0.1, min_max=True)
+val_dataset_1 = md.one_channel_dataset(data, labels)
+val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
-rt.plot_samples(train_dataloader, 20)
+
+data, labels = real_imag(num_samples=4000, signal_length=1024, sigma_max=0.1, min_max=True)
+train_dataset_2 = md.two_channel_dataset(data, labels)
+train_dataloader_2 = DataLoader(train_dataset_2, batch_size=32, shuffle=True)
+
+data, labels = real_imag(num_samples=400, signal_length=1024, sigma_max=0.1, min_max=True)
+val_dataset_2 = md.two_channel_dataset(data, labels)
+val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
+
+
+
+#rt.plot_samples(train_dataloader, 20)
 #rt.plot_samples(val_dataloader, 20)
 
 #model1 = rt.load_model('PeakMag3_4_030')
@@ -32,7 +40,10 @@ rt.plot_samples(train_dataloader, 20)
 
 
 model1 = md.PeakMag3()
-#model2 = PeakMag3()
+print(rt.count_parameters(model1))
+
+model2 = md.PeakMag4()
+print(rt.count_parameters(model2))
 
 results = []
 
@@ -40,9 +51,9 @@ plot_during = True
 
 result_dict1 = rt.train_model_binary(
                 model1, 
-                train_dataloader, 
-                val_dataloader, 
-                save_name='PeakMag3_4_030', #None if no save required
+                train_dataloader_1, 
+                val_dataloader_1, 
+                save_name=None, #None if no save required
                 num_epochs = 20, 
                 acceptance=0.5, 
                 plotting=plot_during
@@ -50,29 +61,34 @@ result_dict1 = rt.train_model_binary(
 results.append(result_dict1)
 
 
-'''
+
 result_dict2 = rt.train_model_binary(
                 model2, 
-                train_dataloader, 
-                val_dataloader, 
-                save_name='PeakMag3_2', #None if no save required
+                train_dataloader_2, 
+                val_dataloader_2, 
+                save_name='PeakMag4_1', #None if no save required
                 num_epochs = 20, 
                 acceptance=0.5, 
                 plotting=plot_during
                 )
 results.append(result_dict2)
-'''
 
-'''
+
+
 rt.plot_loss_history(results,log_scale=True)
 rt.plot_precision_history(results,log_scale=True)
 rt.plot_recall_history(results,log_scale=True)
-'''
 
+
+
+'''
 #load models from save files or train above
 #model1 = rt.load_model('PeakMag1_1')
 model2 = rt.load_model('PeakMag3_3_025')
 
 criterion=nn.BCEWithLogitsLoss()
 rt.compare_models(model1, model2, val_dataloader, criterion, acceptance1=0.5, acceptance2=0.5)
+
+'''
+
 
