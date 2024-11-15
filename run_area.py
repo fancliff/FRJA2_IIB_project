@@ -15,16 +15,16 @@ import routines as rt
 import time
 
 
-data, labels = mag_1D_noise_normalised(num_samples=4000, signal_length=1024, sigma_max=0.1, min_max=True)
-train_dataset_1 = md.one_channel_dataset(data, labels)
+data, labels = real_imag(num_samples=1000, signal_length=1024, sigma_max=0.1, min_max=True)
+train_dataset_1 = md.two_channel_dataset(data, labels)
 train_dataloader_1 = DataLoader(train_dataset_1, batch_size=32, shuffle=True)
 
-data, labels = mag_1D_noise_normalised(num_samples=400, signal_length=1024, sigma_max=0.1, min_max=True)
-val_dataset_1 = md.one_channel_dataset(data, labels)
+data, labels = real_imag(num_samples=400, signal_length=1024, sigma_max=0.1, min_max=True)
+val_dataset_1 = md.two_channel_dataset(data, labels)
 val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 
-data, labels = real_imag(num_samples=4000, signal_length=1024, sigma_max=0.1, min_max=True)
+data, labels = real_imag(num_samples=2000, signal_length=1024, sigma_max=0.1, min_max=True)
 train_dataset_2 = md.two_channel_dataset(data, labels)
 train_dataloader_2 = DataLoader(train_dataset_2, batch_size=32, shuffle=True)
 
@@ -41,7 +41,7 @@ val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 #print(rt.count_parameters(model1))
 
 
-model1 = md.PeakMag3()
+model1 = md.PeakMag4()
 print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
 
 model2 = md.PeakMag4()
@@ -49,7 +49,7 @@ print(f'Model 2 trainable parameters: {rt.count_parameters(model2)}')
 
 results = []
 
-plot_during = True
+plot_during = False
 
 
 start1 = time.time()
@@ -88,14 +88,14 @@ rt.plot_recall_history(results,log_scale=True)
 print('Time taken for model 1 training: ', end1-start1)
 print('Time taken for model 2 training: ', end2-start2)
 
-'''
+
 #load models from save files or train above
 #model1 = rt.load_model('PeakMag1_1')
-model2 = rt.load_model('PeakMag3_3_025')
+#model2 = rt.load_model('PeakMag3_3_025')
 
-criterion=nn.BCEWithLogitsLoss()
-rt.compare_models(model1, model2, val_dataloader, criterion, acceptance1=0.5, acceptance2=0.5)
+criterion=nn.BCELoss()
+rt.compare_models(model1, model2, val_dataloader_1, criterion, acceptance1=0.5, acceptance2=0.5)
 
-'''
+
 
 
