@@ -1,8 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from numba import jit
-
-import routines as rt
 
 num_samples: int = 5
 signal_length: int = 1024
@@ -10,6 +7,9 @@ sigma_max: float = 0.1
 
 data1 = np.empty((num_samples,signal_length),dtype=np.float64)
 labels = np.empty((num_samples,signal_length),dtype=np.int32)
+zeros = np.zeros(signal_length)
+ones = zeros + 1
+minusones = zeros - 1
 
 frequencies = np.linspace(0,1,signal_length)
 for i in range(num_samples):
@@ -83,18 +83,19 @@ for i in range(num_samples):
     phase_95 = np.angle(out_95[0] + 1j*out_95[1])
     
     plt.figure(figsize=(12, 6))
-    #plt.plot(frequencies, np.zeros(len(frequencies)), color='black')
-    #plt.plot(frequencies, np.ones(len(frequencies)), color='black')
+    plt.plot(frequencies, zeros, color='black')
+    plt.plot(frequencies, ones, color='black')
+    plt.plot(frequencies, minusones, color='black')
     
     #plt.plot(frequencies, mag_95, label='|H_v(f)| 0.95', color='blue')
     #plt.plot(frequencies, mag_min_max, label='|H_v(f)| min_max', color='red')
     
-    plt.plot(frequencies, phase_min_max, label='Phase min_max', color='blue', linestyle='--')
-    plt.plot(frequencies, phase_95, label='Phase 95', color='red', linestyle='--')
-    plt.plot(frequencies, phase_no_norm, label='Phase no norm', color='green', linestyle='--')
+    #plt.plot(frequencies, phase_min_max, label='Phase min_max', color='blue', linestyle='--')
+    #plt.plot(frequencies, phase_95, label='Phase 95', color='red', linestyle='--')
+    #plt.plot(frequencies, phase_no_norm, label='Phase no norm', color='green', linestyle='--')
     
-    #plt.plot(frequencies, out_min_max[0], label='Re[H_v(f)] min_max', linestyle='--', color='orange')
-    #plt.plot(frequencies, out_min_max[1], label='Im[H_v(f)] min_max', linestyle=':', color='green')
+    plt.plot(frequencies, out_min_max[0], label='Re[H_v(f)] min_max', linestyle='--', color='orange')
+    plt.plot(frequencies, out_min_max[1], label='Im[H_v(f)] min_max', linestyle=':', color='green')
     
     #plt.plot(frequencies, out_95[0], label='Re[H_v(f)] 0.95', linestyle='--', color='blue')
     #plt.plot(frequencies, out_95[1], label='Im[H_v(f)] 0.95', linestyle=':', color='red')
