@@ -11,7 +11,11 @@ from numba import jit
 
 def train_model_binary(model, train_dataloader, val_dataloader, save_name, num_epochs, acceptance, plotting=True):
     
-    criterion = nn.BCEWithLogitsLoss() #combines sigmoid and BCE loss
+    criterion = nn.BCELoss() 
+    #No longer need BCE with logits.
+    #Applying sigmoid at the end of the model instead.
+    #BCE with logits may be more numerically stable
+    #if issues arise can switch back easily
     optimiser = optim.Adam(model.parameters(), lr=0.001)
     
     if plotting:
