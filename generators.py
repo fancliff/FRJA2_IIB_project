@@ -184,6 +184,7 @@ def mag_1D_noise_normalised(
     return data, labels
 
 
+
 @jit(nopython=True)
 def mag_1D_noise(num_samples=1000, signal_length=1000, sigma_max=0.1):
     
@@ -245,6 +246,7 @@ def mag_1D_noise(num_samples=1000, signal_length=1000, sigma_max=0.1):
     return data, labels
 
 
+
 #debugging of below method required, setting of ws, zs, a_s not working with jit
 #aim of method is to return the parameters of the modes in the signal for better plotting
 @jit(nopython=True)
@@ -301,6 +303,7 @@ def mag_1D_no_noise_new(num_samples=1000, signal_length=1000):
     return data, labels, ws, zs, a_s
 
 
+
 @jit(nopython=True)
 def mag_1D_no_noise(num_samples=1000, signal_length=1000):
     
@@ -347,3 +350,7 @@ def mag_1D_no_noise(num_samples=1000, signal_length=1000):
         labels[i, :] = label
 
     return data, labels
+
+
+
+
