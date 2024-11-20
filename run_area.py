@@ -84,7 +84,7 @@ result_dict2,_ = rt.train_model_binary(
                 num_epochs = 100, 
                 acceptance=0.5, 
                 plotting=plot_during,
-                patience = 4,
+                patience = 10,
                 )
 results.append(result_dict2)
 end2 = time.time()
@@ -92,8 +92,8 @@ end2 = time.time()
 
 
 rt.plot_loss_history(results,log_scale=True)
-rt.plot_precision_history(results,log_scale=True)
-rt.plot_recall_history(results,log_scale=True)
+rt.plot_precision_history(results,log_scale=False)
+rt.plot_recall_history(results,log_scale=False)
 
 print('Time taken for model 1 training: ', end1-start1)
 print('Time taken for model 2 training: ', end2-start2)
