@@ -169,7 +169,7 @@ def plot_loss_history(results, log_scale=True):
     plt.show()
 
 
-def plot_precision_history(results, log_scale=True):
+def plot_precision_history(results, log_scale=False):
     plt.figure(figsize=(8, 4))
     plt.title('Training and Validation Precision')
     plt.xlabel('Epoch')
@@ -185,7 +185,7 @@ def plot_precision_history(results, log_scale=True):
     plt.show()
 
 
-def plot_recall_history(results, log_scale=True):
+def plot_recall_history(results, log_scale=False):
     plt.figure(figsize=(8, 4))
     plt.title('Training and Validation Recall')
     plt.xlabel('Epoch')
