@@ -105,6 +105,7 @@ class EarlyStopping:
 
 
 #as PeakMag7 but with added convolutional layer
+#num parameters: 358,800
 class PeakMag8(nn.Module):
     def __init__(self, data_channels: int, input_length: int = 1024):
         super(PeakMag8, self).__init__()
@@ -155,6 +156,7 @@ class PeakMag8(nn.Module):
 
 
 #as PeakMag6 but with 2 FC layers to test impact of GAP vs PeakMag5
+#num parameters:
 class PeakMag7(nn.Module):
     def __init__(self, data_channels: int, input_length: int = 1024):
         super(PeakMag7, self).__init__()
@@ -204,6 +206,7 @@ class PeakMag7(nn.Module):
 
 
 #big cut on number of parameters using GAP and 1FC layer
+#num parameters: 121,104
 class PeakMag6(nn.Module):
     def __init__(self, data_channels: int, input_length: int = 1024):
         super(PeakMag6, self).__init__()
@@ -249,6 +252,7 @@ class PeakMag6(nn.Module):
 
 
 #as PeakMag4 but with flexible number of input channels
+#num parameters:
 class PeakMag5(nn.Module):
     def __init__(self, data_channels: int, input_length: int = 1024):
         super(PeakMag5, self).__init__()
