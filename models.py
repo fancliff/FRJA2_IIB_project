@@ -104,6 +104,51 @@ class EarlyStopping:
         model.load_state_dict(torch.load(self.path))
 
 
+class PeakMag6(nn.Module):
+    def __init__(self, data_channels: int, input_length: int = 1024):
+        super(PeakMag6, self).__init__()
+        self.conv1 = nn.Conv1d(data_channels, 16, kernel_size=21, padding=10)
+        self.conv2 = nn.Conv1d(16, 32, kernel_size=21, padding=10,)
+        self.conv3 = nn.Conv1d(32, 64, kernel_size=21, padding=10)
+        self.pool = nn.MaxPool1d(kernel_size=2) # default stride = kernel_size
+        self.global_pool = nn.AdaptiveAvgPool1d(1) # Global average pooling
+        self.fc1 = nn.Linear(64,input_length)
+        self.dropout = nn.Dropout(0.2) # 0.2 sensible default
+        
+    def forward(self,x):
+        x = F.relu(self.conv1(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = F.relu(self.conv2(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = F.relu(self.conv3(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = self.global_pool(x) # Output shape: [batch_size, 64, 1]
+        x = x.squeeze(-1) # Remove the last dimension: [batch_size, 64, 1] -> [batch_size, 64]
+        
+        x = self.fc1(x)
+        
+        x = torch.sigmoid(x)
+        
+        return x
+    
+    def num_flat_features(self, x):
+        size = x.size()[1:]  # all dimensions except the batch dimension
+        num_features = 1
+        for s in size:
+            num_features *= s
+        return num_features
+    
+    #more thought on this required
+    #def compute_fc_input_size(self, input_length):
+
+
+
 #as PeakMag4 but with flexible number of input channels
 class PeakMag5(nn.Module):
     def __init__(self, data_channels: int, input_length: int = 1024):
