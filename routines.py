@@ -221,9 +221,9 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
                 
                 for j in range(num_channels):
                     axes[j].plot(data[i][j].cpu().numpy(), label="Signal", color="blue")
-                    axes[j].plot(labels[i].cpu().numpy() * 5, label="Actual Labels (scaled)", linestyle="--", color="green")
-                    axes[j].plot(probabilities[i].cpu().numpy() * 10, label="Prediction Probability (scaled)", color="orange")
-                    axes[j].plot(predicted_labels[i].cpu().numpy() * 5, label="Predicted Labels (scaled)", linestyle=":", color="red")
+                    axes[j].plot(labels[i].cpu().numpy(), label="Actual Labels (scaled)", linestyle="--", color="green")
+                    #axes[j].plot(probabilities[i].cpu().numpy(), label="Prediction Probability (scaled)", color="orange")
+                    axes[j].plot(predicted_labels[i].cpu().numpy(), label="Predicted Labels (scaled)", linestyle=":", color="red")
                     axes[j].set_ylabel('Amplitude / Label')
 
                     axes[j].set_title(f'Channel {j+1}')
