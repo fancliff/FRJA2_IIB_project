@@ -233,7 +233,7 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
                 plt.suptitle(f'Sample {i+1}')
                 plt.xlabel('Frequency (Normalized)')
                 plt.tight_layout()
-                plt.subplots_adjust(top=0.95) # Adjust suptitle position
+                plt.subplots_adjust(top=0.9) # Adjust suptitle position
                 plt.show()
 
                 samples_plotted += 1
