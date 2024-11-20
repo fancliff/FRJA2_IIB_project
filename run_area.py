@@ -45,6 +45,8 @@ val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 #model1 = rt.load_model('PeakMag4_1')
 #print(rt.count_parameters(model1))
 
+'''
+
 model1 = md.PeakMag6(data_channels=np.sum(outputs1))
 print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
 
@@ -96,13 +98,16 @@ rt.plot_recall_history(results,log_scale=True)
 print('Time taken for model 1 training: ', end1-start1)
 print('Time taken for model 2 training: ', end2-start2)
 
+'''
+
 #load models from save files or train above
-#model1 = rt.load_model('PeakMag1_1')
-#model2 = rt.load_model('PeakMag5_real_imag')
+model1 = rt.load_model('PeakMag6_1')
+model2 = rt.load_model('PeakMag8_1')
 
 criterion=nn.BCELoss()
 rt.compare_models(model1, model2, val_dataloader_1, criterion, acceptance1=0.5, acceptance2=0.5)
 
-
+rt.plot_predictions(model1, val_dataloader_1, 10, acceptance=0.5)
+rt.plot_predictions(model2, val_dataloader_1, 10, acceptance=0.5)
 
 
