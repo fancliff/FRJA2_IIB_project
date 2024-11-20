@@ -63,11 +63,11 @@ result_dict1,_ = rt.train_model_binary(
                 model1, 
                 train_dataloader_1, 
                 val_dataloader_1, 
-                save_name=None, #None if no save required
+                save_name='PeakMag6_2', #None if no save required
                 num_epochs = 100, 
                 acceptance=0.5, 
                 plotting=plot_during,
-                patience = 10,
+                patience = 15,
                 )
 results.append(result_dict1)
 end1 = time.time()
@@ -80,11 +80,11 @@ result_dict2,_ = rt.train_model_binary(
                 model2, 
                 train_dataloader_2, 
                 val_dataloader_2, 
-                save_name='PeakMag8_1', #None if no save required
+                save_name='PeakMag8_2', #None if no save required
                 num_epochs = 100, 
                 acceptance=0.5, 
                 plotting=plot_during,
-                patience = 10,
+                patience = 15,
                 )
 results.append(result_dict2)
 end2 = time.time()
