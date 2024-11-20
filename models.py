@@ -104,6 +104,106 @@ class EarlyStopping:
         model.load_state_dict(torch.load(self.path))
 
 
+#as PeakMag7 but with added convolutional layer
+class PeakMag8(nn.Module):
+    def __init__(self, data_channels: int, input_length: int = 1024):
+        super(PeakMag8, self).__init__()
+        self.conv1 = nn.Conv1d(data_channels, 16, kernel_size=21, padding=10)
+        self.conv2 = nn.Conv1d(16, 32, kernel_size=21, padding=10)
+        self.conv3 = nn.Conv1d(32, 64, kernel_size=21, padding=10)
+        self.conv4 = nn.Conv1d(64, 128, kernel_size=21, padding=10)
+        self.pool = nn.MaxPool1d(kernel_size=2) # default stride = kernel_size
+        self.global_pool = nn.AdaptiveAvgPool1d(1) # Global average pooling
+        self.fc1 = nn.Linear(128,input_length)
+        self.dropout = nn.Dropout(0.2) # 0.2 sensible default
+        
+    def forward(self,x):
+        x = F.relu(self.conv1(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = F.relu(self.conv2(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = F.relu(self.conv3(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = F.relu(self.conv4(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = self.global_pool(x) # Output shape: [batch_size, 128, 1]
+        x = x.squeeze(-1) # Remove the last dimension: [batch_size, 128, 1] -> [batch_size, 128]
+        
+        x = self.fc1(x)
+        
+        x = torch.sigmoid(x)
+        
+        return x
+    
+    def num_flat_features(self, x):
+        size = x.size()[1:]  # all dimensions except the batch dimension
+        num_features = 1
+        for s in size:
+            num_features *= s
+        return num_features
+    
+    #more thought on this required
+    #def compute_fc_input_size(self, input_length):
+
+
+#as PeakMag6 but with 2 FC layers to test impact of GAP vs PeakMag5
+class PeakMag7(nn.Module):
+    def __init__(self, data_channels: int, input_length: int = 1024):
+        super(PeakMag7, self).__init__()
+        self.conv1 = nn.Conv1d(data_channels, 16, kernel_size=21, padding=10)
+        self.conv2 = nn.Conv1d(16, 32, kernel_size=21, padding=10,)
+        self.conv3 = nn.Conv1d(32, 64, kernel_size=21, padding=10)
+        self.pool = nn.MaxPool1d(kernel_size=2) # default stride = kernel_size
+        self.global_pool = nn.AdaptiveAvgPool1d(1) # Global average pooling
+        self.fc1 = nn.Linear(64,input_length)
+        self.fc2 = nn.Linear(input_length,input_length)
+        self.dropout = nn.Dropout(0.2) # 0.2 sensible default
+        
+    def forward(self,x):
+        x = F.relu(self.conv1(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = F.relu(self.conv2(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = F.relu(self.conv3(x))
+        x = self.dropout(x)
+        x = self.pool(x)
+        
+        x = self.global_pool(x) # Output shape: [batch_size, 64, 1]
+        x = x.squeeze(-1) # Remove the last dimension: [batch_size, 64, 1] -> [batch_size, 64]
+        
+        x = F.relu(self.fc1(x))
+        x = self.dropout(x)
+        
+        x = self.fc2(x)
+        
+        x = torch.sigmoid(x)
+        
+        return x
+    
+    def num_flat_features(self, x):
+        size = x.size()[1:]  # all dimensions except the batch dimension
+        num_features = 1
+        for s in size:
+            num_features *= s
+        return num_features
+    
+    #more thought on this required
+    #def compute_fc_input_size(self, input_length):
+
+
+#big cut on number of parameters using GAP and 1FC layer
 class PeakMag6(nn.Module):
     def __init__(self, data_channels: int, input_length: int = 1024):
         super(PeakMag6, self).__init__()
@@ -146,7 +246,6 @@ class PeakMag6(nn.Module):
     
     #more thought on this required
     #def compute_fc_input_size(self, input_length):
-
 
 
 #as PeakMag4 but with flexible number of input channels
