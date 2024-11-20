@@ -206,22 +206,34 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
     samples_plotted = 0
     with torch.no_grad():
         for data, labels in dataloader:
-            predictions = model(data).squeeze()
-            probabilities = torch.sigmoid(predictions)
+            #below 2 lines are used if sigmoid is not applied at the end of the model
+            #predictions = model(data).squeeze()
+            #probabilities = torch.sigmoid(predictions)
+            
+            probabilities = model(data).squeeze()
             predicted_labels = (probabilities >= acceptance).float()
 
             for i in range(min(num_samples, len(data))):
-                plt.figure(figsize=(12, 6))
+                num_channels = data[i].shape[0]
+                fig, axes = plt.subplots(num_channels, 1, figsize=(12, 6), sharex=True)
+                if num_channels == 1:
+                    axes = [axes] # Convert single axis to list for iteration
                 
-                plt.plot(data[i].squeeze().cpu().numpy(), label="Signal", color="blue")
-                plt.plot(labels[i].cpu().numpy() * 5, label="Actual Labels (scaled)", linestyle="--", color="green")
-                plt.plot(probabilities[i].cpu().numpy() * 10, label="Prediction Probability (scaled)", color="orange")
-                plt.plot(predicted_labels[i].cpu().numpy() * 5, label="Predicted Labels (scaled)", linestyle=":", color="red")
+                for j in range(num_channels):
+                    axes[j].plot(data[i][j].cpu().numpy(), label="Signal", color="blue")
+                    axes[j].plot(labels[i].cpu().numpy() * 5, label="Actual Labels (scaled)", linestyle="--", color="green")
+                    axes[j].plot(probabilities[i].cpu().numpy() * 10, label="Prediction Probability (scaled)", color="orange")
+                    axes[j].plot(predicted_labels[i].cpu().numpy() * 5, label="Predicted Labels (scaled)", linestyle=":", color="red")
+                    axes[j].set_ylabel('Amplitude / Label')
 
-                plt.title(f'Sample {i+1}')
+                    axes[j].set_title(f'Channel {j+1}')
+                    axes[j].set_ylabel('Amplitude / Label')
+                    axes[j].legend()
+
+                plt.suptitle(f'Sample {i+1}')
                 plt.xlabel('Frequency (Normalized)')
-                plt.ylabel('Amplitude / Label')
-                plt.legend()
+                plt.tight_layout()
+                plt.subplots_adjust(top=0.95) # Adjust suptitle position
                 plt.show()
 
                 samples_plotted += 1
