@@ -211,6 +211,7 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
             #probabilities = torch.sigmoid(predictions)
             
             probabilities = model(data).squeeze()
+            print((model(data)).shape)
             predicted_labels = (probabilities >= acceptance).float()
 
             for i in range(min(num_samples, len(data))):
