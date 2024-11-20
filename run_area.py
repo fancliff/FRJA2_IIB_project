@@ -99,10 +99,10 @@ print('Time taken for model 1 training: ', end1-start1)
 
 #load models from save files or train above
 #model1 = rt.load_model('PeakMag1_1')
-model2 = rt.load_model('PeakMag5_real_imag')
+#model2 = rt.load_model('PeakMag5_real_imag')
 
-criterion=nn.BCELoss()
-rt.compare_models(model1, model2, val_dataloader_1, criterion, acceptance1=0.5, acceptance2=0.5)
+#criterion=nn.BCELoss()
+#rt.compare_models(model1, model2, val_dataloader_1, criterion, acceptance1=0.5, acceptance2=0.5)
 
 
 
