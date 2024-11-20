@@ -62,11 +62,11 @@ result_dict1,_ = rt.train_model_binary(
                 model1, 
                 train_dataloader_1, 
                 val_dataloader_1, 
-                save_name='PeakMag5_real_imag', #None if no save required
-                num_epochs = 20, 
+                save_name='PeakMag6_2', #None if no save required
+                num_epochs = 100, 
                 acceptance=0.5, 
                 plotting=plot_during,
-                patience = 4,
+                patience = 10,
                 )
 results.append(result_dict1)
 end1 = time.time()
