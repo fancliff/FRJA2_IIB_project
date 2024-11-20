@@ -219,22 +219,23 @@ class PeakMag6(nn.Module):
         self.dropout = nn.Dropout(0.2) # 0.2 sensible default
         
     def forward(self,x):
-        x = F.relu(self.conv1(x))
+        #Input shape: [batch_size, data_channels, input_length]
+        x = F.relu(self.conv1(x)) # Output shape: [batch_size, 16, input_length]
         x = self.dropout(x)
-        x = self.pool(x)
+        x = self.pool(x) # Output shape: [batch_size, 16, input_length/2]
         
-        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv2(x)) # Output shape: [batch_size, 32, input_length/2]
         x = self.dropout(x)
-        x = self.pool(x)
+        x = self.pool(x) # Output shape: [batch_size, 32, input_length/4]
         
-        x = F.relu(self.conv3(x))
+        x = F.relu(self.conv3(x)) # Output shape: [batch_size, 64, input_length/4]
         x = self.dropout(x)
-        x = self.pool(x)
+        x = self.pool(x) # Output shape: [batch_size, 64, input_length/8]
         
         x = self.global_pool(x) # Output shape: [batch_size, 64, 1]
         x = x.squeeze(-1) # Remove the last dimension: [batch_size, 64, 1] -> [batch_size, 64]
         
-        x = self.fc1(x)
+        x = self.fc1(x) # Output shape: [batch_size, input_length]
         
         x = torch.sigmoid(x)
         
@@ -265,25 +266,26 @@ class PeakMag5(nn.Module):
         self.dropout = nn.Dropout(0.3)
         
     def forward(self,x):
-        x = F.relu(self.conv1(x))
+        #Input shape: [batch_size, data_channels, input_length]
+        x = F.relu(self.conv1(x)) # Output shape: [batch_size, 16, input_length]
         x = self.dropout(x)
-        x = self.pool(x)
+        x = self.pool(x) # Output shape: [batch_size, 16, input_length/2]
         
-        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv2(x)) # Output shape: [batch_size, 32, input_length/2]
         x = self.dropout(x)
-        x = self.pool(x)
+        x = self.pool(x) # Output shape: [batch_size, 32, input_length/4]
         
-        x = F.relu(self.conv3(x))
+        x = F.relu(self.conv3(x)) # Output shape: [batch_size, 64, input_length/4]
         x = self.dropout(x)
-        x = self.pool(x)
+        x = self.pool(x) # Output shape: [batch_size, 64, input_length/8]
         
-        x = x.view(-1, self.num_flat_features(x))
+        x = x.view(-1, self.num_flat_features(x)) # Output shape: [batch_size, 64*input_length/8]
         
-        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc1(x)) # Output shape: [batch_size, 2048]
         
         x = self.dropout(x)
         
-        x = self.fc2(x)
+        x = self.fc2(x) # Output shape: [batch_size, input_length]
         
         x = torch.sigmoid(x)
         
