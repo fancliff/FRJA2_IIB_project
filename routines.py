@@ -18,7 +18,7 @@ def train_model_binary(model, train_dataloader, val_dataloader, save_name, num_e
     #Applying sigmoid at the end of the model instead.
     #BCE with logits may be more numerically stable
     #if issues arise can switch back easily
-    optimiser = optim.Adam(model.parameters(), lr=0.001)
+    optimiser = optim.Adam(model.parameters(), lr=0.001) # weight_decay=1e-5
     
     if plotting:
         # Initialize the plot
