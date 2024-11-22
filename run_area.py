@@ -102,7 +102,8 @@ model1 = rt.load_model('PeakMag5_40000')
 model2 = rt.load_model('PeakMag5_4000')
 
 #rt.visualise_activations(model1, val_dataloader_1, 3)
-rt.visualise_activations_with_signal(model1, val_dataloader_1, 3)
+#rt.visualise_activations_with_signal(model1, val_dataloader_1, 3)
+rt.compare_activations(model1, model2, val_dataloader_1, 3)
 
 criterion=nn.BCELoss()
 rt.compare_models(

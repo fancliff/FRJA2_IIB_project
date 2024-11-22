@@ -477,5 +477,70 @@ def visualise_activations_with_signal(model, dataloader, num_samples):
                 return  # Exit after plotting specified number of samples
 
 
+def compare_activations(model1, model2, dataloader, num_samples):
+    #input models should have same structure
+    
+    #Dictionary to store activations of each layer
+    activations1 = {}
+    activations2 = {}
+    
+    #Register hooks for all layers to store activations
+    for name, layer in model1.named_modules():
+        #Only register hooks for Conv1d layers (adjust as needed)
+        if isinstance(layer, nn.Conv1d): 
+            layer.register_forward_hook(
+                lambda self, input, output, name=name: activations1.update({name: output})
+            )
+    
+    for name, layer in model2.named_modules():
+        #Only register hooks for Conv1d layers (adjust as needed)
+        if isinstance(layer, nn.Conv1d): 
+            layer.register_forward_hook(
+                lambda self, input, output, name=name: activations2.update({name: output})
+            )
+    
+    samples_plotted = 0
+    model1.eval()
+    model2.eval()
+    for data, _ in dataloader:
+        for i in range(min(num_samples, len(data))):
+            signal = data[i].unsqueeze(0) # Add batch dimension
+            model1(signal) # Forward pass to populate activations dictionary
+            model2(signal)
+            
+            for (name1, activation1), (name2, activation2) in zip(activations1.items(), activations2.items()):
+                activation1 = activation1[0].detach().cpu().numpy() #First batch element
+                activation2 = activation2[0].detach().cpu().numpy()
+                num_channels1 = activation1.shape[0]
+                num_channels2 = activation2.shape[0]
+                
+                fig,axes = plt.subplots(2,1,figsize=(12,6),sharex=True)
+                for j in range(2):
+                    if j==0:
+                        axes[j].set_title(f'Model 1: Activations of {name1}')
+                        num_channels = num_channels1
+                        activations = activation1
+                    else:
+                        axes[j].set_title(f'Model 2: Activations of {name2}')
+                        num_channels = num_channels2
+                        activations = activation2
+                    
+                    for channel in range(num_channels):
+                        axes[j].plot(activations[channel], label=f'Channel {channel+1}')
+                    
+                    axes[j].set_xlabel('Position')
+                    axes[j].set_ylabel('Activation')
+                plt.suptitle(f'Sample {samples_plotted+1}')
+                #plt.tight_layout()
+                plt.subplots_adjust(top=0.9)
+                plt.show()
+            
+            samples_plotted += 1
+            if samples_plotted >= num_samples:
+                return  # Exit after plotting specified number of samples
+
+
+#add compare activations with signal function
+
 
 
