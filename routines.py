@@ -335,11 +335,11 @@ def save_model(model, save_name):
     print(f'Model saved to {model_path}.pth')
 
 
-def compare_models(model1, model2, dataloader, criterion, acceptance1, acceptance2):
+def compare_models(model1, model2, dataloader1, dataloader2, criterion, acceptance1, acceptance2):
     model1.eval()
     model2.eval()
-    loss1, recall1, precision1 = validation_loss_recall_precision(model1, dataloader, criterion, acceptance1)
-    loss2, recall2, precision2 = validation_loss_recall_precision(model2, dataloader, criterion, acceptance2)
+    loss1, recall1, precision1 = validation_loss_recall_precision(model1, dataloader1, criterion, acceptance1)
+    loss2, recall2, precision2 = validation_loss_recall_precision(model2, dataloader2, criterion, acceptance2)
     print('Model 1:')
     print(f'Loss: {loss1:.4f}, Precision: {precision1:.4f}, Recall: {recall1:.4f}\n')
     print('Model 2:')

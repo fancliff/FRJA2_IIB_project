@@ -107,7 +107,15 @@ model2 = rt.load_model('PeakMag5_4000')
 
 
 criterion=nn.BCELoss()
-rt.compare_models(model1, model2, val_dataloader_1, criterion, acceptance1=0.5, acceptance2=0.5)
+rt.compare_models(
+    model1, 
+    model2,
+    val_dataloader_1,
+    val_dataloader_1,
+    criterion,
+    acceptance1=0.5,
+    acceptance2=0.5,
+)
 
 rt.plot_predictions(model1, val_dataloader_1, 10, acceptance=0.5)
 rt.plot_predictions(model2, val_dataloader_1, 10, acceptance=0.5)
