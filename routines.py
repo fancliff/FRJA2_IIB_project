@@ -8,6 +8,7 @@ import scipy
 import matplotlib.pyplot as plt
 from numba import jit
 from models import EarlyStopping
+import matplotlib.patches as mpatches #for legend using masks
 
 
 def train_model_binary(model, train_dataloader, val_dataloader, save_name, num_epochs, acceptance, plotting=True, patience=4):
@@ -233,8 +234,7 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
                     #axes[j].plot(predicted_labels[i].cpu().numpy(), label="Predicted Labels (scaled)", linestyle=":", color="red")
                     axes[j].set_ylabel('Amplitude / Label')
 
-                    #for x_val in np.where(labels[i].cpu().numpy() == 1)[0]:
-                        #axes[j].axvspan(x_val - 0.5, x_val + 0.5, color='grey', alpha=0.2)
+                    # Plot the actual labels as a semi-transparent mask
                     mask = np.ones_like(labels_arr)
                     mask[labels_arr == 1] = 0
                     axes[j].imshow(
@@ -245,9 +245,12 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
                         alpha=0.15,
                     )
                     
+                    #add a proxy legend element for the mask
+                    mask_patch = mpatches.Patch(color='grey', alpha=0.15, label='Actual Labels')
+                    
                     axes[j].set_title(f'Channel {j+1}')
                     axes[j].set_ylabel('Amplitude / Label')
-                    axes[j].legend()
+                    axes[j].legend(handles=axes[j].get_legend_handles_labels()[0] + [mask_patch])
 
                 plt.suptitle(f'Sample {i+1}')
                 plt.xlabel('Frequency (Normalized)')
@@ -264,14 +267,41 @@ def plot_samples(dataloader, num_samples):
     samples_plotted = 0
     for data, labels in dataloader:
         for i in range(min(num_samples, len(data))):
-            plt.figure(figsize=(12, 6))
-            plt.plot(data[i].squeeze().cpu().numpy(), label="Signal", color="blue")
-            plt.plot(labels[i].cpu().numpy() * 2, label="Labels (scaled)", linestyle="--", color="green")
-            plt.title(f'Sample {i+1}')
+            num_channels = data[i].shape[0]
+            fig, axes = plt.subplots(num_channels, 1, figsize=(12, 6), sharex=True)
+            if num_channels == 1:
+                axes = [axes] # Convert single axis to list for iteration
+            
+            for j in range(num_channels):
+                labels_arr = labels[i].cpu().numpy()
+                axes[j].plot(data[i][j].cpu().numpy(), label="Signal", color="blue")
+                #axes[j].plot(labels_arr, label="Actual Labels (scaled)", linestyle="--", color="green")
+                axes[j].set_ylabel('Amplitude / Label')
+
+                # Plot the actual labels as a semi-transparent mask
+                mask = np.ones_like(labels_arr)
+                mask[labels_arr == 1] = 0
+                axes[j].imshow(
+                    mask.reshape(1, -1),
+                    cmap='grey',
+                    extent=(0, len(labels_arr), axes[j].get_ylim()[0], axes[j].get_ylim()[1]),
+                    aspect='auto',
+                    alpha=0.15,
+                )
+                
+                #add a proxy legend element for the mask
+                mask_patch = mpatches.Patch(color='grey', alpha=0.15, label='Actual Labels')
+                
+                axes[j].set_title(f'Channel {j+1}')
+                axes[j].set_ylabel('Amplitude / Label')
+                axes[j].legend(handles=axes[j].get_legend_handles_labels()[0] + [mask_patch])
+
+            plt.suptitle(f'Sample {i+1}')
             plt.xlabel('Frequency (Normalized)')
-            plt.ylabel('Amplitude / Label')
-            plt.legend()
+            plt.tight_layout()
+            plt.subplots_adjust(top=0.9) # Adjust suptitle position
             plt.show()
+            
             samples_plotted += 1
             if samples_plotted >= num_samples:
                 return  # Exit after plotting specified number of samples

@@ -39,8 +39,8 @@ val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 
 
 
-#rt.plot_samples(train_dataloader, 20)
-#rt.plot_samples(val_dataloader, 20)
+#rt.plot_samples(train_dataloader_1, 20)
+#rt.plot_samples(val_dataloader_1, 2)
 
 #model1 = rt.load_model('PeakMag4_1')
 #print(rt.count_parameters(model1))
