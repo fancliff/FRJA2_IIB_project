@@ -56,14 +56,14 @@ print(f'Model 2 trainable parameters: {rt.count_parameters(model2)}')
 results = []
 
 plot_during = False
-
+'''
 
 start1 = time.time()
 result_dict1,_ = rt.train_model_binary(
                 model1, 
                 train_dataloader_1, 
                 val_dataloader_1, 
-                save_name='PeakMag5_40000', #None if no save required
+                save_name=None, #None if no save required
                 num_epochs = 100, 
                 acceptance=0.5, 
                 plotting=plot_during,
@@ -80,7 +80,7 @@ result_dict2,_ = rt.train_model_binary(
                 model2, 
                 train_dataloader_2, 
                 val_dataloader_2, 
-                save_name='PeakMag5_4000', #None if no save required
+                save_name=None, #None if no save required
                 num_epochs = 100, 
                 acceptance=0.5, 
                 plotting=plot_during,
@@ -98,18 +98,18 @@ rt.plot_recall_history(results, log_scale=False, show=False)
 print('Time taken for model 1 training: ', end1-start1)
 print('Time taken for model 2 training: ', end2-start2)
 
-
+'''
 
 
 #load models from save files or train above
-#model1 = rt.load_model('PeakMag6_1')
-#model2 = rt.load_model('PeakMag8_1')
+model1 = rt.load_model('PeakMag5_40000')
+model2 = rt.load_model('PeakMag5_4000')
 
 
 criterion=nn.BCELoss()
 rt.compare_models(model1, model2, val_dataloader_1, criterion, acceptance1=0.5, acceptance2=0.5)
 
-#rt.plot_predictions(model1, val_dataloader_1, 10, acceptance=0.5)
-#rt.plot_predictions(model2, val_dataloader_1, 10, acceptance=0.5)
+rt.plot_predictions(model1, val_dataloader_1, 10, acceptance=0.5)
+rt.plot_predictions(model2, val_dataloader_1, 10, acceptance=0.5)
 
 
