@@ -39,12 +39,8 @@ val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 
 
 
-#rt.plot_samples(train_dataloader_1, 20)
-#rt.plot_samples(val_dataloader_1, 2)
-
-#model1 = rt.load_model('PeakMag4_1')
-#print(rt.count_parameters(model1))
-
+#rt.plot_samples(train_dataloader_1, 5)
+#rt.plot_samples(val_dataloader_1, 5)
 
 
 model1 = md.PeakMag5(data_channels=np.sum(outputs1))
@@ -105,6 +101,7 @@ print('Time taken for model 2 training: ', end2-start2)
 model1 = rt.load_model('PeakMag5_40000')
 model2 = rt.load_model('PeakMag5_4000')
 
+rt.visualise_activations(model1, val_dataloader_1, 10)
 
 criterion=nn.BCELoss()
 rt.compare_models(

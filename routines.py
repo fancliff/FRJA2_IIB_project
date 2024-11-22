@@ -365,6 +365,33 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
+def visualise_activations(model, dataloader, num_samples):
+    samples_plotted = 0
+    for data, _ in dataloader:
+        for i in range(min(num_samples, len(data))):
+            signal = data[i].unsqueeze(0) # Add batch dimension
+            model.eval()
+            model(signal) # Forward pass to populate activations
+            activations = {}
+            for name, layer in model.named_modules():
+                layer.register_forward_hook(lambda self, input, output: activations.update({name: output}))
+
+            for name, activation in activations.items():
+                activation = activation[0].detach().cpu().numpy() #First batch element
+                num_channels = activation.shape[0]
+                
+                for channel in range(num_channels):
+                    plt.plot(activation[channel], label=f'Channel {channel+1}')
+                    
+                plt.title(f'Activations of {name}')
+                plt.xlabel('Position')
+                plt.ylabel('Activation')
+                plt.legend()
+                plt.show()
+            
+            samples_plotted += 1
+            if samples_plotted >= num_samples:
+                return  # Exit after plotting specified number of samples
 
 
 
