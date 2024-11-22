@@ -226,12 +226,25 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
                     axes = [axes] # Convert single axis to list for iteration
                 
                 for j in range(num_channels):
+                    labels_arr = labels[i].cpu().numpy()
                     axes[j].plot(data[i][j].cpu().numpy(), label="Signal", color="blue")
-                    axes[j].plot(labels[i].cpu().numpy(), label="Actual Labels (scaled)", linestyle="--", color="green")
+                    #axes[j].plot(labels_arr, label="Actual Labels (scaled)", linestyle="--", color="green")
                     axes[j].plot(probabilities[i].cpu().numpy(), label="Prediction Probability (scaled)", color="orange")
                     #axes[j].plot(predicted_labels[i].cpu().numpy(), label="Predicted Labels (scaled)", linestyle=":", color="red")
                     axes[j].set_ylabel('Amplitude / Label')
 
+                    #for x_val in np.where(labels[i].cpu().numpy() == 1)[0]:
+                        #axes[j].axvspan(x_val - 0.5, x_val + 0.5, color='grey', alpha=0.2)
+                    mask = np.ones_like(labels_arr)
+                    mask[labels_arr == 1] = 0
+                    axes[j].imshow(
+                        mask.reshape(1, -1),
+                        cmap='grey',
+                        extent=(0, len(labels_arr), axes[j].get_ylim()[0], axes[j].get_ylim()[1]),
+                        aspect='auto',
+                        alpha=0.15,
+                    )
+                    
                     axes[j].set_title(f'Channel {j+1}')
                     axes[j].set_ylabel('Amplitude / Label')
                     axes[j].legend()
