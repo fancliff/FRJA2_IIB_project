@@ -366,27 +366,36 @@ def count_parameters(model):
 
 
 def visualise_activations(model, dataloader, num_samples):
+    #Dictionary to store activations of each layer
+    activations = {}
+    
+    #Register hooks for all layers to store activations
+    for name, layer in model.named_modules():
+        #Only register hooks for Conv1d layers (adjust as needed)
+        if isinstance(layer, nn.Conv1d): 
+            layer.register_forward_hook(
+                lambda self, input, output, name=name: activations.update({name: output})
+            )
+    
     samples_plotted = 0
     for data, _ in dataloader:
         for i in range(min(num_samples, len(data))):
             signal = data[i].unsqueeze(0) # Add batch dimension
             model.eval()
-            model(signal) # Forward pass to populate activations
-            activations = {}
-            for name, layer in model.named_modules():
-                layer.register_forward_hook(lambda self, input, output: activations.update({name: output}))
-
+            model(signal) # Forward pass to populate activations dictionary
+            
             for name, activation in activations.items():
                 activation = activation[0].detach().cpu().numpy() #First batch element
                 num_channels = activation.shape[0]
                 
+                plt.figure(figsize=(10,5))
                 for channel in range(num_channels):
                     plt.plot(activation[channel], label=f'Channel {channel+1}')
                     
-                plt.title(f'Activations of {name}')
+                plt.title(f'Activations of {name} - Sample {samples_plotted+1}')
                 plt.xlabel('Position')
                 plt.ylabel('Activation')
-                plt.legend()
+                #plt.legend() #legend is quite large for many channels in conv layers
                 plt.show()
             
             samples_plotted += 1
