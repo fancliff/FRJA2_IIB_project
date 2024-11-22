@@ -153,7 +153,7 @@ def validation_loss_recall_precision(model, dataloader, criterion, acceptance):
     return avg_loss, avg_recall, avg_precision
 
 
-def plot_loss_history(results, log_scale=True):
+def plot_loss_history(results, log_scale=True, show=False):
     plt.figure(figsize=(8, 4))
     plt.title('Training and Validation Loss')
     plt.xlabel('Epoch')
@@ -166,10 +166,11 @@ def plot_loss_history(results, log_scale=True):
         plt.plot(result_dict["epochs"], result_dict["validation_loss"], label=f"Model {i+1} Validation Loss")
 
     plt.legend()
-    plt.show()
+    plt.savefig('C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/Models/Figures/current/loss_plot.png')
+    if show: plt.show()
 
 
-def plot_precision_history(results, log_scale=False):
+def plot_precision_history(results, log_scale=False, show=False):
     plt.figure(figsize=(8, 4))
     plt.title('Training and Validation Precision')
     plt.xlabel('Epoch')
@@ -182,10 +183,11 @@ def plot_precision_history(results, log_scale=False):
         plt.plot(result_dict["epochs"], result_dict["validation_precision"], label=f"Model {i+1} Validation Precision")
 
     plt.legend()
-    plt.show()
+    plt.savefig('C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/Models/Figures/current/precision_plot.png')
+    if show: plt.show()
 
 
-def plot_recall_history(results, log_scale=False):
+def plot_recall_history(results, log_scale=False, show=False):
     plt.figure(figsize=(8, 4))
     plt.title('Training and Validation Recall')
     plt.xlabel('Epoch')
@@ -197,8 +199,9 @@ def plot_recall_history(results, log_scale=False):
         plt.plot(result_dict["epochs"], result_dict["training_recall"], label=f"Model {i+1}: Training Recall")
         plt.plot(result_dict["epochs"], result_dict["validation_recall"], label=f"Model {i+1} Validation Recall")
 
-    plt.legend()
-    plt.show()
+    plt.legend()    
+    plt.savefig('C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/Models/Figures/current/recall_plot.png')
+    if show: plt.show()
 
 
 def plot_predictions(model, dataloader, num_samples, acceptance):
