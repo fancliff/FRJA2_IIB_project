@@ -228,11 +228,25 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
                 
                 for j in range(num_channels):
                     labels_arr = labels[i].cpu().numpy()
-                    axes[j].plot(data[i][j].cpu().numpy(), label="Signal", color="blue")
-                    #axes[j].plot(labels_arr, label="Actual Labels (scaled)", linestyle="--", color="green")
-                    axes[j].plot(probabilities[i].cpu().numpy(), label="Prediction Probability (scaled)", color="orange")
-                    #axes[j].plot(predicted_labels[i].cpu().numpy(), label="Predicted Labels (scaled)", linestyle=":", color="red")
+                    signal_arr = data[i][j].cpu().numpy()
+                    prob_arr = probabilities[i].cpu().numpy()
+                    predictions_arr = predicted_labels[i].cpu().numpy()
+                    
+                    axes[j].plot(signal_arr, label="Signal", color="blue")
+                    axes[j].plot(prob_arr, label="Prediction Probability", color="orange")
                     axes[j].set_ylabel('Amplitude / Label')
+                    
+                    # Masked signal line for predicted labels
+                    #use NaNs to prevent the line from connecting 
+                    #points over regions where the model predicts no label
+                    masked_labels = np.where(predictions_arr == 1, signal_arr, np.nan)
+                    axes[j].plot(
+                        masked_labels,
+                        color='red',
+                        label='Predicted Labels',
+                        alpha=0.5,
+                        linewidth=5,
+                    )
 
                     # Plot the actual labels as a semi-transparent mask
                     mask = np.ones_like(labels_arr)
