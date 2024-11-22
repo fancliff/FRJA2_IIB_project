@@ -403,6 +403,79 @@ def visualise_activations(model, dataloader, num_samples):
                 return  # Exit after plotting specified number of samples
 
 
+def visualise_activations_with_signal(model, dataloader, num_samples):
+    #Dictionary to store activations of each layer
+    activations = {}
+    
+    #Register hooks for all layers to store activations
+    for name, layer in model.named_modules():
+        #Only register hooks for Conv1d layers (adjust as needed)
+        if isinstance(layer, nn.Conv1d): 
+            layer.register_forward_hook(
+                lambda self, input, output, name=name: activations.update({name: output})
+            )
+    
+    samples_plotted = 0
+    for data, labels in dataloader:
+        for i in range(min(num_samples, len(data))):
+            signal = data[i].unsqueeze(0) # Add batch dimension
+            labels_arr = labels[i].cpu().numpy()
+            model.eval()
+            model(signal) # Forward pass to populate activations dictionary
+            
+            num_input_channels = data[i].shape[0]
+            
+            for name, activation in activations.items():
+                activation = activation[0].detach().cpu().numpy() #First batch element
+                num_layers = activation.shape[0]
+                len_activation = activation.shape[1]
+                num_subplots = num_input_channels + 1 # Add one for activations
+                
+                fig, axes = plt.subplots(num_subplots, 1, figsize=(12, 3*num_subplots), sharex=True)
+                if num_subplots == 1:
+                    axes = [axes] # Convert single axis to list for iteration
+                
+                
+                for k in range(num_layers):
+                    #plot the activations of the current layer at the bottom
+                    axes[-1].plot(activation[k])
+                
+                axes[-1].set_title(f'Activations of {name}')
+                axes[-1].set_xlabel('Position')
+                axes[-1].set_ylabel('Activation')
+                
+                for j in range(num_input_channels):
+                    #plot the signal for the current input channel
+                    #resized to match the length of the activations
+                    signal_channel = data[i][j].cpu().numpy()
+                    signal_channel = scipy.ndimage.zoom(signal_channel, len_activation/len(signal_channel))
+                    axes[j].plot(signal_channel)
+                    axes[j].set_title(f'Input channel {j+1}')
+                    axes[j].set_xlabel('Position')
+                    axes[j].set_ylabel('Amplitude')
+                
+                #plot labels as semi transparent mask
+                labels_arr_resized = scipy.ndimage.zoom(labels_arr, len_activation/len(labels_arr))
+                mask = np.ones_like(labels_arr_resized)
+                mask[labels_arr_resized == 1] = 0
+                for q in range(num_subplots): #exclude the activations plot
+                    axes[q].imshow(
+                        mask.reshape(1, -1),
+                        cmap='grey',
+                        extent=(0, len_activation, axes[q].get_ylim()[0], axes[q].get_ylim()[1]),
+                        aspect='auto',
+                        alpha=0.15,
+                    )
+                
+                plt.suptitle(f'Sample {samples_plotted+1}')
+                plt.tight_layout()
+                plt.subplots_adjust(top=0.9) # Adjust suptitle position
+                plt.show()
+            
+            samples_plotted += 1
+            if samples_plotted >= num_samples:
+                return  # Exit after plotting specified number of samples
+
 
 
 
