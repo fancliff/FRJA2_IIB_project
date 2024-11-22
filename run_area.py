@@ -19,21 +19,21 @@ import time
 outputs1 = np.array([False, True, True, False, False])
 outputs2 = np.array([False, True, True, False, False])
 
-data, labels = n_channels_gen(num_samples=40000, signal_length=1024, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
+data, labels = n_channels_gen(num_samples=40000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
 train_dataset_1 = md.n_channel_dataset(data, labels)
 train_dataloader_1 = DataLoader(train_dataset_1, batch_size=32, shuffle=True)
 
-data, labels = n_channels_gen(num_samples=1000, signal_length=1024, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
+data, labels = n_channels_gen(num_samples=1000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
 val_dataset_1 = md.n_channel_dataset(data, labels)
 val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 
 
-data, labels = n_channels_gen(num_samples=4000, signal_length=1024, sigma_max=0.1, min_max=True, enabled_outputs=outputs2)
+data, labels = n_channels_gen(num_samples=4000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs2)
 train_dataset_2 = md.n_channel_dataset(data, labels)
 train_dataloader_2 = DataLoader(train_dataset_2, batch_size=32, shuffle=True)
 
-data, labels = n_channels_gen(num_samples=1000, signal_length=1024, sigma_max=0.1, min_max=True, enabled_outputs=outputs2)
+data, labels = n_channels_gen(num_samples=1000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs2)
 val_dataset_2 = md.n_channel_dataset(data, labels)
 val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 

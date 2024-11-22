@@ -10,6 +10,7 @@ def n_channels_gen(
     num_samples: int,
     signal_length: int,
     enabled_outputs: np.ndarray,
+    sigma_min: float = 0.01,
     sigma_max: float = 0.1,
     max_modes: int = 5,
     normalise = None,
@@ -40,7 +41,8 @@ def n_channels_gen(
         omegas = np.random.uniform(0.001, 0.999, size=max_modes)
         
         #noise for each sample is different and random
-        sigma = np.random.uniform(0.01, sigma_max)
+        #should sigma be log uniform like zetas?
+        sigma = np.random.uniform(sigma_min, sigma_max)
         
         #add noise to real and imaginary parts
         noise = np.random.normal(0, np.exp(sigma), signal_length) + 1j*np.random.normal(0, np.exp(sigma), signal_length)
