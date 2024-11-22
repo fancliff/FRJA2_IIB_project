@@ -19,7 +19,7 @@ import time
 outputs1 = np.array([False, True, True, False, False])
 outputs2 = np.array([False, True, True, False, False])
 
-data, labels = n_channels_gen(num_samples=40000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
+data, labels = n_channels_gen(num_samples=4000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
 train_dataset_1 = md.n_channel_dataset(data, labels)
 train_dataloader_1 = DataLoader(train_dataset_1, batch_size=32, shuffle=True)
 
@@ -56,7 +56,7 @@ print(f'Model 2 trainable parameters: {rt.count_parameters(model2)}')
 results = []
 
 plot_during = False
-'''
+
 
 start1 = time.time()
 result_dict1,_ = rt.train_model_binary(
@@ -73,7 +73,7 @@ results.append(result_dict1)
 end1 = time.time()
 
 
-
+'''
 
 start2 = time.time()
 result_dict2,_ = rt.train_model_binary(
@@ -89,7 +89,7 @@ result_dict2,_ = rt.train_model_binary(
 results.append(result_dict2)
 end2 = time.time()
 
-
+'''
 
 rt.plot_loss_history(results, log_scale=True, show=False)
 rt.plot_precision_history(results, log_scale=False, show=False)
@@ -120,4 +120,4 @@ rt.compare_models(
 rt.plot_predictions(model1, val_dataloader_1, 10, acceptance=0.5)
 rt.plot_predictions(model2, val_dataloader_1, 10, acceptance=0.5)
 
-
+'''
