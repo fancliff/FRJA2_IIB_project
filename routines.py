@@ -307,7 +307,7 @@ def plot_samples(dataloader, num_samples):
                 mask_patch = mpatches.Patch(color='grey', alpha=0.15, label='Actual Labels')
                 
                 axes[j].set_title(f'Channel {j+1}')
-                axes[j].set_ylabel('Amplitude / Label')
+                axes[j].set_ylabel('Signal Amplitude')
                 axes[j].legend(handles=axes[j].get_legend_handles_labels()[0] + [mask_patch])
 
             plt.suptitle(f'Sample {i+1}')
