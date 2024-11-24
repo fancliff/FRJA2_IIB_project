@@ -254,6 +254,56 @@ class PeakMag6(nn.Module):
 
 #as PeakMag4 but with flexible number of input channels
 #num parameters:
+class PeakMag5_small_kernel(nn.Module):
+    def __init__(self, data_channels: int, input_length: int = 1024):
+        super(PeakMag5_small_kernel, self).__init__()
+        self.conv1 = nn.Conv1d(data_channels, 16, kernel_size=7, padding=3)
+        self.conv2 = nn.Conv1d(16, 32, kernel_size=7, padding=3)
+        self.conv3 = nn.Conv1d(32, 64, kernel_size=7, padding=3)
+        self.pool = nn.MaxPool1d(kernel_size=2)
+        self.fc1 = nn.Linear(64*128,2048) 
+        self.fc2 = nn.Linear(2048,input_length) 
+        self.dropout = nn.Dropout(0.3)
+        
+    def forward(self,x):
+        #Input shape: [batch_size, data_channels, input_length]
+        x = F.relu(self.conv1(x)) # Output shape: [batch_size, 16, input_length]
+        x = self.dropout(x)
+        x = self.pool(x) # Output shape: [batch_size, 16, input_length/2]
+        
+        x = F.relu(self.conv2(x)) # Output shape: [batch_size, 32, input_length/2]
+        x = self.dropout(x)
+        x = self.pool(x) # Output shape: [batch_size, 32, input_length/4]
+        
+        x = F.relu(self.conv3(x)) # Output shape: [batch_size, 64, input_length/4]
+        x = self.dropout(x)
+        x = self.pool(x) # Output shape: [batch_size, 64, input_length/8]
+        
+        x = x.view(-1, self.num_flat_features(x)) # Output shape: [batch_size, 64*input_length/8]
+        
+        x = F.relu(self.fc1(x)) # Output shape: [batch_size, 2048]
+        
+        x = self.dropout(x)
+        
+        x = self.fc2(x) # Output shape: [batch_size, input_length]
+        
+        x = torch.sigmoid(x)
+        
+        return x
+    
+    def num_flat_features(self, x):
+        size = x.size()[1:]  # all dimensions except the batch dimension
+        num_features = 1
+        for s in size:
+            num_features *= s
+        return num_features
+    
+    #more thought on this required
+    #def compute_fc_input_size(self, input_length):
+
+
+#as PeakMag4 but with flexible number of input channels
+#num parameters:
 class PeakMag5(nn.Module):
     def __init__(self, data_channels: int, input_length: int = 1024):
         super(PeakMag5, self).__init__()
