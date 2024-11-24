@@ -10,11 +10,10 @@ def n_channels_gen(
     num_samples: int,
     signal_length: int,
     enabled_outputs: np.ndarray,
+    noise: bool = True,
     sigma_min: float = 0.01,
     sigma_max: float = 0.1,
     max_modes: int = 5,
-    normalise = None,
-    norm_95: bool = False,
     min_max: bool = False,
     ):
     
@@ -40,13 +39,14 @@ def n_channels_gen(
         #no modes at very edge of frequency range
         omegas = np.random.uniform(0.001, 0.999, size=max_modes)
         
-        #noise for each sample is different and random
-        #should sigma be log uniform like zetas?
-        sigma = np.random.uniform(sigma_min, sigma_max)
-        
-        #add noise to real and imaginary parts
-        noise = np.random.normal(0, np.exp(sigma), signal_length) + 1j*np.random.normal(0, np.exp(sigma), signal_length)
-        H_v += noise
+        if noise:
+            #noise for each sample is different and random
+            #should sigma be log uniform like zetas?
+            sigma = np.random.uniform(sigma_min, sigma_max)
+            
+            #add noise to real and imaginary parts
+            noise_arr = np.random.normal(0, np.exp(sigma), signal_length) + 1j*np.random.normal(0, np.exp(sigma), signal_length)
+            H_v += noise_arr
         
         for n in range(num_modes):
             # to improve model add a random sign to alpha_j 
@@ -69,34 +69,26 @@ def n_channels_gen(
             bandwidth = 2*omega_n*zeta_n
             label[(frequencies >= omega_n - bandwidth) & (frequencies <= omega_n + bandwidth)] = 1
         
-        mag = np.abs(H_v)
+        mag_no_norm = np.abs(H_v)
+        mag = mag_no_norm
         
         real_pt = np.real(H_v)
         imag_pt = np.imag(H_v)
         
         phase = np.angle(H_v) 
-        #how best to normalise this??
+        #phase is by definition normalised between -pi and pi
         
-        log10_mag = np.log10(mag) #how best to normalise this??
-        
-        if normalise is not None:
-            real_pt = normalise(real_pt)
-            imag_pt = normalise(imag_pt)
-        
-        if norm_95:
-            max = np.max(mag)
-            mag = mag/(0.95*max)
-            real_pt = real_pt/(0.95*max)
-            imag_pt = imag_pt/(0.95*max)
+        log10_mag = np.log10(mag_no_norm)
+        #separate normalisation. Still min max normalisation
         
         if min_max:
             #aim is to maintain the phase of out if using real and imaginary parts
-            max_mag = np.max(mag)
-            min_mag = np.min(mag)
-            mag_normed = (mag - min_mag)/(max_mag - min_mag)
-            real_pt = real_pt * mag_normed/mag
-            imag_pt = imag_pt * mag_normed/mag
-
+            max_mag = np.max(mag_no_norm)
+            min_mag = np.min(mag_no_norm)
+            mag = (mag_no_norm - min_mag)/(max_mag - min_mag)
+            real_pt = real_pt * mag/mag_no_norm
+            imag_pt = imag_pt * mag/mag_no_norm
+            log10_mag = (log10_mag - np.min(log10_mag))/(np.max(log10_mag) - np.min(log10_mag))
         
         # Populate output data based on enabled_outputs
         j = 0
