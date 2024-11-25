@@ -16,10 +16,10 @@ import time
 
 
 #                      mag, real, imag, phase, log_mag
-outputs1 = np.array([True, False, False, False, False])
-outputs2 = np.array([True, False, False, False, False])
+outputs1 = np.array([False, True, True, False, False])
+outputs2 = np.array([False, True, True, False, False])
 
-data, labels = n_channels_gen(num_samples=40000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
+data, labels = n_channels_gen(num_samples=10000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
 train_dataset_1 = md.n_channel_dataset(data, labels)
 train_dataloader_1 = DataLoader(train_dataset_1, batch_size=32, shuffle=True)
 
@@ -29,7 +29,7 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 
 
-data, labels = n_channels_gen(num_samples=40000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs2)
+data, labels = n_channels_gen(num_samples=10000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs2)
 train_dataset_2 = md.n_channel_dataset(data, labels)
 train_dataloader_2 = DataLoader(train_dataset_2, batch_size=32, shuffle=True)
 
@@ -43,15 +43,16 @@ val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 #rt.plot_samples(val_dataloader_1, 5)
 
 
-model1 = md.PeakMag5(data_channels=np.sum(outputs1))
+model1 = md.NewModel1(data_channels=np.sum(outputs1))
 print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
 
-model2 = md.PeakMag5_small_kernel(data_channels=np.sum(outputs2))
+model2 = md.PeakMag6(data_channels=np.sum(outputs2))
 print(f'Model 2 trainable parameters: {rt.count_parameters(model2)}')
 
 results = []
 
 plot_during = False
+
 
 
 start1 = time.time()
@@ -76,7 +77,7 @@ result_dict2,_ = rt.train_model_binary(
                 model2, 
                 train_dataloader_2, 
                 val_dataloader_2, 
-                save_name='PeakMag5_small_kernel_40000_mag_only', #None if no save required
+                save_name='PeakMag7_GAP_test', #None if no save required
                 num_epochs = 100, 
                 acceptance=0.5, 
                 plotting=plot_during,
@@ -98,7 +99,7 @@ print('Time taken for model 2 training: ', end2-start2)
 
 
 #load models from save files or train above
-#model1 = rt.load_model('PeakMag5_40000_mag_only')
+#model1 = rt.load_model('PeakMag5_40000_real_imag')
 #model2 = rt.load_model('PeakMag5_40000_real_imag')
 
 #rt.visualise_activations(model1, val_dataloader_1, 3)
@@ -117,6 +118,6 @@ rt.compare_models(
 )
 
 #rt.plot_predictions(model1, val_dataloader_1, 10, acceptance=0.5)
-#rt.plot_predictions(model2, val_dataloader_1, 10, acceptance=0.5)
+#rt.plot_predictions(model2, val_dataloader_2, 10, acceptance=0.5)
 
 

@@ -104,6 +104,59 @@ class EarlyStopping:
         model.load_state_dict(torch.load(self.path))
 
 
+#New structure with up convolutional layers and no pooling
+#very similar trainable parameters to PeakMag6 but more convolutional layers
+#slightly narrower kernel size than PeakMag6
+#No output FC layer
+#Test performance of adding that layer on top of this model
+#num parameters: 120,657
+
+#Model currently does not train at all. why?
+class NewModel1(nn.Module):
+    def __init__(self, data_channels: int, input_length: int = 1024):
+        super(NewModel1, self).__init__()
+        self.conv1 = nn.Conv1d(data_channels, 16, kernel_size=13, padding=6)
+        self.conv2 = nn.Conv1d(16, 32, kernel_size=13, padding=6)
+        self.conv3 = nn.Conv1d(32, 64, kernel_size=13, padding=6)
+        self.conv4 = nn.Conv1d(64, 64, kernel_size=13, padding=6)
+        self.conv5 = nn.Conv1d(64, 32, kernel_size=13, padding=6)
+        self.conv6 = nn.Conv1d(32, 16, kernel_size=13, padding=6)
+        self.conv7 = nn.Conv1d(16, 1, kernel_size=13, padding=6)
+        self.dropout = nn.Dropout(0.2) # 0.2 sensible default
+        
+    def forward(self,x):
+        x = F.relu(self.conv1(x))
+        x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = F.relu(self.conv2(x))
+        x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = F.relu(self.conv3(x))
+        x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = F.relu(self.conv4(x))
+        x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = F.relu(self.conv5(x))
+        x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = F.relu(self.conv6(x))
+        x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = F.relu(self.conv7(x))
+        #x = self.dropout(x) # no dropout on final layer
+        
+        x = torch.sigmoid(x)
+        
+        return x
+
+
 #as PeakMag7 but with added convolutional layer
 #num parameters: 358,800
 class PeakMag8(nn.Module):
@@ -156,7 +209,7 @@ class PeakMag8(nn.Module):
 
 
 #as PeakMag6 but with 2 FC layers to test impact of GAP vs PeakMag5
-#num parameters:
+#num parameters: 2,285,840
 class PeakMag7(nn.Module):
     def __init__(self, data_channels: int, input_length: int = 1024):
         super(PeakMag7, self).__init__()
@@ -165,8 +218,8 @@ class PeakMag7(nn.Module):
         self.conv3 = nn.Conv1d(32, 64, kernel_size=21, padding=10)
         self.pool = nn.MaxPool1d(kernel_size=2) # default stride = kernel_size
         self.global_pool = nn.AdaptiveAvgPool1d(1) # Global average pooling
-        self.fc1 = nn.Linear(64,input_length)
-        self.fc2 = nn.Linear(input_length,input_length)
+        self.fc1 = nn.Linear(64,2048)
+        self.fc2 = nn.Linear(2048,input_length)
         self.dropout = nn.Dropout(0.2) # 0.2 sensible default
         
     def forward(self,x):
