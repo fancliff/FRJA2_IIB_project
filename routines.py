@@ -226,14 +226,16 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
                 if num_channels == 1:
                     axes = [axes] # Convert single axis to list for iteration
                 
+                x = np.linspace(0,1,len(data[i][0]))
+                
                 for j in range(num_channels):
                     labels_arr = labels[i].cpu().numpy()
                     signal_arr = data[i][j].cpu().numpy()
                     prob_arr = probabilities[i].cpu().numpy()
                     predictions_arr = predicted_labels[i].cpu().numpy()
                     
-                    axes[j].plot(signal_arr, label="Signal", color="blue")
-                    axes[j].plot(prob_arr, label="Prediction Probability", color="orange")
+                    axes[j].plot(x, signal_arr, label="Signal", color="blue")
+                    axes[j].plot(x, prob_arr, label="Prediction Probability", color="orange")
                     axes[j].set_ylabel('Amplitude / Label')
                     
                     # Masked signal line for predicted labels
@@ -241,7 +243,7 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
                     #points over regions where the model predicts no label
                     masked_labels = np.where(predictions_arr == 1, signal_arr, np.nan)
                     axes[j].plot(
-                        masked_labels,
+                        x, masked_labels,
                         color='red',
                         label='Predicted Labels',
                         alpha=0.5,
@@ -249,12 +251,12 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
                     )
 
                     # Plot the actual labels as a semi-transparent mask
-                    mask = np.ones_like(labels_arr)
-                    mask[labels_arr == 1] = 0
+                    mask = np.zeros_like(labels_arr)
+                    mask[labels_arr == 1] = 1
                     axes[j].imshow(
                         mask.reshape(1, -1),
-                        cmap='grey',
-                        extent=(0, len(labels_arr), axes[j].get_ylim()[0], axes[j].get_ylim()[1]),
+                        cmap='Greys',
+                        extent=(0, 1, axes[j].get_ylim()[0], axes[j].get_ylim()[1]),
                         aspect='auto',
                         alpha=0.15,
                     )
@@ -286,19 +288,21 @@ def plot_samples(dataloader, num_samples):
             if num_channels == 1:
                 axes = [axes] # Convert single axis to list for iteration
             
+            x = np.linspace(0,1,len(data[i][0]))
+            
             for j in range(num_channels):
                 labels_arr = labels[i].cpu().numpy()
-                axes[j].plot(data[i][j].cpu().numpy(), label="Signal", color="blue")
+                axes[j].plot(x,data[i][j].cpu().numpy(), label="Signal", color="blue")
                 #axes[j].plot(labels_arr, label="Actual Labels (scaled)", linestyle="--", color="green")
                 axes[j].set_ylabel('Amplitude / Label')
-
+                
                 # Plot the actual labels as a semi-transparent mask
-                mask = np.ones_like(labels_arr)
-                mask[labels_arr == 1] = 0
+                mask = np.zeros_like(labels_arr)
+                mask[labels_arr == 1] = 1
                 axes[j].imshow(
                     mask.reshape(1, -1),
-                    cmap='grey',
-                    extent=(0, len(labels_arr), axes[j].get_ylim()[0], axes[j].get_ylim()[1]),
+                    cmap='Greys',
+                    extent=(0, 1, axes[j].get_ylim()[0], axes[j].get_ylim()[1]),
                     aspect='auto',
                     alpha=0.15,
                 )
@@ -461,7 +465,7 @@ def visualise_activations_with_signal(model, dataloader, num_samples):
                 for q in range(num_subplots): #exclude the activations plot
                     axes[q].imshow(
                         mask.reshape(1, -1),
-                        cmap='grey',
+                        cmap='Greys',
                         extent=(0, len_activation, axes[q].get_ylim()[0], axes[q].get_ylim()[1]),
                         aspect='auto',
                         alpha=0.15,

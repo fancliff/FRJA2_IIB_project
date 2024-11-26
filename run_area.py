@@ -19,21 +19,21 @@ import time
 outputs1 = np.array([False, True, True, False, False])
 outputs2 = np.array([False, True, True, False, False])
 
-data, labels = n_channels_gen(num_samples=10000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
+data, labels = n_channels_gen(num_samples=1000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
 train_dataset_1 = md.n_channel_dataset(data, labels)
 train_dataloader_1 = DataLoader(train_dataset_1, batch_size=32, shuffle=True)
 
-data, labels = n_channels_gen(num_samples=1000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
+data, labels = n_channels_gen(num_samples=100, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
 val_dataset_1 = md.n_channel_dataset(data, labels)
 val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 
 
-data, labels = n_channels_gen(num_samples=10000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs2)
+data, labels = n_channels_gen(num_samples=1000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs2)
 train_dataset_2 = md.n_channel_dataset(data, labels)
 train_dataloader_2 = DataLoader(train_dataset_2, batch_size=32, shuffle=True)
 
-data, labels = n_channels_gen(num_samples=1000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs2)
+data, labels = n_channels_gen(num_samples=100, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs2)
 val_dataset_2 = md.n_channel_dataset(data, labels)
 val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 
@@ -43,7 +43,7 @@ val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 #rt.plot_samples(val_dataloader_1, 5)
 
 
-model1 = md.NewModel1(data_channels=np.sum(outputs1))
+model1 = md.PeakMag8(data_channels=np.sum(outputs1))
 print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
 
 model2 = md.PeakMag6(data_channels=np.sum(outputs2))
@@ -53,7 +53,7 @@ results = []
 
 plot_during = False
 
-
+'''
 
 start1 = time.time()
 result_dict1,_ = rt.train_model_binary(
@@ -96,15 +96,17 @@ print('Time taken for model 1 training: ', end1-start1)
 print('Time taken for model 2 training: ', end2-start2)
 
 
-
+'''
 
 #load models from save files or train above
-#model1 = rt.load_model('PeakMag5_40000_real_imag')
+model1 = rt.load_model('PeakMag5_40000_real_imag')
 #model2 = rt.load_model('PeakMag5_40000_real_imag')
 
 #rt.visualise_activations(model1, val_dataloader_1, 3)
 #rt.visualise_activations_with_signal(model1, val_dataloader_1, 3)
 #rt.compare_activations(model1, model2, val_dataloader_1, 3)
+
+'''
 
 criterion=nn.BCELoss()
 rt.compare_models(
@@ -117,7 +119,9 @@ rt.compare_models(
     acceptance2=0.5,
 )
 
-#rt.plot_predictions(model1, val_dataloader_1, 10, acceptance=0.5)
+'''
+
+rt.plot_predictions(model1, val_dataloader_1, 10, acceptance=0.5)
 #rt.plot_predictions(model2, val_dataloader_2, 10, acceptance=0.5)
 
 
