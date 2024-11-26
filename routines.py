@@ -236,7 +236,7 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
                     
                     axes[j].plot(x, signal_arr, label="Signal", color="blue")
                     axes[j].plot(x, prob_arr, label="Prediction Probability", color="orange")
-                    axes[j].set_ylabel('Amplitude / Label')
+                    #axes[j].set_ylabel('Amplitude / Label')
                     
                     # Masked signal line for predicted labels
                     #use NaNs to prevent the line from connecting 
@@ -264,14 +264,14 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
                     #add a proxy legend element for the mask
                     mask_patch = mpatches.Patch(color='grey', alpha=0.15, label='Actual Labels')
                     
-                    axes[j].set_title(f'Channel {j+1}')
-                    axes[j].set_ylabel('Amplitude / Label')
-                    axes[j].legend(handles=axes[j].get_legend_handles_labels()[0] + [mask_patch])
+                    #axes[j].set_title(f'Channel {j+1}')
+                    #axes[j].set_ylabel('Amplitude / Label')
+                    #axes[j].legend(handles=axes[j].get_legend_handles_labels()[0] + [mask_patch])
 
-                plt.suptitle(f'Sample {i+1}')
-                plt.xlabel('Frequency (Normalized)')
+                #plt.suptitle(f'Sample {i+1}')
+                #plt.xlabel('Frequency (Normalized)')
                 plt.tight_layout()
-                plt.subplots_adjust(top=0.9) # Adjust suptitle position
+                #plt.subplots_adjust(top=0.9) # Adjust suptitle position
                 plt.show()
 
                 samples_plotted += 1
@@ -294,7 +294,7 @@ def plot_samples(dataloader, num_samples):
                 labels_arr = labels[i].cpu().numpy()
                 axes[j].plot(x,data[i][j].cpu().numpy(), label="Signal", color="blue")
                 #axes[j].plot(labels_arr, label="Actual Labels (scaled)", linestyle="--", color="green")
-                axes[j].set_ylabel('Amplitude / Label')
+                #axes[j].set_ylabel('Amplitude / Label')
                 
                 # Plot the actual labels as a semi-transparent mask
                 mask = np.zeros_like(labels_arr)
@@ -310,14 +310,14 @@ def plot_samples(dataloader, num_samples):
                 #add a proxy legend element for the mask
                 mask_patch = mpatches.Patch(color='grey', alpha=0.15, label='Actual Labels')
                 
-                axes[j].set_title(f'Channel {j+1}')
-                axes[j].set_ylabel('Signal Amplitude')
-                axes[j].legend(handles=axes[j].get_legend_handles_labels()[0] + [mask_patch])
+                #axes[j].set_title(f'Channel {j+1}')
+                #axes[j].set_ylabel('Signal Amplitude')
+                #axes[j].legend(handles=axes[j].get_legend_handles_labels()[0] + [mask_patch])
 
-            plt.suptitle(f'Sample {i+1}')
-            plt.xlabel('Frequency (Normalized)')
+            #plt.suptitle(f'Sample {i+1}')
+            #plt.xlabel('Frequency (Normalized)')
             plt.tight_layout()
-            plt.subplots_adjust(top=0.9) # Adjust suptitle position
+            #plt.subplots_adjust(top=0.9) # Adjust suptitle position
             plt.show()
             
             samples_plotted += 1
