@@ -15,6 +15,7 @@ def n_channels_gen(
     sigma_max: float = 0.1,
     max_modes: int = 5,
     min_max: bool = False,
+    multiclass: int = 0,
     ):
     
     num_outs = np.sum(enabled_outputs)
@@ -67,8 +68,18 @@ def n_channels_gen(
             #set label bandwidth to 3db or arbitrary value
             #bandwidth = 0.02 #(8 frequency points wide if 400 points)
             bandwidth = 2*omega_n*zeta_n
-            label[(frequencies >= omega_n - bandwidth) & (frequencies <= omega_n + bandwidth)] = 1
+            #multiclass = 0 is binary classification
+            #multiclass = 1 is multiclass classification with max label value of 2
+            #multiclass = 2 is multiclass classification with max label value of max_modes
+            if multiclass == 0:
+                label[(frequencies >= omega_n - bandwidth) & (frequencies <= omega_n + bandwidth)] = 1
+            elif multiclass == 1 or multiclass == 2:
+                label[(frequencies >= omega_n - bandwidth) & (frequencies <= omega_n + bandwidth)] += 1
         
+        #restrict multiclass labels to 2 if multiclass == 1
+        if multiclass == 1:
+            label = np.minimum(label, 2).astype(np.int32) #label must remain as a numpy array for JIT w numba
+
         mag_no_norm = np.abs(H_v)
         mag = mag_no_norm
         
