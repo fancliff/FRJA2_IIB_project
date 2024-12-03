@@ -126,30 +126,30 @@ class NewModel1(nn.Module):
         
     def forward(self,x):
         x = F.relu(self.conv1(x))
-        x = self.dropout(x)
+        #x = self.dropout(x)
         #x = self.pool(x)
         
         x = F.relu(self.conv2(x))
-        x = self.dropout(x)
+        #x = self.dropout(x)
         #x = self.pool(x)
         
         x = F.relu(self.conv3(x))
-        x = self.dropout(x)
+        #x = self.dropout(x)
         #x = self.pool(x)
         
         x = F.relu(self.conv4(x))
-        x = self.dropout(x)
+        #x = self.dropout(x)
         #x = self.pool(x)
         
         x = F.relu(self.conv5(x))
-        x = self.dropout(x)
+        #x = self.dropout(x)
         #x = self.pool(x)
         
         x = F.relu(self.conv6(x))
-        x = self.dropout(x)
+        #x = self.dropout(x)
         #x = self.pool(x)
         
-        x = F.relu(self.conv7(x))
+        x = self.conv7(x)
         #x = self.dropout(x) # no dropout on final layer
         
         x = torch.sigmoid(x)

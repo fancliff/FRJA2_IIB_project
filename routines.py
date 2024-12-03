@@ -302,6 +302,7 @@ def plot_samples(dataloader, num_samples):
                 
                 # Define explicit colors for each label
                 label_colors = {
+                    0: (1, 1, 1, 1),  # White for label 0 (RGBA)
                     1: (0.1, 0.6, 0.1, 0.4),  # Green for label 1
                     2: (0.6, 0.1, 0.1, 0.4),  # Red for label 2
                     3: (0.1, 0.1, 0.6, 0.4),  # Blue for label 3

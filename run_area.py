@@ -43,24 +43,24 @@ val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 #rt.plot_samples(val_dataloader_1, 5)
 
 
-model1 = md.PeakMag8(data_channels=np.sum(outputs1))
+model1 = md.NewModel1(data_channels=np.sum(outputs1))
 print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
 
-model2 = md.PeakMag6(data_channels=np.sum(outputs2))
-print(f'Model 2 trainable parameters: {rt.count_parameters(model2)}')
+#model2 = md.PeakMag5(data_channels=np.sum(outputs2))
+#print(f'Model 2 trainable parameters: {rt.count_parameters(model2)}')
 
 results = []
 
 plot_during = False
 
-'''
+
 
 start1 = time.time()
 result_dict1,_ = rt.train_model_binary(
                 model1, 
                 train_dataloader_1, 
                 val_dataloader_1, 
-                save_name='PeakMag5_40000_mag_only', #None if no save required
+                save_name=None, #None if no save required
                 num_epochs = 100, 
                 acceptance=0.5, 
                 plotting=plot_during,
@@ -70,7 +70,7 @@ results.append(result_dict1)
 end1 = time.time()
 
 
-
+'''
 
 start2 = time.time()
 result_dict2,_ = rt.train_model_binary(
@@ -86,14 +86,14 @@ result_dict2,_ = rt.train_model_binary(
 results.append(result_dict2)
 end2 = time.time()
 
-
+'''
 
 rt.plot_loss_history(results, log_scale=True, show=False)
 rt.plot_precision_history(results, log_scale=False, show=False)
 rt.plot_recall_history(results, log_scale=False, show=False)
 
 print('Time taken for model 1 training: ', end1-start1)
-print('Time taken for model 2 training: ', end2-start2)
+#print('Time taken for model 2 training: ', end2-start2)
 
 
 '''
@@ -106,7 +106,7 @@ model1 = rt.load_model('PeakMag5_40000_real_imag')
 #rt.visualise_activations_with_signal(model1, val_dataloader_1, 3)
 #rt.compare_activations(model1, model2, val_dataloader_1, 3)
 
-'''
+
 
 criterion=nn.BCELoss()
 rt.compare_models(
@@ -121,7 +121,7 @@ rt.compare_models(
 
 '''
 
-rt.plot_predictions(model1, val_dataloader_1, 10, acceptance=0.5)
+#rt.plot_predictions(model1, val_dataloader_1, 10, acceptance=0.5)
 #rt.plot_predictions(model2, val_dataloader_2, 10, acceptance=0.5)
 
 
