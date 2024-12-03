@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from numba import jit
 from models import EarlyStopping
 import matplotlib.patches as mpatches #for legend using masks
+import matplotlib.colors as mcolors #for custom colormap
 
 
 def train_model_binary(model, train_dataloader, val_dataloader, save_name, num_epochs, acceptance, plotting=True, patience=4):
@@ -251,15 +252,18 @@ def plot_predictions(model, dataloader, num_samples, acceptance):
                     )
 
                     # Plot the actual labels as a semi-transparent mask
-                    mask = np.zeros_like(labels_arr)
-                    mask[labels_arr == 1] = 1
-                    axes[j].imshow(
-                        mask.reshape(1, -1),
-                        cmap='Greys',
-                        extent=(0, 1, axes[j].get_ylim()[0], axes[j].get_ylim()[1]),
-                        aspect='auto',
-                        alpha=0.15,
-                    )
+                    cmap = plt.cm.get_cmap('tab10')
+                    for class_label in np.unique(labels_arr):
+                        mask = np.zeros_like(labels_arr)
+                        mask[labels_arr == class_label] = 1
+                        axes[j].imshow(
+                            mask.reshape(1, -1),
+                            cmap='Greys',
+                            extent=(0, 1, axes[j].get_ylim()[0], axes[j].get_ylim()[1]),
+                            aspect='auto',
+                            alpha=0.15,
+                            color = cmap(class_label),
+                        )
                     
                     #add a proxy legend element for the mask
                     mask_patch = mpatches.Patch(color='grey', alpha=0.15, label='Actual Labels')
@@ -293,26 +297,42 @@ def plot_samples(dataloader, num_samples):
             for j in range(num_channels):
                 labels_arr = labels[i].cpu().numpy()
                 axes[j].plot(x,data[i][j].cpu().numpy(), label="Signal", color="blue")
-                #axes[j].plot(labels_arr, label="Actual Labels (scaled)", linestyle="--", color="green")
+                #axes[j].plot(labels_arr, label="Actual Labels", linestyle="--", color="green")
                 #axes[j].set_ylabel('Amplitude / Label')
                 
-                # Plot the actual labels as a semi-transparent mask
-                mask = np.zeros_like(labels_arr)
-                mask[labels_arr == 1] = 1
-                axes[j].imshow(
-                    mask.reshape(1, -1),
-                    cmap='Greys',
-                    extent=(0, 1, axes[j].get_ylim()[0], axes[j].get_ylim()[1]),
-                    aspect='auto',
-                    alpha=0.15,
-                )
-                
-                #add a proxy legend element for the mask
-                mask_patch = mpatches.Patch(color='grey', alpha=0.15, label='Actual Labels')
+                # Define explicit colors for each label
+                label_colors = {
+                    1: (0.1, 0.6, 0.1, 0.4),  # Green for label 1
+                    2: (0.6, 0.1, 0.1, 0.4),  # Red for label 2
+                    3: (0.1, 0.1, 0.6, 0.4),  # Blue for label 3
+                    4: (0.6, 0.6, 0.1, 0.4),  # Yellow for label 4
+                    5: (0.6, 0.1, 0.6, 0.4),  # Purple for label 5
+                }
+                mask_patches = []
+                # Overlay the masks
+                for class_label in np.unique(labels_arr):
+                    mask = np.zeros_like(labels_arr)
+                    mask[labels_arr == class_label] = 1
+                    label_alpha = label_colors[class_label][3]  # Use transparency from the RGBA tuple
+                    label_color = label_colors[class_label]  # Set explicit color
+                    label_cmap = mcolors.LinearSegmentedColormap.from_list("", ["white", label_color])
+                    
+                    axes[j].imshow(
+                        mask.reshape(1, -1),
+                        cmap=label_cmap,  # Disable automatic colormap
+                        extent=(0, 1, axes[j].get_ylim()[0], axes[j].get_ylim()[1]),
+                        aspect='auto',
+                        alpha=label_alpha,  # Use transparency from the RGBA tuple
+                    )
+                    
+                    #add a proxy legend element for the mask for labels other than 0
+                    if class_label != 0:
+                        mask_patch = mpatches.Patch(color=label_color, alpha=label_alpha, label=f'Modes: {class_label}')
+                        mask_patches.append(mask_patch)
                 
                 #axes[j].set_title(f'Channel {j+1}')
                 #axes[j].set_ylabel('Signal Amplitude')
-                #axes[j].legend(handles=axes[j].get_legend_handles_labels()[0] + [mask_patch])
+                axes[j].legend(handles=axes[j].get_legend_handles_labels()[0] + mask_patches)
 
             #plt.suptitle(f'Sample {i+1}')
             #plt.xlabel('Frequency (Normalized)')

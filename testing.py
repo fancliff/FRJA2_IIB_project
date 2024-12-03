@@ -18,8 +18,8 @@ import time
 outputs1 = np.array([True, False, False, False, False])
 outputs2 = np.array([False, True, True, False, False])
 
-data, labels = n_channels_gen(num_samples=32, signal_length=1024, enabled_outputs=outputs2, noise=True, sigma_max=0.1, min_max=True)
+data, labels = n_channels_gen(num_samples=32, signal_length=1024, enabled_outputs=outputs2, noise=True, sigma_max=0.1, min_max=True, multiclass=1)
 val_dataset_1 = md.n_channel_dataset(data, labels)
 val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
-rt.plot_samples(val_dataloader_1, 5)
+rt.plot_samples(val_dataloader_1, 10)
