@@ -150,6 +150,38 @@ class NewModel4(nn.Module):
         return x
 
 
+#As NewModel3 but with batch normalisation
+#num parameters: 2,137
+class NewModel3b(nn.Module):
+    def __init__(self, data_channels: int, input_length: int = 1024):
+        super(NewModel3b, self).__init__()
+        self.conv1 = nn.Conv1d(data_channels, 4, kernel_size=13, padding=6)
+        self.conv2 = nn.Conv1d(4, 4, kernel_size=13, padding=6)
+        self.conv3 = nn.Conv1d(4, 8, kernel_size=13, padding=6)
+        self.conv4 = nn.Conv1d(8, 8, kernel_size=13, padding=6)
+        self.conv5 = nn.Conv1d(8, 4, kernel_size=13, padding=6)
+        self.conv6 = nn.Conv1d(4, 2, kernel_size=13, padding=6)
+        self.conv7 = nn.Conv1d(2, 1, kernel_size=13, padding=6)
+        self.dropout = nn.Dropout(0.1) # 0.1 so as not to reduce model power
+        self.bn2 = nn.BatchNorm1d(2)
+        self.bn4 = nn.BatchNorm1d(4)
+        self.bn8 = nn.BatchNorm1d(8)
+        
+    def forward(self,x):
+        x = F.relu(self.bn4(self.conv1(x)))
+        x = F.relu(self.bn4(self.conv2(x)))
+        x = F.relu(self.bn8(self.conv3(x)))
+        x = F.relu(self.bn8(self.conv4(x)))
+        x = F.relu(self.bn4(self.conv5(x)))
+        x = F.relu(self.bn2(self.conv6(x)))
+        
+        x = self.conv7(x)
+        x = torch.sigmoid(x)
+        
+        return x
+
+
+
 #New structure with up convolutional layers and no pooling
 #No output FC layer
 #num parameters: 2,137

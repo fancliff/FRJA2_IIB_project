@@ -47,7 +47,7 @@ model1 = md.NewModel3(data_channels=np.sum(outputs1))
 print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
 print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
 
-model2 = md.NewModel4(data_channels=np.sum(outputs2))
+model2 = md.NewModel3b(data_channels=np.sum(outputs2))
 print(f'Model 2 trainable parameters: {rt.count_parameters(model2)}')
 print(f'Model 2 receptive field: {rt.calculate_total_receptive_field(model2)}')
 
@@ -79,7 +79,7 @@ result_dict2,_ = rt.train_model_binary(
                 model2, 
                 train_dataloader_2, 
                 val_dataloader_2, 
-                save_name='New4', #None if no save required
+                save_name='New3b', #None if no save required
                 num_epochs = 200, 
                 acceptance=0.5, 
                 plotting=plot_during,
