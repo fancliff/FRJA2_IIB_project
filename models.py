@@ -7,6 +7,7 @@ import numpy as np
 import scipy
 import matplotlib.pyplot as plt
 from numba import jit
+from typing import List, Union
 
 class two_channel_dataset(Dataset):
     """
@@ -104,6 +105,60 @@ class EarlyStopping:
         model.load_state_dict(torch.load(self.path))
 
 
+
+class NewModelGeneral(nn.Module):
+    def __init__(self, 
+                data_channels: int, 
+                out_channels: List[int], 
+                kernel_size: Union[int, List[int]] = 13, 
+                input_length: int = 1024,
+                ):
+        """
+        A CNN model with flexible output channels, batch normalization, 
+        and kernel size/padding customization.
+        
+        :param data_channels: The number of input channels.
+        :param input_length: The length of the input sequence.
+        :param out_channels: List of output channel sizes for each Conv1d layer.
+        :param kernel_size: Either an integer kernel size or a list of kernel sizes for each Conv1d layer.
+        """
+        super(NewModelGeneral, self).__init__()
+
+        # If kernel_size is an integer, create a list of that size for all layers
+        if isinstance(kernel_size, int):
+            kernel_size = [kernel_size] * len(out_channels)
+        elif isinstance(kernel_size, list):
+            assert len(kernel_size) == len(out_channels), \
+                "The length of kernel_size list must match the length of out_channels list."
+
+        # Default to calculating padding as (kernel_size - 1) / 2 for each layer
+        padding = [(k - 1) // 2 for k in kernel_size]
+
+        # Define Conv1d and BatchNorm1d layers dynamically using the out_channels and kernel_size list
+        self.convs = nn.ModuleList()  # to hold all convolution layers
+        self.bns = nn.ModuleList()   # to hold all BatchNorm layers
+        
+        in_channels = data_channels  # The initial input channel is the number of input channels (data_channels)
+        
+        for i, out_channel in enumerate(out_channels):
+            kernel = kernel_size[i]  # Get the kernel size for the current layer
+            pad = padding[i]  # Get the padding value for the current layer
+
+            self.convs.append(nn.Conv1d(in_channels, out_channel, kernel_size=kernel, padding=pad))
+            self.bns.append(nn.BatchNorm1d(out_channel))
+            in_channels = out_channel  # Update the input channels for the next convolution layer
+
+    def forward(self, x):
+        for conv, bn in zip(self.convs[:-1], self.bns):
+            x = F.relu(bn(conv(x)))
+        
+        x = self.convs[-1](x)  # Final conv layer without BN or ReLU
+        x = torch.sigmoid(x)  # Sigmoid activation for output
+
+        return x
+
+
+
 #New structure with up convolutional layers and no pooling
 #No output FC layer
 #num parameters: 2,429
@@ -151,7 +206,7 @@ class NewModel4(nn.Module):
 
 
 #As NewModel3 but with batch normalisation
-#num parameters: 2,137
+#num parameters: 2,197
 class NewModel3b(nn.Module):
     def __init__(self, data_channels: int, input_length: int = 1024):
         super(NewModel3b, self).__init__()
@@ -163,17 +218,20 @@ class NewModel3b(nn.Module):
         self.conv6 = nn.Conv1d(4, 2, kernel_size=13, padding=6)
         self.conv7 = nn.Conv1d(2, 1, kernel_size=13, padding=6)
         self.dropout = nn.Dropout(0.1) # 0.1 so as not to reduce model power
-        self.bn2 = nn.BatchNorm1d(2)
-        self.bn4 = nn.BatchNorm1d(4)
-        self.bn8 = nn.BatchNorm1d(8)
+        self.bn1 = nn.BatchNorm1d(4)
+        self.bn2 = nn.BatchNorm1d(4)
+        self.bn3 = nn.BatchNorm1d(8)
+        self.bn4 = nn.BatchNorm1d(8)
+        self.bn5 = nn.BatchNorm1d(4)
+        self.bn6 = nn.BatchNorm1d(2)
         
     def forward(self,x):
-        x = F.relu(self.bn4(self.conv1(x)))
-        x = F.relu(self.bn4(self.conv2(x)))
-        x = F.relu(self.bn8(self.conv3(x)))
-        x = F.relu(self.bn8(self.conv4(x)))
-        x = F.relu(self.bn4(self.conv5(x)))
-        x = F.relu(self.bn2(self.conv6(x)))
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = F.relu(self.bn3(self.conv3(x)))
+        x = F.relu(self.bn4(self.conv4(x)))
+        x = F.relu(self.bn5(self.conv5(x)))
+        x = F.relu(self.bn6(self.conv6(x)))
         
         x = self.conv7(x)
         x = torch.sigmoid(x)
