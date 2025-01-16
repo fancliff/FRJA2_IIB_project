@@ -19,21 +19,21 @@ import time
 outputs1 = np.array([False, True, True, False, False])
 outputs2 = np.array([False, True, True, False, False])
 
-data, labels = n_channels_gen(num_samples=1000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
+data, labels = n_channels_gen(num_samples=2000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
 train_dataset_1 = md.n_channel_dataset(data, labels)
 train_dataloader_1 = DataLoader(train_dataset_1, batch_size=32, shuffle=True)
 
-data, labels = n_channels_gen(num_samples=100, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
+data, labels = n_channels_gen(num_samples=1000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs1)
 val_dataset_1 = md.n_channel_dataset(data, labels)
 val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 
 
-data, labels = n_channels_gen(num_samples=1000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs2)
+data, labels = n_channels_gen(num_samples=2000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs2)
 train_dataset_2 = md.n_channel_dataset(data, labels)
 train_dataloader_2 = DataLoader(train_dataset_2, batch_size=32, shuffle=True)
 
-data, labels = n_channels_gen(num_samples=100, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs2)
+data, labels = n_channels_gen(num_samples=1000, signal_length=1024, sigma_min=0.01, sigma_max=0.1, min_max=True, enabled_outputs=outputs2)
 val_dataset_2 = md.n_channel_dataset(data, labels)
 val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 
@@ -43,11 +43,13 @@ val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 #rt.plot_samples(val_dataloader_1, 5)
 
 
-model1 = md.NewModel1(data_channels=np.sum(outputs1))
+model1 = md.NewModel3(data_channels=np.sum(outputs1))
 print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
+print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
 
-#model2 = md.PeakMag5(data_channels=np.sum(outputs2))
-#print(f'Model 2 trainable parameters: {rt.count_parameters(model2)}')
+model2 = md.NewModel4(data_channels=np.sum(outputs2))
+print(f'Model 2 trainable parameters: {rt.count_parameters(model2)}')
+print(f'Model 2 receptive field: {rt.calculate_total_receptive_field(model2)}')
 
 results = []
 
@@ -60,47 +62,47 @@ result_dict1,_ = rt.train_model_binary(
                 model1, 
                 train_dataloader_1, 
                 val_dataloader_1, 
-                save_name=None, #None if no save required
-                num_epochs = 100, 
+                save_name='New3', #None if no save required
+                num_epochs = 200, 
                 acceptance=0.5, 
                 plotting=plot_during,
-                patience = 10,
+                patience = 20,
                 )
 results.append(result_dict1)
 end1 = time.time()
 
 
-'''
+
 
 start2 = time.time()
 result_dict2,_ = rt.train_model_binary(
                 model2, 
                 train_dataloader_2, 
                 val_dataloader_2, 
-                save_name='PeakMag7_GAP_test', #None if no save required
-                num_epochs = 100, 
+                save_name='New4', #None if no save required
+                num_epochs = 200, 
                 acceptance=0.5, 
                 plotting=plot_during,
-                patience = 10,
+                patience = 20,
                 )
 results.append(result_dict2)
 end2 = time.time()
 
-'''
+
 
 rt.plot_loss_history(results, log_scale=True, show=False)
 rt.plot_precision_history(results, log_scale=False, show=False)
 rt.plot_recall_history(results, log_scale=False, show=False)
 
 print('Time taken for model 1 training: ', end1-start1)
-#print('Time taken for model 2 training: ', end2-start2)
+print('Time taken for model 2 training: ', end2-start2)
 
 
 '''
 
 #load models from save files or train above
-model1 = rt.load_model('PeakMag5_40000_real_imag')
-#model2 = rt.load_model('PeakMag5_40000_real_imag')
+model1 = rt.load_model('New1')
+model2 = rt.load_model('New2')
 
 #rt.visualise_activations(model1, val_dataloader_1, 3)
 #rt.visualise_activations_with_signal(model1, val_dataloader_1, 3)

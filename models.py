@@ -105,13 +105,153 @@ class EarlyStopping:
 
 
 #New structure with up convolutional layers and no pooling
+#No output FC layer
+#num parameters: 2,429
+
+# Too deep? Not training at all? Vanishing Gradient?
+# Try batch normalisation then try adding skip connections
+class NewModel4(nn.Module):
+    def __init__(self, data_channels: int, input_length: int = 1024):
+        super(NewModel4, self).__init__()
+        self.conv1 = nn.Conv1d(data_channels, 4, kernel_size=7, padding=3)
+        self.conv2 = nn.Conv1d(4, 4, kernel_size=7, padding=3)
+        self.conv3 = nn.Conv1d(4, 6, kernel_size=7, padding=3)
+        self.conv4 = nn.Conv1d(6, 6, kernel_size=7, padding=3)
+        self.conv5 = nn.Conv1d(6, 8, kernel_size=7, padding=3)
+        self.conv6 = nn.Conv1d(8, 8, kernel_size=7, padding=3)
+        self.conv7 = nn.Conv1d(8, 6, kernel_size=7, padding=3)
+        self.conv8 = nn.Conv1d(6, 6, kernel_size=7, padding=3)
+        self.conv9 = nn.Conv1d(6, 4, kernel_size=7, padding=3)
+        self.conv10 = nn.Conv1d(4, 4, kernel_size=7, padding=3)
+        self.conv11 = nn.Conv1d(4, 2, kernel_size=7, padding=3)
+        self.conv12 = nn.Conv1d(2, 2, kernel_size=7, padding=3)
+        self.conv13 = nn.Conv1d(2, 2, kernel_size=7, padding=3)
+        self.conv14 = nn.Conv1d(2, 1, kernel_size=7, padding=3)
+        self.dropout = nn.Dropout(0.1) # 0.1 so as not to reduce model power
+        
+    def forward(self,x):
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        x = F.relu(self.conv4(x))
+        x = F.relu(self.conv5(x))
+        x = F.relu(self.conv6(x))
+        x = F.relu(self.conv7(x))
+        x = F.relu(self.conv8(x))
+        x = F.relu(self.conv9(x))
+        x = F.relu(self.conv10(x))
+        x = F.relu(self.conv11(x))
+        x = F.relu(self.conv12(x))
+        x = F.relu(self.conv13(x))
+        x = F.relu(self.conv14(x))
+        
+        x = torch.sigmoid(x)
+        
+        return x
+
+
+#New structure with up convolutional layers and no pooling
+#No output FC layer
+#num parameters: 2,137
+class NewModel3(nn.Module):
+    def __init__(self, data_channels: int, input_length: int = 1024):
+        super(NewModel3, self).__init__()
+        self.conv1 = nn.Conv1d(data_channels, 4, kernel_size=13, padding=6)
+        self.conv2 = nn.Conv1d(4, 4, kernel_size=13, padding=6)
+        self.conv3 = nn.Conv1d(4, 8, kernel_size=13, padding=6)
+        self.conv4 = nn.Conv1d(8, 8, kernel_size=13, padding=6)
+        self.conv5 = nn.Conv1d(8, 4, kernel_size=13, padding=6)
+        self.conv6 = nn.Conv1d(4, 2, kernel_size=13, padding=6)
+        self.conv7 = nn.Conv1d(2, 1, kernel_size=13, padding=6)
+        self.dropout = nn.Dropout(0.1) # 0.1 so as not to reduce model power
+        
+    def forward(self,x):
+        x = F.relu(self.conv1(x))
+        #x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = F.relu(self.conv2(x))
+        #x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = F.relu(self.conv3(x))
+        #x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = F.relu(self.conv4(x))
+        #x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = F.relu(self.conv5(x))
+        #x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = F.relu(self.conv6(x))
+        #x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = self.conv7(x)
+        #x = self.dropout(x) # no dropout on final layer
+        
+        x = torch.sigmoid(x)
+        
+        return x
+
+
+#New structure with up convolutional layers and no pooling
+#No output FC layer
+#num parameters: 7,701
+class NewModel2(nn.Module):
+    def __init__(self, data_channels: int, input_length: int = 1024):
+        super(NewModel2, self).__init__()
+        self.conv1 = nn.Conv1d(data_channels, 4, kernel_size=13, padding=6)
+        self.conv2 = nn.Conv1d(4, 8, kernel_size=13, padding=6)
+        self.conv3 = nn.Conv1d(8, 16, kernel_size=13, padding=6)
+        self.conv4 = nn.Conv1d(16, 16, kernel_size=13, padding=6)
+        self.conv5 = nn.Conv1d(16, 8, kernel_size=13, padding=6)
+        self.conv6 = nn.Conv1d(8, 4, kernel_size=13, padding=6)
+        self.conv7 = nn.Conv1d(4, 1, kernel_size=13, padding=6)
+        self.dropout = nn.Dropout(0.1) # 0.1 so as not to reduce model power
+        
+    def forward(self,x):
+        x = F.relu(self.conv1(x))
+        #x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = F.relu(self.conv2(x))
+        #x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = F.relu(self.conv3(x))
+        #x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = F.relu(self.conv4(x))
+        #x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = F.relu(self.conv5(x))
+        #x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = F.relu(self.conv6(x))
+        #x = self.dropout(x)
+        #x = self.pool(x)
+        
+        x = self.conv7(x)
+        #x = self.dropout(x) # no dropout on final layer
+        
+        x = torch.sigmoid(x)
+        
+        return x
+
+
+#New structure with up convolutional layers and no pooling
 #very similar trainable parameters to PeakMag6 but more convolutional layers
 #slightly narrower kernel size than PeakMag6
 #No output FC layer
 #Test performance of adding that layer on top of this model
 #num parameters: 120,657
-
-#Model currently does not train at all. why?
 class NewModel1(nn.Module):
     def __init__(self, data_channels: int, input_length: int = 1024):
         super(NewModel1, self).__init__()

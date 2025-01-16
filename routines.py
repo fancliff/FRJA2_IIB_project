@@ -302,7 +302,6 @@ def plot_samples(dataloader, num_samples):
                 
                 # Define explicit colors for each label
                 label_colors = {
-                    0: (1, 1, 1, 1),  # White for label 0 (RGBA)
                     1: (0.1, 0.6, 0.1, 0.4),  # Green for label 1
                     2: (0.6, 0.1, 0.1, 0.4),  # Red for label 2
                     3: (0.1, 0.1, 0.6, 0.4),  # Blue for label 3
@@ -312,6 +311,8 @@ def plot_samples(dataloader, num_samples):
                 mask_patches = []
                 # Overlay the masks
                 for class_label in np.unique(labels_arr):
+                    if class_label == 0:
+                        continue
                     mask = np.zeros_like(labels_arr)
                     mask[labels_arr == class_label] = 1
                     label_alpha = label_colors[class_label][3]  # Use transparency from the RGBA tuple
@@ -388,6 +389,22 @@ def calculate_precision_recall_binary(outputs, labels, acceptance):
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+def calculate_total_receptive_field(model):
+    #Assumes model is a sequence of layers
+    total_receptive_field = 1
+    for layer in model.modules():
+        if isinstance(layer, nn.Conv1d):
+            kernel_size = layer.kernel_size[0]
+            stride = layer.stride[0]
+            dilation = layer.dilation[0]
+            total_receptive_field += (kernel_size - 1) * dilation
+        if isinstance(layer, nn.MaxPool1d):
+            kernel_size = layer.kernel_size
+            stride = layer.stride
+            total_receptive_field += kernel_size - 1
+    return total_receptive_field
 
 
 def visualise_activations(model, dataloader, num_samples):
