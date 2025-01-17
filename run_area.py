@@ -45,14 +45,15 @@ val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 
 
 model1 = md.NewModelGeneral(data_channels=np.sum(outputs1), 
-                            out_channels=[4, 4, 8, 8, 4, 2, 1],
+                            out_channels=[4,4,8,8,4,2,1],
+                            kernel_size=13,
                             )
 print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
 print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
 
 model2 = md.NewModelGeneral(data_channels=np.sum(outputs2),
-                            out_channels=[4,4,6,6,8,8,6,6,4,4,2,2,2,1],
-                            kernel_size=7,
+                            out_channels=[4,4,8,8,4,2,1],
+                            kernel_size=11,
                             )
 print(f'Model 2 trainable parameters: {rt.count_parameters(model2)}')
 print(f'Model 2 receptive field: {rt.calculate_total_receptive_field(model2)}')
@@ -61,14 +62,14 @@ results = []
 
 plot_during = False
 
-'''
+
 
 start1 = time.time()
 result_dict1,_ = rt.train_model_binary(
                 model1, 
                 train_dataloader_1, 
                 val_dataloader_1, 
-                save_name=None, #None if no save required
+                save_name='New3b_kernel_13', #None if no save required
                 num_epochs = 200, 
                 acceptance=0.5, 
                 plotting=plot_during,
@@ -78,14 +79,13 @@ results.append(result_dict1)
 end1 = time.time()
 
 
-'''
 
 start2 = time.time()
 result_dict2,_ = rt.train_model_binary(
                 model2, 
                 train_dataloader_2, 
                 val_dataloader_2, 
-                save_name='New4b', #None if no save required
+                save_name='New3b_kernel_11', #None if no save required
                 num_epochs = 200, 
                 acceptance=0.5, 
                 plotting=plot_during,
@@ -96,11 +96,11 @@ end2 = time.time()
 
 
 
-#rt.plot_loss_history(results, log_scale=True, show=False)
-#rt.plot_precision_history(results, log_scale=False, show=False)
-#rt.plot_recall_history(results, log_scale=False, show=False)
+rt.plot_loss_history(results, log_scale=True, show=False)
+rt.plot_precision_history(results, log_scale=False, show=False)
+rt.plot_recall_history(results, log_scale=False, show=False)
 
-#print('Time taken for model 1 training: ', end1-start1)
+print('Time taken for model 1 training: ', end1-start1)
 print('Time taken for model 2 training: ', end2-start2)
 
 
