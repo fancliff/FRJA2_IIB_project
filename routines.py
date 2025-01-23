@@ -206,81 +206,58 @@ def plot_recall_history(results, log_scale=False, show=False):
     if show: plt.show()
 
 
-def plot_predictions(model, dataloader, num_samples, acceptance):
-    model.eval()
+def plot_predictions(models, dataloader, num_samples, acceptance):
     samples_plotted = 0
     with torch.no_grad():
         for data, labels in dataloader:
-            #below 2 lines are used if sigmoid is not applied at the end of the model
-            #predictions = model(data).squeeze()
-            #probabilities = torch.sigmoid(predictions)
-            
-            probabilities = model(data).squeeze()
-            #print((model(data)).shape)
-            #print(data.shape)
-            
-            predicted_labels = (probabilities >= acceptance).float()
+            batch_size = len(data)
+            for i in range(min(num_samples,batch_size)):
+                x = np.linspace(0, 1, len(data[i][0]))
+                for model_idx, model in enumerate(models):
+                    model.eval()
+                    probabilities = model(data).squeeze()
+                    predicted_labels = (probabilities >= acceptance).float()
+                    num_channels = data[i].shape[0]
+                    fig, axes = plt.subplots(num_channels, 1, figsize=(8, 4), sharex=True)
+                    if num_channels == 1:
+                        axes = [axes]  # Convert single axis to list for iteration
 
-            for i in range(min(num_samples, len(data))):
-                num_channels = data[i].shape[0]
-                fig, axes = plt.subplots(num_channels, 1, figsize=(12, 6), sharex=True)
-                if num_channels == 1:
-                    axes = [axes] # Convert single axis to list for iteration
-                
-                x = np.linspace(0,1,len(data[i][0]))
-                
-                for j in range(num_channels):
-                    labels_arr = labels[i].cpu().numpy()
-                    signal_arr = data[i][j].cpu().numpy()
-                    prob_arr = probabilities[i].cpu().numpy()
-                    predictions_arr = predicted_labels[i].cpu().numpy()
-                    
-                    axes[j].plot(x, signal_arr, label="Signal", color="blue")
-                    axes[j].plot(x, prob_arr, label="Prediction Probability", color="orange")
-                    #axes[j].set_ylabel('Amplitude / Label')
-                    
-                    # Masked signal line for predicted labels
-                    #use NaNs to prevent the line from connecting 
-                    #points over regions where the model predicts no label
-                    masked_labels = np.where(predictions_arr == 1, signal_arr, np.nan)
-                    axes[j].plot(
-                        x, masked_labels,
-                        color='red',
-                        label='Predicted Labels',
-                        alpha=0.5,
-                        linewidth=5,
-                    )
+                    for j in range(num_channels):
+                        labels_arr = labels[i].cpu().numpy()
+                        signal_arr = data[i][j].cpu().numpy()
+                        prob_arr = probabilities[i].cpu().numpy()
+                        predictions_arr = predicted_labels[i].cpu().numpy()
 
-                    # Plot the actual labels as a semi-transparent mask
-                    cmap = plt.cm.get_cmap('tab10')
-                    for class_label in np.unique(labels_arr):
+                        axes[j].plot(x, signal_arr, label="Signal", color="blue")
+                        axes[j].plot(x, prob_arr, label="Prediction Probability", color="orange")
+
+                        # Masked signal line for predicted labels
+                        masked_labels = np.where(predictions_arr == 1, signal_arr, np.nan)
+                        axes[j].plot(
+                            x, masked_labels,
+                            color='red',
+                            label='Predicted Labels',
+                            alpha=0.5,
+                            linewidth=5,
+                        )
+
+                        # Plot the actual labels as a semi-transparent mask
                         mask = np.zeros_like(labels_arr)
-                        mask[labels_arr == class_label] = 1
+                        mask[labels_arr == 1] = 1
                         axes[j].imshow(
                             mask.reshape(1, -1),
                             cmap='Greys',
                             extent=(0, 1, axes[j].get_ylim()[0], axes[j].get_ylim()[1]),
                             aspect='auto',
                             alpha=0.15,
-                            color = cmap(class_label),
                         )
                     
-                    #add a proxy legend element for the mask
-                    mask_patch = mpatches.Patch(color='grey', alpha=0.15, label='Actual Labels')
-                    
-                    #axes[j].set_title(f'Channel {j+1}')
-                    #axes[j].set_ylabel('Amplitude / Label')
-                    #axes[j].legend(handles=axes[j].get_legend_handles_labels()[0] + [mask_patch])
-
-                #plt.suptitle(f'Sample {i+1}')
-                #plt.xlabel('Frequency (Normalized)')
-                plt.tight_layout()
-                #plt.subplots_adjust(top=0.9) # Adjust suptitle position
-                plt.show()
-
+                    plt.tight_layout()
+                    plt.show()
+                
                 samples_plotted += 1
                 if samples_plotted >= num_samples:
-                    return  # Exit after plotting specified number of samples
+                    return # Exit if enough samples are plotted
 
 
 def plot_samples(dataloader, num_samples):
