@@ -343,10 +343,12 @@ def compare_models(model1, model2, dataloader1, dataloader2, criterion, acceptan
     model2.eval()
     loss1, recall1, precision1 = validation_loss_recall_precision(model1, dataloader1, criterion, acceptance1)
     loss2, recall2, precision2 = validation_loss_recall_precision(model2, dataloader2, criterion, acceptance2)
+    fscore1 = 2 * (precision1 * recall1) / (precision1 + recall1)
+    fscore2 = 2 * (precision2 * recall2) / (precision2 + recall2)
     print('Model 1:')
-    print(f'Loss: {loss1:.4f}, Precision: {precision1:.4f}, Recall: {recall1:.4f}\n')
+    print(f'Loss: {loss1:.4f}, Precision: {precision1:.4f}, Recall: {recall1:.4f}, F-score: {fscore1:.4f}\n')
     print('Model 2:')
-    print(f'Loss: {loss2:.4f}, Precision: {precision2:.4f}, Recall: {recall2:.4f}\n')
+    print(f'Loss: {loss2:.4f}, Precision: {precision2:.4f}, Recall: {recall2:.4f}, F-score: {fscore2:.4f}\n')
 
 
 def calculate_precision_recall_binary(outputs, labels, acceptance):

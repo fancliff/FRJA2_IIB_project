@@ -28,7 +28,7 @@ data, labels = n_channels_gen(
     zeta_max=0.1,
     zeta_min=0.01,
     three_db_bandwidth=False,
-    fixed_bandwidth=0.01,
+    fixed_bandwidth=0.02,
     min_max=True, 
     enabled_outputs=outputs1
     )
@@ -43,7 +43,7 @@ data, labels = n_channels_gen(
     zeta_max=0.1,
     zeta_min=0.01,
     three_db_bandwidth=False,
-    fixed_bandwidth=0.01,
+    fixed_bandwidth=0.02,
     min_max=True, 
     enabled_outputs=outputs1
     )
@@ -52,7 +52,7 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 #### DATA SET 2 ####
 
-'''
+
 
 data, labels = n_channels_gen(
     num_samples=2000, 
@@ -61,8 +61,8 @@ data, labels = n_channels_gen(
     sigma_max=0.1, 
     zeta_max=0.1,
     zeta_min=0.01,
-    three_db_bandwidth=True,
-    fixed_bandwidth=0.02,
+    three_db_bandwidth=False,
+    fixed_bandwidth=0.03,
     min_max=True, 
     enabled_outputs=outputs2
     )
@@ -76,20 +76,20 @@ data, labels = n_channels_gen(
     sigma_max=0.1, 
     zeta_max=0.1,
     zeta_min=0.01,
-    three_db_bandwidth=True,
-    fixed_bandwidth=0.02,
+    three_db_bandwidth=False,
+    fixed_bandwidth=0.03,
     min_max=True, 
     enabled_outputs=outputs2
     )
 val_dataset_2 = md.n_channel_dataset(data, labels)
 val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
 
-'''
+
 
 #rt.plot_samples(train_dataloader_1, 5)
 #rt.plot_samples(val_dataloader_1, 5)
 
-
+'''
 
 model1 = md.NewModelGeneral(data_channels=np.sum(outputs1), 
                             out_channels=[4,4,8,8,4,2,1],
@@ -120,7 +120,7 @@ result_dict1,_ = rt.train_model_binary(
                 model1, 
                 train_dataloader_1, 
                 val_dataloader_1, 
-                save_name='kernel_9_fixed__01', #None if no save required
+                save_name='kernel_9_fixed_03', #None if no save required
                 num_epochs = 200, 
                 acceptance=0.5, 
                 plotting=plot_during,
@@ -136,7 +136,7 @@ result_dict2,_ = rt.train_model_binary(
                 model2, 
                 train_dataloader_1, 
                 val_dataloader_1, 
-                save_name='kernel_7_fixed_01', #None if no save required
+                save_name='kernel_9_fixed_03', #None if no save required
                 num_epochs = 200, 
                 acceptance=0.5, 
                 plotting=plot_during,
@@ -158,8 +158,8 @@ print('Time taken for model 2 training: ', end2-start2)
 '''
 
 #load models from save files or train above
-model1 = rt.load_model('New3b_kernel_9_fixed_bandwidth_0.02')
-model2 = rt.load_model('New3b_kernel_9')
+model1 = rt.load_model('kernel_9_fixed_02')
+model2 = rt.load_model('kernel_9_fixed_03')
 
 #rt.visualise_activations(model1, val_dataloader_1, 3)
 #rt.visualise_activations_with_signal(model1, val_dataloader_1, 3)
@@ -180,7 +180,7 @@ rt.compare_models(
 
 
 
-rt.plot_predictions([model1, model2], val_dataloader_1, 5, acceptance=0.5)
+#rt.plot_predictions([model1, model2], val_dataloader_1, 5, acceptance=0.5)
 
-'''
+
 
