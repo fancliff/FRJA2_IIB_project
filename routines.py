@@ -328,7 +328,7 @@ def plot_samples(dataloader, num_samples):
 def load_model(save_name):
     project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/Models/'
     model_path = project_path + save_name
-    model = torch.load(f'{model_path}.pth')
+    model = torch.load(f'{model_path}')
     return model
 
 

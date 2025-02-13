@@ -16,42 +16,45 @@ import time
 
 from typing import List
 
+import h5py
+
 #                      mag, real, imag, phase, log_mag
 outputs1 = np.array([False, True, True, False, False])
 outputs2 = np.array([False, True, True, False, False])
 
-data, labels = n_channels_gen(
-    num_samples=2000, 
-    signal_length=1024, 
-    sigma_min=0.01, 
-    sigma_max=0.1, 
-    zeta_max=0.1,
-    zeta_min=0.01,
-    three_db_bandwidth=False,
-    fixed_bandwidth=0.02,
-    min_max=True, 
-    enabled_outputs=outputs1
-    )
-train_dataset_1 = md.n_channel_dataset(data, labels)
-train_dataloader_1 = DataLoader(train_dataset_1, batch_size=32, shuffle=True)
+# data, labels = n_channels_gen(
+#     num_samples=100000, 
+#     signal_length=1024, 
+#     sigma_min=0.01, 
+#     sigma_max=0.1, 
+#     zeta_max=0.1,
+#     zeta_min=0.01,
+#     three_db_bandwidth=False,
+#     fixed_bandwidth=0.02,
+#     min_max=True, 
+#     enabled_outputs=outputs1
+#     )
 
-data, labels = n_channels_gen(
-    num_samples=2000, 
-    signal_length=1024, 
-    sigma_min=0.01, 
-    sigma_max=0.1, 
-    zeta_max=0.1,
-    zeta_min=0.01,
-    three_db_bandwidth=False,
-    fixed_bandwidth=0.02,
-    min_max=True, 
-    enabled_outputs=outputs1
-    )
-val_dataset_1 = md.n_channel_dataset(data, labels)
+project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/datasets/'
+data_name = 'data_02_bandwidth.h5'
+data_file = project_path + data_name
+
+# with h5py.File(data_file, 'w') as f:
+#     f.create_dataset('data', data=data)
+#     f.create_dataset('labels', data=labels)
+
+with h5py.File(data_file, 'r') as f:
+    val_data = f['data'][:5000]
+    val_labels = f['labels'][:5000]
+    train_data = f['data'][5000:7000]
+    train_labels = f['labels'][5000:7000]
+
+train_dataset_1 = md.n_channel_dataset(train_data, train_labels)
+train_dataloader_1 = DataLoader(train_dataset_1, batch_size=32, shuffle=True)
+val_dataset_1 = md.n_channel_dataset(val_data, val_labels)
 val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
-#rt.plot_samples(train_dataloader_1, 5)
-#rt.plot_samples(val_dataloader_1, 5)
+# rt.plot_samples(train_dataloader_1, 5)
 
 
 
@@ -71,7 +74,7 @@ model2 = md.NewModelGeneral(data_channels=np.sum(outputs2),
 print(f'Model 2 trainable parameters: {rt.count_parameters(model2)}')
 print(f'Model 2 receptive field: {rt.calculate_total_receptive_field(model2)}')
 
-
+'''
 
 results = []
 
@@ -130,8 +133,8 @@ print('Time taken for model 2 training: ', end2-start2)
 
 
 #load models from save files or train above
-#model1 = rt.load_model('kernel_9_fixed_02')
-#model2 = rt.load_model('kernel_9_fixed_02')
+model1 = rt.load_model('02_13_21_37_39_4488421_9.pth')
+model2 = rt.load_model('02_13_21_46_48_4488421_13.pth')
 
 #rt.visualise_activations(model1, val_dataloader_1, 3)
 #rt.visualise_activations_with_signal(model1, val_dataloader_1, 3)
@@ -154,5 +157,4 @@ rt.compare_models(
 
 #rt.plot_predictions([model1, model2], val_dataloader_1, 5, acceptance=0.5)
 
-
-
+'''

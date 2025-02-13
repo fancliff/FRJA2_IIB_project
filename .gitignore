@@ -6,6 +6,10 @@
 #Ignore all .pth files
 *.pth
 
+#Ignore all datasets
+datasets/
+*.h5
+
 #Ignore all .png files
 *.png
 
