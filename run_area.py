@@ -57,7 +57,7 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 model1 = md.NewModelGeneral(data_channels=np.sum(outputs1), 
                             out_channels=[4,4,8,8,4,2,1],
-                            kernel_size=9,
+                            kernel_size=5,
                             )
 print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
 print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
@@ -84,7 +84,7 @@ result_dict1,_ = rt.train_model_binary(
                 model1, 
                 train_dataloader_1, 
                 val_dataloader_1,
-                save_suffix = '_' + ''.join(model1.out_channels) + '_' + str(model1.kernel_size),
+                save_suffix = '_' + ''.join(map(str, model1.out_channels)) + '_' + str(model1.kernel_size),
                 # save_suffix = '',
                 # save_suffix = None,
                 # None if no save required
@@ -104,7 +104,7 @@ result_dict2,_ = rt.train_model_binary(
                 model2, 
                 train_dataloader_1, 
                 val_dataloader_1, 
-                save_suffix = '_' + ''.join(model2.out_channels) + '_' + str(model2.kernel_size),
+                save_suffix = '_' + ''.join(map(str, model2.out_channels)) + '_' + str(model2.kernel_size),
                 # save_suffix = '', 
                 # save_suffix = None,
                 # None if no save required

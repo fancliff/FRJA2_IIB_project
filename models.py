@@ -123,6 +123,10 @@ class NewModelGeneral(nn.Module):
         :param kernel_size: Either an integer kernel size or a list of kernel sizes for each Conv1d layer.
         """
         super(NewModelGeneral, self).__init__()
+        self.data_channels = data_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size
+        self.input_length = input_length
 
         # If kernel_size is an integer, create a list of that size for all layers
         if isinstance(kernel_size, int):

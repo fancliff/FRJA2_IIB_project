@@ -13,7 +13,7 @@ import matplotlib.colors as mcolors #for custom colormap
 import datetime #for timestamping save files
 
 
-def train_model_binary(model, train_dataloader, val_dataloader, save_name, num_epochs, acceptance, plotting=True, patience=4):
+def train_model_binary(model, train_dataloader, val_dataloader, save_suffix, num_epochs, acceptance, plotting=True, patience=4):
     early_stopping = EarlyStopping(patience=patience, verbose=True)
     
     criterion = nn.BCELoss() 
@@ -91,7 +91,7 @@ def train_model_binary(model, train_dataloader, val_dataloader, save_name, num_e
     early_stopping.load_checkpoint(model)
     
     #save the model if a save name is provided
-    save_name is not None and save_model(model, save_name)
+    save_suffix is not None and save_model(model, save_suffix)
     
     if plotting:
         plt.ioff()
