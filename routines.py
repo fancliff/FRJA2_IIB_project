@@ -10,6 +10,7 @@ from numba import jit
 from models import EarlyStopping
 import matplotlib.patches as mpatches #for legend using masks
 import matplotlib.colors as mcolors #for custom colormap
+import datetime #for timestamping save files
 
 
 def train_model_binary(model, train_dataloader, val_dataloader, save_name, num_epochs, acceptance, plotting=True, patience=4):
@@ -331,9 +332,10 @@ def load_model(save_name):
     return model
 
 
-def save_model(model, save_name):
+def save_model(model, save_suffix):
     project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/Models/'
-    model_path = project_path + save_name
+    now = datetime.datetime.now()
+    model_path = project_path + now.strftime("%m_%d_%H_%M_%S") + save_suffix
     torch.save(model, f'{model_path}.pth')
     print(f'Model saved to {model_path}.pth')
 
