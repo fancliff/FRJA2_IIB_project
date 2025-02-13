@@ -74,87 +74,77 @@ model2 = md.NewModelGeneral(data_channels=np.sum(outputs2),
 print(f'Model 2 trainable parameters: {rt.count_parameters(model2)}')
 print(f'Model 2 receptive field: {rt.calculate_total_receptive_field(model2)}')
 
-'''
-
-results = []
-
-plot_during = False
 
 
+# results = []
 
-start1 = time.time()
-result_dict1,_ = rt.train_model_binary(
-                model1, 
-                train_dataloader_1, 
-                val_dataloader_1,
-                save_suffix = '_' + ''.join(map(str, model1.out_channels)) + '_' + str(model1.kernel_size),
-                # save_suffix = '',
-                # save_suffix = None,
-                # None if no save required
-                # '' for save with timestamp only
-                num_epochs = 200, 
-                acceptance=0.5, 
-                plotting=plot_during,
-                patience = 40,
-                )
-results.append(result_dict1)
-end1 = time.time()
+# plot_during = False
 
 
 
-start2 = time.time()
-result_dict2,_ = rt.train_model_binary(
-                model2, 
-                train_dataloader_1, 
-                val_dataloader_1, 
-                save_suffix = '_' + ''.join(map(str, model2.out_channels)) + '_' + str(model2.kernel_size),
-                # save_suffix = '', 
-                # save_suffix = None,
-                # None if no save required
-                # '' for save with timestamp only
-                num_epochs = 200, 
-                acceptance=0.5, 
-                plotting=plot_during,
-                patience = 40,
-                )
-results.append(result_dict2)
-end2 = time.time()
+# start1 = time.time()
+# result_dict1,_ = rt.train_model_binary(
+#                 model1, 
+#                 train_dataloader_1, 
+#                 val_dataloader_1,
+#                 save_suffix = '_' + ''.join(map(str, model1.out_channels)) + '_' + str(model1.kernel_size),
+#                 # save_suffix = '',
+#                 # save_suffix = None,
+#                 # None if no save required
+#                 # '' for save with timestamp only
+#                 num_epochs = 200, 
+#                 acceptance=0.5, 
+#                 plotting=plot_during,
+#                 patience = 40,
+#                 )
+# results.append(result_dict1)
+# end1 = time.time()
 
 
 
-rt.plot_loss_history(results, log_scale=True, show=False)
-rt.plot_precision_history(results, log_scale=False, show=False)
-rt.plot_recall_history(results, log_scale=False, show=False)
-
-print('Time taken for model 1 training: ', end1-start1)
-print('Time taken for model 2 training: ', end2-start2)
-
-
-
-
-#load models from save files or train above
-model1 = rt.load_model('02_13_21_37_39_4488421_9.pth')
-model2 = rt.load_model('02_13_21_46_48_4488421_13.pth')
-
-#rt.visualise_activations(model1, val_dataloader_1, 3)
-#rt.visualise_activations_with_signal(model1, val_dataloader_1, 3)
-#rt.compare_activations(model1, model2, val_dataloader_1, 3)
-
-
-
-criterion=nn.BCELoss()
-rt.compare_models(
-    model1, 
-    model2,
-    val_dataloader_1,
-    val_dataloader_1,
-    criterion,
-    acceptance1=0.5,
-    acceptance2=0.5,
-)
+# start2 = time.time()
+# result_dict2,_ = rt.train_model_binary(
+#                 model2, 
+#                 train_dataloader_1, 
+#                 val_dataloader_1, 
+#                 save_suffix = '_' + ''.join(map(str, model2.out_channels)) + '_' + str(model2.kernel_size),
+#                 # save_suffix = '', 
+#                 # save_suffix = None,
+#                 # None if no save required
+#                 # '' for save with timestamp only
+#                 num_epochs = 200, 
+#                 acceptance=0.5, 
+#                 plotting=plot_during,
+#                 patience = 40,
+#                 )
+# results.append(result_dict2)
+# end2 = time.time()
 
 
 
-#rt.plot_predictions([model1, model2], val_dataloader_1, 5, acceptance=0.5)
+# rt.plot_loss_history(results, log_scale=True, show=False)
+# rt.plot_precision_history(results, log_scale=False, show=False)
+# rt.plot_recall_history(results, log_scale=False, show=False)
 
-'''
+# print('Time taken for model 1 training: ', end1-start1)
+# print('Time taken for model 2 training: ', end2-start2)
+
+
+
+# #load models from save files or train above
+# model1 = rt.load_model('02_13_21_37_39_4488421_9.pth')
+# model2 = rt.load_model('02_13_21_46_48_4488421_13.pth')
+
+# criterion=nn.BCELoss()
+# rt.compare_models(
+#     model1, 
+#     model2,
+#     val_dataloader_1,
+#     val_dataloader_1,
+#     criterion,
+#     acceptance1=0.5,
+#     acceptance2=0.5,
+# )
+
+# #rt.plot_predictions([model1, model2], val_dataloader_1, 5, acceptance=0.5)
+
