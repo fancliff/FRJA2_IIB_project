@@ -50,42 +50,6 @@ data, labels = n_channels_gen(
 val_dataset_1 = md.n_channel_dataset(data, labels)
 val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
-#### DATA SET 2 ####
-
-
-
-data, labels = n_channels_gen(
-    num_samples=2000, 
-    signal_length=1024, 
-    sigma_min=0.01, 
-    sigma_max=0.1, 
-    zeta_max=0.1,
-    zeta_min=0.01,
-    three_db_bandwidth=False,
-    fixed_bandwidth=0.03,
-    min_max=True, 
-    enabled_outputs=outputs2
-    )
-train_dataset_2 = md.n_channel_dataset(data, labels)
-train_dataloader_2 = DataLoader(train_dataset_2, batch_size=32, shuffle=True)
-
-data, labels = n_channels_gen(
-    num_samples=2000, 
-    signal_length=1024, 
-    sigma_min=0.01, 
-    sigma_max=0.1, 
-    zeta_max=0.1,
-    zeta_min=0.01,
-    three_db_bandwidth=False,
-    fixed_bandwidth=0.03,
-    min_max=True, 
-    enabled_outputs=outputs2
-    )
-val_dataset_2 = md.n_channel_dataset(data, labels)
-val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=True)
-
-
-
 #rt.plot_samples(train_dataloader_1, 5)
 #rt.plot_samples(val_dataloader_1, 5)
 
@@ -159,7 +123,7 @@ print('Time taken for model 2 training: ', end2-start2)
 
 #load models from save files or train above
 model1 = rt.load_model('kernel_9_fixed_02')
-model2 = rt.load_model('kernel_9_fixed_03')
+model2 = rt.load_model('kernel_9_fixed_02')
 
 #rt.visualise_activations(model1, val_dataloader_1, 3)
 #rt.visualise_activations_with_signal(model1, val_dataloader_1, 3)
@@ -172,7 +136,7 @@ rt.compare_models(
     model1, 
     model2,
     val_dataloader_1,
-    val_dataloader_2,
+    val_dataloader_1,
     criterion,
     acceptance1=0.5,
     acceptance2=0.5,
