@@ -13,6 +13,10 @@ def n_channels_gen(
     noise: bool = True,
     sigma_min: float = 0.01,
     sigma_max: float = 0.1,
+    zeta_min: float = 0.0001,
+    zeta_max: float = 0.5,
+    three_db_bandwidth: bool = True,
+    fixed_bandwidth: float = 0.02,
     max_modes: int = 5,
     min_max: bool = False,
     multiclass: int = 0,
@@ -36,7 +40,7 @@ def n_channels_gen(
         alphas = np.random.choice(np.array([-1,1]),size=max_modes)*np.random.uniform(1, 2, size=5)
         #alphas = np.random.uniform(1, 2, size=5)
         
-        zetas = 10**(np.random.uniform(-2, -1, size=max_modes))
+        zetas = 10**(np.random.uniform(np.log10(zeta_min), np.log10(zeta_max), size=max_modes))
         #no modes at very edge of frequency range
         omegas = np.random.uniform(0.001, 0.999, size=max_modes)
         
@@ -65,9 +69,10 @@ def n_channels_gen(
                 
                 H_v[j] += H_f
             
-            #set label bandwidth to 3db or arbitrary value
-            #bandwidth = 0.02 #(8 frequency points wide if 400 points)
-            bandwidth = 2*omega_n*zeta_n
+            if three_db_bandwidth:
+                bandwidth = 2*omega_n*zeta_n
+            else:
+                bandwidth = fixed_bandwidth
             #multiclass = 0 is binary classification
             #multiclass = 1 is multiclass classification with max label value of 2
             #multiclass = 2 is multiclass classification with max label value of max_modes
