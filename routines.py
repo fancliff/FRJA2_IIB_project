@@ -335,7 +335,7 @@ def load_model(save_name):
 def save_model(model, save_suffix):
     project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/Models/'
     now = datetime.datetime.now()
-    model_path = project_path + now.strftime("%m_%d_%H_%M_%S") + save_suffix
+    model_path = project_path + now.strftime("%m_%d_%H_%M") + save_suffix
     torch.save(model, f'{model_path}.pth')
     print(f'Model saved to {model_path}.pth')
 

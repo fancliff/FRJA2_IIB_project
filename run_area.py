@@ -86,8 +86,8 @@ results = []
 
 plot_during = False
 
-save1 = '_'.join([''.join(map(str, model1.out_channels)), ''.join(map(str, model1.kernel_size)), str(model1.batch_norm), str(model1.P_dropout), str(model1.max_pool)])
-save2 = '_'.join([''.join(map(str, model2.out_channels)), ''.join(map(str, model2.kernel_size)), str(model2.batch_norm), str(model2.P_dropout), str(model2.max_pool)])
+save1 = '_' + '_'.join([''.join(map(str, model1.out_channels)), ''.join(map(str, model1.kernel_size)), str(model1.batch_norm), str(model1.P_dropout), str(model1.max_pool)])
+save2 = '_' + '_'.join([''.join(map(str, model2.out_channels)), ''.join(map(str, model2.kernel_size)), str(model2.batch_norm), str(model2.P_dropout), str(model2.max_pool)])
 
 
 start1 = time.time()
