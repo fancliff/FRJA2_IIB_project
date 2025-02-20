@@ -244,7 +244,7 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
                             alpha=0.5,
                             linewidth=5,
                         )
-
+                        
                         # Plot the actual labels as a semi-transparent mask
                         mask = np.zeros_like(labels_arr)
                         mask[labels_arr == 1] = 1
@@ -255,10 +255,10 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
                             aspect='auto',
                             alpha=0.15,
                         )
-                    
-                    #Plot the omegas as vertical dashed lines
-                    for k, omega in enumerate(omegas):
-                        axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
+                        
+                        #Plot the omegas as vertical dashed lines
+                        for k, omega in enumerate(omegas):
+                            axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
                     
                     plt.tight_layout()
                     plt.show()
