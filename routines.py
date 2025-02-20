@@ -257,8 +257,8 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
                         )
                     
                     #Plot the omegas as vertical dashed lines
-                    for omega in omegas:
-                        axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if j==0 else '')
+                    for k, omega in enumerate(omegas):
+                        axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
                     
                     plt.tight_layout()
                     plt.show()
