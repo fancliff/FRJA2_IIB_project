@@ -210,10 +210,11 @@ def plot_recall_history(results, log_scale=False, show=False):
 def plot_predictions(models, dataloader, num_samples, acceptance):
     samples_plotted = 0
     with torch.no_grad():
-        for data, labels, _ in dataloader:
+        for data, labels, params in dataloader:
             batch_size = len(data)
             for i in range(min(num_samples,batch_size)):
                 x = np.linspace(0, 1, len(data[i][0]))
+                omegas = params[i, :, 0].cpu().numpy() if params is not None else []
                 for model_idx, model in enumerate(models):
                     model.eval()
                     probabilities = model(data).squeeze()
@@ -253,6 +254,10 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
                             alpha=0.15,
                         )
                     
+                    #Plot the omegas as vertical dashed lines
+                    for omega in omegas:
+                        axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if j==0 else None)
+                    
                     plt.tight_layout()
                     plt.show()
                 
@@ -263,7 +268,7 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
 
 def plot_samples(dataloader, num_samples):
     samples_plotted = 0
-    for data, labels, _ in dataloader:
+    for data, labels, params in dataloader:
         for i in range(min(num_samples, len(data))):
             num_channels = data[i].shape[0]
             fig, axes = plt.subplots(num_channels, 1, figsize=(12, 6), sharex=True)
@@ -271,6 +276,7 @@ def plot_samples(dataloader, num_samples):
                 axes = [axes] # Convert single axis to list for iteration
             
             x = np.linspace(0,1,len(data[i][0]))
+            omegas = params[i, :, 0].cpu().numpy() if params is not None else []
             
             for j in range(num_channels):
                 labels_arr = labels[i].cpu().numpy()
@@ -309,6 +315,10 @@ def plot_samples(dataloader, num_samples):
                     if class_label != 0:
                         mask_patch = mpatches.Patch(color=label_color, alpha=label_alpha, label=f'Modes: {class_label}')
                         mask_patches.append(mask_patch)
+                
+                #Plot the omegas as vertical dashed lines
+                for omega in omegas:
+                    axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if j==0 else None)
                 
                 #axes[j].set_title(f'Channel {j+1}')
                 #axes[j].set_ylabel('Signal Amplitude')
