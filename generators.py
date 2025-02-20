@@ -28,7 +28,7 @@ def n_channels_gen(
     data = np.empty((num_samples, num_outs, signal_length),dtype=np.float64)
     labels = np.empty((num_samples,signal_length),dtype=np.int32)
     if params_out:
-        params = np.empty((num_samples, max_modes, 3),dtype=np.float64)
+        params = np.full((num_samples, max_modes, 3), np.nan, dtype=np.float64)
 
     frequencies = np.linspace(0,1,signal_length)
     for i in range(num_samples):
@@ -134,10 +134,6 @@ def n_channels_gen(
 
         labels[i, :] = label
 
-    # if params_out:
-    #     return data, labels, params
-    # else:
-    #     return data, labels
     return data, labels, params if params_out else None
 
 
