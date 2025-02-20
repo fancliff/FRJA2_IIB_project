@@ -338,6 +338,81 @@ def plot_samples(dataloader, num_samples):
                 return  # Exit after plotting specified number of samples
 
 
+def estimate_natural_frequencies(model, dataloader, acceptance=0.5, method='midpoint', bandwidth=None, overlap_threshold=0.5):
+    """
+    Estimate natural frequencies from a PyTorch CNN model.
+
+    Args:
+        model (torch.nn.Module): Trained CNN model.
+        dataloader (torch.utils.data.DataLoader): DataLoader containing input data.
+        acceptance (float): Probability threshold for accepting a frequency.
+        method (str): Method for estimating frequencies ('midpoint', 'peak', or 'confidence').
+        bandwidth (float or None): Fixed bandwidth around each mode. If None, no bandwidth-based overlap detection is performed.
+        overlap_threshold (float): Percentage of the bandwidth that must be exceeded to assume modal overlap.
+    Returns:
+        list: List of lists containing estimated natural frequencies for each batch.
+    """
+    estimated_omegas = []
+
+    if method not in ['midpoint', 'peak', 'confidence']:
+        raise ValueError("Invalid method. Choose from 'midpoint', 'peak', or 'confidence'.")
+
+    with torch.no_grad():
+        for data, _, _ in dataloader:
+            outputs = model(data).squeeze()
+            batch_size, signal_length = outputs.shape
+            x = np.linspace(0, 1, signal_length)  # Frequency values
+
+            for i in range(batch_size):
+                prob_arr = outputs[i].cpu().numpy()
+                predicted_labels = prob_arr >= acceptance
+
+                if not np.any(predicted_labels):
+                    # No frequencies predicted for this sample
+                    estimated_omegas.append([])
+                    continue
+
+                # Find start and end indices of each mode
+                # Add False values at the start and end to detect mode boundaries at the edges
+                # Use np.diff to find the indices where the predicted labels change
+                # Use np.where to find the indices of the changes - extracts non zero indices
+                # np.where with no condition returns indices of non-zero elements because zero is False
+                mode_indices = np.where(np.diff(np.concatenate(([False], predicted_labels, [False]))))[0] 
+                mode_indices = mode_indices.reshape(-1, 2) # reshape into pairs of start and end indices
+
+                freq_estimates = []
+
+                for start, end in mode_indices:
+                    mode_width = x[end] - x[start]
+                    
+                    if bandwidth is not None and mode_width > bandwidth * (1+overlap_threshold):
+                        num_modes = int(np.ceil(mode_width / bandwidth))
+                        first_mode = x[start] + bandwidth / 2
+                        last_mode = x[end] - bandwidth / 2
+                        
+                        freq_estimates.extend(np.linspace(first_mode, last_mode, num_modes))
+                    else:
+                        if method == 'midpoint':
+                            # Find the midpoint of each mode
+                            freq_estimates.append((x[start] + x[end - 1]) / 2)
+
+                        elif method == 'peak':
+                            # Find the peak probability of each mode
+                            freq_estimates.append(x[np.argmax(prob_arr[start:end]) + start])
+
+                        elif method == 'confidence':
+                            # Weighted average of frequencies within each mode
+                            mode_probs = prob_arr[start:end]
+                            mode_freqs = x[start:end]
+                            if np.sum(mode_probs) > 0:  # Avoid division by zero
+                                weighted_avg = np.sum(mode_freqs * mode_probs) / np.sum(mode_probs)
+                                freq_estimates.append(weighted_avg)
+
+                estimated_omegas.append(freq_estimates)
+
+    return estimated_omegas
+
+
 def load_model(save_name):
     project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/Models/'
     model_path = project_path + save_name
