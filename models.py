@@ -48,9 +48,10 @@ class one_channel_dataset(Dataset):
 
 #can be used for one, two or more channel datasets
 class n_channel_dataset(Dataset):
-    def __init__(self, data, labels):
+    def __init__(self, data, labels, params):
         self.data = data
         self.labels = labels
+        self.params = params
     
     def __len__(self):
         return len(self.labels)
@@ -65,7 +66,11 @@ class n_channel_dataset(Dataset):
         
         #convert label to tensor with shape (signal_length)
         label = torch.tensor(self.labels[idx], dtype=torch.float32)
-        return signal, label
+        if self.params is not None:
+            parameters = torch.tensor(self.params[idx], dtype=torch.float32)
+            return signal, label, parameters
+        
+        return signal, label, None
 
 
 class EarlyStopping:

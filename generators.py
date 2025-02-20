@@ -20,12 +20,15 @@ def n_channels_gen(
     max_modes: int = 5,
     min_max: bool = False,
     multiclass: int = 0,
+    params_out: bool = True,
     ):
     
     num_outs = np.sum(enabled_outputs)
 
     data = np.empty((num_samples, num_outs, signal_length),dtype=np.float64)
     labels = np.empty((num_samples,signal_length),dtype=np.int32)
+    if params_out:
+        params = np.empty((num_samples, max_modes, 3),dtype=np.float64)
 
     frequencies = np.linspace(0,1,signal_length)
     for i in range(num_samples):
@@ -37,12 +40,17 @@ def n_channels_gen(
         #when noise is added change num_modes to include 0
         # to improve model generalisation add a random sign to alpha_j 
         
-        alphas = np.random.choice(np.array([-1,1]),size=max_modes)*np.random.uniform(1, 2, size=5)
+        alphas = np.random.choice(np.array([-1,1]),size=num_modes)*np.random.uniform(1, 2, size=num_modes)
         #alphas = np.random.uniform(1, 2, size=5)
         
-        zetas = 10**(np.random.uniform(np.log10(zeta_min), np.log10(zeta_max), size=max_modes))
+        zetas = 10**(np.random.uniform(np.log10(zeta_min), np.log10(zeta_max), size=num_modes))
         #no modes at very edge of frequency range
-        omegas = np.random.uniform(0.001, 0.999, size=max_modes)
+        omegas = np.random.uniform(0.001, 0.999, size=num_modes)
+        
+        if params_out:
+            params[i, :num_modes, 0] = omegas
+            params[i, :num_modes, 1] = alphas
+            params[i, :num_modes, 2] = zetas
         
         if noise:
             #noise for each sample is different and random
@@ -126,7 +134,11 @@ def n_channels_gen(
 
         labels[i, :] = label
 
-    return data, labels
+    # if params_out:
+    #     return data, labels, params
+    # else:
+    #     return data, labels
+    return data, labels, params if params_out else None
 
 
 

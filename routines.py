@@ -47,7 +47,7 @@ def train_model_binary(model, train_dataloader, val_dataloader, save_suffix, num
     
     for epoch in range(num_epochs):
         model.train() #!!!
-        train_loss, train_recall, train_precision = training_step(model, train_dataloader, criterion, optimiser, acceptance)
+        train_loss, train_recall, train_precision = training_step_binary(model, train_dataloader, criterion, optimiser, acceptance)
         
         model.eval() #!!!
         val_loss, val_recall, val_precision = validation_loss_recall_precision(model, val_dataloader, criterion, acceptance)
@@ -100,7 +100,7 @@ def train_model_binary(model, train_dataloader, val_dataloader, save_suffix, num
     return result_dict, model
 
 
-def training_step(model, dataloader, criterion, optimiser, acceptance):
+def training_step_binary(model, dataloader, criterion, optimiser, acceptance):
     #remember to set model to training mode 
     #before running this function
     total_loss = 0.0
@@ -108,7 +108,7 @@ def training_step(model, dataloader, criterion, optimiser, acceptance):
     total_recall = 0.0
     total_samples = 0
     
-    for data, labels in dataloader:
+    for data, labels, _ in dataloader:
         optimiser.zero_grad()
         outputs = model(data).squeeze()
         loss = criterion(outputs, labels.float())
