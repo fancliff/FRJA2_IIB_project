@@ -215,6 +215,8 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
             for i in range(min(num_samples,batch_size)):
                 x = np.linspace(0, 1, len(data[i][0]))
                 omegas = params[i, :, 0].cpu().numpy() if params is not None else []
+                omegas = omegas[~np.isnan(omegas)] # Remove NaN values
+                
                 for model_idx, model in enumerate(models):
                     model.eval()
                     probabilities = model(data).squeeze()
@@ -256,7 +258,7 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
                     
                     #Plot the omegas as vertical dashed lines
                     for omega in omegas:
-                        axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if j==0 else None)
+                        axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if j==0 else '')
                     
                     plt.tight_layout()
                     plt.show()
@@ -277,6 +279,7 @@ def plot_samples(dataloader, num_samples):
             
             x = np.linspace(0,1,len(data[i][0]))
             omegas = params[i, :, 0].cpu().numpy() if params is not None else []
+            omegas = omegas[~np.isnan(omegas)] # Remove NaN values
             
             for j in range(num_channels):
                 labels_arr = labels[i].cpu().numpy()
@@ -317,8 +320,8 @@ def plot_samples(dataloader, num_samples):
                         mask_patches.append(mask_patch)
                 
                 #Plot the omegas as vertical dashed lines
-                for omega in omegas:
-                    axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if j==0 else None)
+                for k, omega in enumerate(omegas):
+                    axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
                 
                 #axes[j].set_title(f'Channel {j+1}')
                 #axes[j].set_ylabel('Signal Amplitude')
