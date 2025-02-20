@@ -29,7 +29,7 @@ outputs2 = np.array([False, True, True, False, False])
 #     sigma_max=0.1, 
 #     zeta_max=0.1,
 #     zeta_min=0.01,
-#     three_db_bandwidth=True,
+#     three_db_bandwidth=False,
 #     fixed_bandwidth=0.02,
 #     min_max=True, 
 #     enabled_outputs=outputs1,
@@ -45,18 +45,20 @@ data_file = project_path + data_name
 #     f.create_dataset('labels', data=labels)
 #     f.create_dataset('params', data=params)
 
-# with h5py.File(data_file, 'r') as f:
-#     val_data = f['data'][:5000]
-#     val_labels = f['labels'][:5000]
-#     train_data = f['data'][5000:7000]
-#     train_labels = f['labels'][5000:7000]
+with h5py.File(data_file, 'r') as f:
+    val_data = f['data'][:5000]
+    val_labels = f['labels'][:5000]
+    val_params = f['params'][:5000]
+    train_data = f['data'][5000:7000]
+    train_labels = f['labels'][5000:7000]
+    train_params = f['params'][5000:7000]
 
-# train_dataset_1 = md.n_channel_dataset(train_data, train_labels)
-# train_dataloader_1 = DataLoader(train_dataset_1, batch_size=32, shuffle=True)
-# val_dataset_1 = md.n_channel_dataset(val_data, val_labels)
-# val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
+train_dataset_1 = md.n_channel_dataset(train_data, train_labels, train_params)
+train_dataloader_1 = DataLoader(train_dataset_1, batch_size=32, shuffle=True)
+val_dataset_1 = md.n_channel_dataset(val_data, val_labels, val_params)
+val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
-# # rt.plot_samples(train_dataloader_1, 5)
+# rt.plot_samples(train_dataloader_1, 5)
 
 
 
@@ -141,20 +143,20 @@ data_file = project_path + data_name
 
 
 
-# #load models from save files or train above
-# # model1 = rt.load_model('02_13_21_37_39_4488421_9.pth')
-# # model2 = rt.load_model('02_13_21_46_48_4488421_13.pth')
+#  models from save files or train above
+model1 = rt.load_model('02_14_10_37_48421_5_True_0.0_False.pth')
+model2 = rt.load_model('02_14_10_43_48421_7_True_0.0_False.pth')
 
-# criterion=nn.BCELoss()
-# rt.compare_models(
-#     model1, 
-#     model2,
-#     val_dataloader_1,
-#     val_dataloader_1,
-#     criterion,
-#     acceptance1=0.5,
-#     acceptance2=0.5,
-# )
+criterion=nn.BCELoss()
+rt.compare_models(
+    model1, 
+    model2,
+    val_dataloader_1,
+    val_dataloader_1,
+    criterion,
+    acceptance1=0.5,
+    acceptance2=0.5,
+)
 
-# #rt.plot_predictions([model1, model2], val_dataloader_1, 5, acceptance=0.5)
+rt.plot_predictions([model1, model2], val_dataloader_1, 5, acceptance=0.5)
 
