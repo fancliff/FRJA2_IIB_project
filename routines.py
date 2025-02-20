@@ -267,7 +267,7 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
                                                             bandwidth=0.04,
                                                             overlap_threshold=0.5)
                         for k, omega in enumerate(predicted_omegas):
-                            axes[j].axvline(x=omega, color='green', linestyle=':', label='Predicted Mode Frequency' if k==0 else '')
+                            axes[j].axvline(x=omega, color='pink', linestyle=':', label='Predicted Mode Frequency' if k==0 else '')
                     
                     plt.tight_layout()
                     plt.show()
@@ -409,6 +409,66 @@ def est_nat_freq_binary(prob_arr, acceptance=0.5, method='midpoint', bandwidth=N
                     freq_estimates.append(weighted_avg)
 
     return np.array(freq_estimates)
+
+
+def calculate_frequency_error(predicted_frequencies, true_frequencies, max_error=1.0):
+    """
+    Calculate the error between predicted and true natural frequencies.
+
+    Args:
+        predicted_frequencies (np.array): Array of predicted frequencies.
+        true_frequencies (np.array): Array of true frequencies.
+        max_error (float): Penalty for unmatched predictions or true frequencies.
+
+    Returns:
+        float: Mean absolute error between predicted and true frequencies.
+    """
+
+    # Handle empty cases
+    if len(predicted_frequencies) == 0 and len(true_frequencies) == 0:
+        return 0.0  # No error if both are empty
+    elif len(predicted_frequencies) == 0:
+        return max_error * len(true_frequencies)  # All true frequencies are unmatched
+    elif len(true_frequencies) == 0:
+        return max_error * len(predicted_frequencies)  # All predictions are unmatched
+
+    # Create a cost matrix for bipartite matching
+    cost_matrix = np.abs(predicted_frequencies[:, None] - true_frequencies[None, :])
+
+    # Use the Hungarian algorithm to find the optimal matching
+    row_ind, col_ind = scipy.optimize.linear_sum_assignment(cost_matrix)
+
+    # Calculate the total error for matched pairs
+    total_error = cost_matrix[row_ind, col_ind].sum()
+
+    # Add penalties for unmatched predictions and true frequencies
+    num_unmatched_pred = len(predicted_frequencies) - len(row_ind)
+    num_unmatched_true = len(true_frequencies) - len(col_ind)
+    total_error += max_error * (num_unmatched_pred + num_unmatched_true)
+
+    # Calculate the mean error
+    mean_error = total_error / max(len(predicted_frequencies), len(true_frequencies))
+
+    return mean_error
+
+
+def calculate_mean_frequency_error(model, dataloader, acceptance, max_error=1.0):
+    total_error = 0.0
+    total_samples = 0
+    with torch.no_grad():
+        for data, labels, params in dataloader:
+            batch_size = len(data)
+            for i in range(batch_size):
+                probabilities = model(data).squeeze()
+                predicted_labels = (probabilities >= acceptance).float()
+                predicted_frequencies = est_nat_freq_binary(probabilities, acceptance=acceptance)
+                true_frequencies = params[i, :, 0].cpu().numpy()
+                true_frequencies = true_frequencies[~np.isnan(true_frequencies)]  # Remove NaN values
+                error = calculate_frequency_error(predicted_frequencies, true_frequencies, max_error=max_error)
+                total_error += error
+                total_samples += 1
+    mean_error = total_error / total_samples
+    return mean_error
 
 
 def load_model(save_name):
