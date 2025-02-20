@@ -256,9 +256,18 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
                             alpha=0.15,
                         )
                         
-                        #Plot the omegas as vertical dashed lines
+                        # Plot the true omegas as vertical dashed lines
                         for k, omega in enumerate(omegas):
                             axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
+                        
+                        # Plot predicted omegas as vertical dotted lines
+                        predicted_omegas = est_nat_freq_binary(prob_arr, 
+                                                            acceptance=acceptance,
+                                                            method='midpoint',
+                                                            bandwidth=0.04,
+                                                            overlap_threshold=0.5)
+                        for k, omega in enumerate(predicted_omegas):
+                            axes[j].axvline(x=omega, color='green', linestyle=':', label='Predicted Mode Frequency' if k==0 else '')
                     
                     plt.tight_layout()
                     plt.show()
@@ -338,7 +347,7 @@ def plot_samples(dataloader, num_samples):
                 return  # Exit after plotting specified number of samples
 
 
-def estimate_natural_frequencies(prob_arr, acceptance=0.5, method='midpoint', bandwidth=None, overlap_threshold=0.5):
+def est_nat_freq_binary(prob_arr, acceptance=0.5, method='midpoint', bandwidth=None, overlap_threshold=0.5):
     """
     Estimate natural frequencies from a PyTorch CNN model.
 
