@@ -59,10 +59,10 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 
 model1 = md.NewModelGeneral(data_channels=np.sum(outputs1), 
-                            out_channels=[4,8,4,2,1],
-                            kernel_size=[5],
-                            batch_norm=False,
-                            P_dropout=0.0,
+                            out_channels=[4,4,8,4,4,2,1],
+                            kernel_size=[13],
+                            batch_norm=True,
+                            P_dropout=0.1,
                             max_pool=False,
                             )
 print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
@@ -71,9 +71,9 @@ print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
 
 
 model2 = md.NewModelGeneral(data_channels=np.sum(outputs2),
-                            out_channels=[4,8,4,2,1],
-                            kernel_size=[7],
-                            batch_norm=False,
+                            out_channels=[4,6,8,6,4,2,1],
+                            kernel_size=[11],
+                            batch_norm=True,
                             P_dropout=0.0,
                             max_pool=False,
                             )
