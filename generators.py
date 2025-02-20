@@ -85,9 +85,9 @@ def n_channels_gen(
             #multiclass = 1 is multiclass classification with max label value of 2
             #multiclass = 2 is multiclass classification with max label value of max_modes
             if multiclass == 0:
-                label[(frequencies >= omega_n - bandwidth) & (frequencies <= omega_n + bandwidth)] = 1
+                label[(frequencies >= omega_n - bandwidth/2) & (frequencies <= omega_n + bandwidth/2)] = 1
             elif multiclass == 1 or multiclass == 2:
-                label[(frequencies >= omega_n - bandwidth) & (frequencies <= omega_n + bandwidth)] += 1
+                label[(frequencies >= omega_n - bandwidth/2) & (frequencies <= omega_n + bandwidth/2)] += 1
         
         #restrict multiclass labels to 2 if multiclass == 1
         if multiclass == 1:
