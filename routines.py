@@ -139,7 +139,7 @@ def validation_loss_recall_precision(model, dataloader, criterion, acceptance):
     total_samples = 0
     
     with torch.no_grad():
-        for data, labels in dataloader:
+        for data, labels, _ in dataloader:
             outputs = model(data).squeeze()
             batch_precision, batch_recall = calculate_precision_recall_binary(outputs, labels, acceptance)
             loss = criterion(outputs, labels.float())
@@ -210,7 +210,7 @@ def plot_recall_history(results, log_scale=False, show=False):
 def plot_predictions(models, dataloader, num_samples, acceptance):
     samples_plotted = 0
     with torch.no_grad():
-        for data, labels in dataloader:
+        for data, labels, _ in dataloader:
             batch_size = len(data)
             for i in range(min(num_samples,batch_size)):
                 x = np.linspace(0, 1, len(data[i][0]))
@@ -263,7 +263,7 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
 
 def plot_samples(dataloader, num_samples):
     samples_plotted = 0
-    for data, labels in dataloader:
+    for data, labels, _ in dataloader:
         for i in range(min(num_samples, len(data))):
             num_channels = data[i].shape[0]
             fig, axes = plt.subplots(num_channels, 1, figsize=(12, 6), sharex=True)
@@ -401,7 +401,7 @@ def visualise_activations(model, dataloader, num_samples):
             )
     
     samples_plotted = 0
-    for data, _ in dataloader:
+    for data, _, _ in dataloader:
         for i in range(min(num_samples, len(data))):
             signal = data[i].unsqueeze(0) # Add batch dimension
             model.eval()
@@ -439,7 +439,7 @@ def visualise_activations_with_signal(model, dataloader, num_samples):
             )
     
     samples_plotted = 0
-    for data, labels in dataloader:
+    for data, labels, _ in dataloader:
         for i in range(min(num_samples, len(data))):
             signal = data[i].unsqueeze(0) # Add batch dimension
             labels_arr = labels[i].cpu().numpy()
@@ -525,7 +525,7 @@ def compare_activations(model1, model2, dataloader, num_samples):
     samples_plotted = 0
     model1.eval()
     model2.eval()
-    for data, _ in dataloader:
+    for data, _, _ in dataloader:
         for i in range(min(num_samples, len(data))):
             signal = data[i].unsqueeze(0) # Add batch dimension
             model1(signal) # Forward pass to populate activations dictionary
