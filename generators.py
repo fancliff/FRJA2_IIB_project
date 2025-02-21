@@ -3,6 +3,122 @@ import matplotlib.pyplot as plt
 from numba import jit
 
 
+#with noise and normalisation
+@jit(nopython=True)
+def n_channels_stepped_gen(
+    num_samples: int,
+    signal_length: int,
+    enabled_outputs: np.ndarray,
+    noise: bool = True,
+    sigma_min: float = 0.01,
+    sigma_max: float = 0.1,
+    zeta_min: float = 0.0001,
+    zeta_max: float = 0.5,
+    max_modes: int = 5,
+    min_max: bool = False,
+    params_out: bool = True,
+    ):
+    
+    num_outs = np.sum(enabled_outputs)
+
+    data = np.empty((num_samples, num_outs, signal_length),dtype=np.float64)
+    labels = np.empty((num_samples,signal_length),dtype=np.int32)
+    if params_out:
+        params = np.full((num_samples, max_modes, 3), np.nan, dtype=np.float64)
+
+    frequencies = np.linspace(0,1,signal_length)
+    for i in range(num_samples):
+        
+        H_v = np.zeros(signal_length, dtype=np.complex128)
+        label = np.zeros(signal_length, dtype=np.int32)
+        
+        num_modes = np.random.randint(0,max_modes+1)
+        #when noise is added change num_modes to include 0
+        # to improve model generalisation add a random sign to alpha_j 
+        
+        alphas = np.random.choice(np.array([-1,1]),size=num_modes)*np.random.uniform(1, 2, size=num_modes)
+        #alphas = np.random.uniform(1, 2, size=5)
+        
+        zetas = 10**(np.random.uniform(np.log10(zeta_min), np.log10(zeta_max), size=num_modes))
+        #no modes at very edge of frequency range
+        omegas = np.random.uniform(0.001, 0.999, size=num_modes)
+        
+        if params_out:
+            params[i, :num_modes, 0] = omegas
+            params[i, :num_modes, 1] = alphas
+            params[i, :num_modes, 2] = zetas
+        
+        if noise:
+            #noise for each sample is different and random
+            #should sigma be log uniform like zetas?
+            sigma = np.random.uniform(sigma_min, sigma_max)
+            
+            #add noise to real and imaginary parts
+            noise_arr = np.random.normal(0, np.exp(sigma), signal_length) + 1j*np.random.normal(0, np.exp(sigma), signal_length)
+            H_v += noise_arr
+        
+        for n in range(num_modes):
+            # to improve model add a random sign to alpha_j 
+            alpha_n = alphas[n]
+            zeta_n = zetas[n]
+            omega_n = omegas[n]
+            
+            for j, w in enumerate(frequencies):
+                H_f = 0.0j
+                
+                denominator = omega_n**2 - w**2 + 2j * zeta_n * w
+                numerator = 1j*w*alpha_n
+                
+                H_f += numerator/denominator
+                
+                H_v[j] += H_f
+            
+            label[(frequencies >= omega_n)] += 1 # Step function labelling
+
+        mag_no_norm = np.abs(H_v)
+        mag = mag_no_norm
+        
+        real_pt = np.real(H_v)
+        imag_pt = np.imag(H_v)
+        
+        phase = np.angle(H_v) 
+        #phase is by definition normalised between -pi and pi
+        
+        log10_mag = np.log10(mag_no_norm)
+        #separate normalisation. Still min max normalisation
+        
+        if min_max:
+            #aim is to maintain the phase of out if using real and imaginary parts
+            max_mag = np.max(mag_no_norm)
+            min_mag = np.min(mag_no_norm)
+            mag = (mag_no_norm - min_mag)/(max_mag - min_mag)
+            real_pt = real_pt * mag/mag_no_norm
+            imag_pt = imag_pt * mag/mag_no_norm
+            log10_mag = (log10_mag - np.min(log10_mag))/(np.max(log10_mag) - np.min(log10_mag))
+        
+        # Populate output data based on enabled_outputs
+        j = 0
+        if enabled_outputs[0]:  # mag
+            data[i, j, :] = mag
+            j += 1
+        if enabled_outputs[1]:  # real
+            data[i, j, :] = real_pt
+            j += 1
+        if enabled_outputs[2]:  # imag
+            data[i, j, :] = imag_pt
+            j += 1
+        if enabled_outputs[3]:  # phase
+            data[i, j, :] = phase
+            j += 1
+        if enabled_outputs[4]:  # log_mag
+            data[i, j, :] = log10_mag
+            j += 1
+
+        labels[i, :] = label
+
+    return data, labels, params if params_out else None
+
+
 
 #with noise and normalisation
 @jit(nopython=True)
