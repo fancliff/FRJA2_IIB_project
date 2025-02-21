@@ -156,6 +156,158 @@ def validation_loss_recall_precision(model, dataloader, criterion, acceptance):
     return avg_loss, avg_recall, avg_precision
 
 
+def train_model_regression(model, train_dataloader, val_dataloader, save_suffix, num_epochs, criterion = nn.MSELoss(), plotting=True, patience=4):
+    early_stopping = EarlyStopping(patience=patience, verbose=True)
+    criterion = criterion
+    optimiser = optim.Adam(model.parameters(), lr=0.001)
+    if plotting:
+        # Initialize the plot
+        plt.ion()
+        fig, ax = plt.subplots()
+        ax.set_xlabel('Epoch')
+        ax.set_ylabel('Loss')
+        ax.set_title('Training and Validation Loss')
+        ax.set_yscale('log')
+        train_loss_line, = ax.plot([], [], label='Training Loss', color='blue')
+        val_loss_line, = ax.plot([], [], label='Validation Loss', color='orange')
+        ax.legend()
+    
+    result_dict = {
+        "training_loss": [],
+        "training_mse": [],
+        "training_mae": [],
+        "training_r2": [],
+        "validation_loss": [],
+        "validation_mse": [],
+        "validation_mae": [],
+        "validation_r2": [],
+        "epochs": []}
+    
+    for epoch in range(num_epochs):
+        model.train() #!!!
+        train_loss, train_mse, train_mae, train_r2 = training_step_regression(model, train_dataloader, criterion, optimiser)
+        
+        model.eval() #!!!
+        val_loss, val_mse, val_mae, val_r2 = validation_loss_regression(model, val_dataloader, criterion)
+        
+        print()
+        print(f'Epoch [{epoch+1}/{num_epochs}]')
+        print(f'Training Loss: {train_loss:.4f}, Training MSE: {train_mse:.4f}, Training MAE: {train_mae:.4f}, Training R²: {train_r2:.4f}')
+        print(f'Validation Loss: {val_loss:.4f}, Validation MSE: {val_mse:.4f}, Validation MAE: {val_mae:.4f}, Validation R²: {val_r2:.4f}')
+        
+        result_dict["training_loss"].append(train_loss)
+        result_dict["training_mse"].append(train_mse)
+        result_dict["training_mae"].append(train_mae)
+        result_dict["training_r2"].append(train_r2)
+        result_dict["validation_loss"].append(val_loss)
+        result_dict["validation_mse"].append(val_mse)
+        result_dict["validation_mae"].append(val_mae)
+        result_dict["validation_r2"].append(val_r2)
+        result_dict["epochs"].append(epoch + 1)
+        
+        if plotting:
+            # Update the plot
+            train_loss_line.set_xdata(result_dict["epochs"])
+            train_loss_line.set_ydata(result_dict["training_loss"])
+            val_loss_line.set_xdata(result_dict["epochs"])
+            val_loss_line.set_ydata(result_dict["validation_loss"])
+            ax.relim()
+            ax.autoscale_view()
+            plt.draw()
+            plt.pause(0.01)
+        
+        early_stopping(val_loss, model)
+        
+        if early_stopping.early_stop:
+            print('Early stopping triggered, stopping training...')
+            #early_stopping.load_checkpoint(model)
+            break
+    
+    print()
+    print('Finished Training')
+    
+    #load the best model using EarlyStopping class 
+    #do this regardless of whether training was stopped early
+    early_stopping.load_checkpoint(model)
+    
+    #save the model if a save name is provided
+    save_suffix is not None and save_model(model, save_suffix)
+    
+    if plotting:
+        plt.ioff()
+        plt.show()
+    
+    return result_dict, model
+
+
+def training_step_regression(model, dataloader, criterion, optimiser):
+    total_loss = 0.0
+    total_mse = 0.0
+    total_mae = 0.0
+    total_r2 = 0.0
+    total_samples = 0
+    
+    for data, labels, _ in dataloader:
+        optimiser.zero_grad()
+        outputs = model(data).squeeze()
+        loss = criterion(outputs, labels.float())
+        loss.backward()
+        optimiser.step()
+        mse, mae, r2 = calculate_regression_metrics(outputs, labels)
+        total_loss += loss.item() * len(data)
+        total_mse += mse * len(data)
+        total_mae += mae * len(data)
+        total_r2 += r2 * len(data)
+        total_samples += len(data)
+    
+    avg_loss = total_loss / total_samples
+    avg_mse = total_mse / total_samples
+    avg_mae = total_mae / total_samples
+    avg_r2 = total_r2 / total_samples
+    
+    return avg_loss, avg_mse, avg_mae, avg_r2
+
+
+def validation_loss_regression(model, dataloader, criterion):
+    total_loss = 0.0
+    total_mse = 0.0
+    total_mae = 0.0
+    total_r2 = 0.0
+    total_samples = 0
+    
+    with torch.no_grad():
+        for data, labels, _ in dataloader:
+            outputs = model(data).squeeze()
+            loss = criterion(outputs, labels.float())
+            mse, mae, r2 = calculate_regression_metrics(outputs, labels)
+            total_loss += loss.item() * len(data)
+            total_mse += mse * len(data)
+            total_mae += mae * len(data)
+            total_r2 += r2 * len(data)
+            total_samples += len(data)
+    avg_loss = total_loss / total_samples
+    avg_mse = total_mse / total_samples
+    avg_mae = total_mae / total_samples
+    avg_r2 = total_r2 / total_samples
+    
+    return avg_loss, avg_mse, avg_mae, avg_r2
+
+
+def calculate_regression_metrics(outputs, labels):
+    outputs = outputs.float()
+    labels = labels.float()
+    
+    mse = F.mse_loss(outputs, labels).item()
+    mae = F.l1_loss(outputs, labels).item()
+    var_labels = torch.var(labels).item()
+    if var_labels == 0:
+        r2 = 0
+    else:
+        r2 = 1 - mse / var_labels
+    
+    return mse, mae, r2
+
+
 def plot_loss_history(results, log_scale=True, show=False):
     plt.figure(figsize=(8, 4))
     plt.title('Training and Validation Loss')
@@ -267,7 +419,7 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
                                                             bandwidth=0.04,
                                                             overlap_threshold=0.5)
                         for k, omega in enumerate(predicted_omegas):
-                            axes[j].axvline(x=omega, color='pink', linestyle=':', label='Predicted Mode Frequency' if k==0 else '')
+                            axes[j].axvline(x=omega, color='cyan', linestyle=':', label='Predicted Mode Frequency' if k==0 else '')
                     
                     plt.tight_layout()
                     plt.show()
@@ -293,7 +445,7 @@ def plot_samples(dataloader, num_samples):
             for j in range(num_channels):
                 labels_arr = labels[i].cpu().numpy()
                 axes[j].plot(x,data[i][j].cpu().numpy(), label="Signal", color="blue")
-                #axes[j].plot(labels_arr, label="Actual Labels", linestyle="--", color="green")
+                axes[j].plot(x,labels_arr, label="Actual Labels", linestyle="--", color="green")
                 #axes[j].set_ylabel('Amplitude / Label')
                 
                 # Define explicit colors for each label
@@ -345,6 +497,57 @@ def plot_samples(dataloader, num_samples):
             samples_plotted += 1
             if samples_plotted >= num_samples:
                 return  # Exit after plotting specified number of samples
+
+
+def plot_step_predictions(models, dataloader, num_samples, threshold=0.5):
+    samples_plotted = 0
+    with torch.no_grad():
+        for data, labels, params in dataloader:
+            batch_size = len(data)
+            for i in range(min(num_samples,batch_size)):
+                x = np.linspace(0, 1, len(data[i][0]))
+                omegas = params[i, :, 0].cpu().numpy() if params is not None else []
+                omegas = omegas[~np.isnan(omegas)] # Remove NaN values
+                
+                for model_idx, model in enumerate(models):
+                    model.eval()
+                    model_output = model(data).squeeze()
+                    num_channels = data[i].shape[0]
+                    fig, axes = plt.subplots(num_channels, 1, figsize=(8, 4), sharex=True)
+                    if num_channels == 1:
+                        axes = [axes]  # Convert single axis to list for iteration
+
+                    for j in range(num_channels):
+                        labels_arr = labels[i].cpu().numpy()
+                        signal_arr = data[i][j].cpu().numpy()
+                        fitted_curve = model_output[i].cpu().numpy()
+                        floored_curve = (np.floor(fitted_curve + threshold)).astype(int)
+                        predicted_omegas = []
+                        for step_level in range(1, max(floored_curve)+1):
+                            for k in range(len(floored_curve)):
+                                if floored_curve[k] == step_level:
+                                    predicted_omegas.append(x[k])
+                                    break
+
+                        axes[j].plot(x, signal_arr, label="Signal", color="blue")
+                        axes[j].plot(x, fitted_curve, label="Predicted curve", color="orange")
+                        axes[j].plot(x, labels_arr, label="Actual Labels", linestyle="--", color="green")
+                        
+                        # Plot the true omegas as vertical dashed lines
+                        for k, omega in enumerate(omegas):
+                            axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
+                        
+                        for k, omega in enumerate(predicted_omegas):
+                            axes[j].axvline(x=omega, color='cyan', linestyle=':', label='Predicted Mode Frequency' if k==0 else '')
+                        
+                    plt.legend()
+                    
+                    plt.tight_layout()
+                    plt.show()
+                
+                samples_plotted += 1
+                if samples_plotted >= num_samples:
+                    return # Exit if enough samples are plotted
 
 
 def est_nat_freq_binary(prob_arr, acceptance=0.5, method='midpoint', bandwidth=None, overlap_threshold=0.5):
