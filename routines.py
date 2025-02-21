@@ -352,7 +352,7 @@ def est_nat_freq_binary(prob_arr, acceptance=0.5, method='midpoint', bandwidth=N
     Estimate natural frequencies from a PyTorch CNN model.
 
     Args:
-        prob_arr (np.ndarray): Array of predicted probabilities for a single signal.
+        prob_arr (np.array): Array of predicted probabilities for a single signal.
         acceptance (float): Probability threshold for accepting a frequency.
         method (str): Method for estimating frequencies ('midpoint', 'peak', or 'confidence').
         bandwidth (float or None): Fixed bandwidth around each mode. If None, no bandwidth-based overlap detection is performed.
@@ -367,6 +367,8 @@ def est_nat_freq_binary(prob_arr, acceptance=0.5, method='midpoint', bandwidth=N
 
     signal_length = len(prob_arr)
     x = np.linspace(0, 1, signal_length)  # Frequency values
+    # Extend frequency range to include the artificial signal edges added later
+    x = np.concatenate(([2*x[0] - x[1]], x, [2*x[-1] - x[-2]]))
 
     predicted_labels = prob_arr >= acceptance
 
@@ -452,7 +454,7 @@ def calculate_frequency_error(predicted_frequencies, true_frequencies, max_error
     return mean_error
 
 
-def calculate_mean_frequency_error(model, dataloader, acceptance, max_error=1.0):
+def calculate_mean_frequency_error(model, dataloader, acceptance=0.5, method='midpoint', max_error=1.0, bandwidth=None, overlap_threshold=0.5):
     total_error = 0.0
     total_samples = 0
     with torch.no_grad():
@@ -460,8 +462,13 @@ def calculate_mean_frequency_error(model, dataloader, acceptance, max_error=1.0)
             batch_size = len(data)
             for i in range(batch_size):
                 probabilities = model(data).squeeze()
-                predicted_labels = (probabilities >= acceptance).float()
-                predicted_frequencies = est_nat_freq_binary(probabilities, acceptance=acceptance)
+                probabilities = probabilities[i].cpu().numpy()
+                predicted_frequencies = est_nat_freq_binary(probabilities, 
+                                                            acceptance, 
+                                                            method,
+                                                            bandwidth,
+                                                            overlap_threshold
+                                                            )
                 true_frequencies = params[i, :, 0].cpu().numpy()
                 true_frequencies = true_frequencies[~np.isnan(true_frequencies)]  # Remove NaN values
                 error = calculate_frequency_error(predicted_frequencies, true_frequencies, max_error=max_error)
