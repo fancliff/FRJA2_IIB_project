@@ -8,7 +8,7 @@ import scipy
 import matplotlib.pyplot as plt
 from numba import jit
 
-from generators import n_channels_gen
+from generators import n_channels_gen, n_channels_stepped_gen
 import models as md
 import routines as rt 
 
@@ -22,22 +22,20 @@ import h5py
 outputs1 = np.array([False, True, True, False, False])
 outputs2 = np.array([False, True, True, False, False])
 
-# data, labels, params = n_channels_gen(
+# data, labels, params = n_channels_stepped_gen(
 #     num_samples=100000, 
 #     signal_length=1024, 
 #     sigma_min=0.01, 
 #     sigma_max=0.1, 
 #     zeta_max=0.1,
 #     zeta_min=0.01,
-#     three_db_bandwidth=False,
-#     fixed_bandwidth=0.02,
 #     min_max=True, 
 #     enabled_outputs=outputs1,
 #     params_out=True
 #     )
 
 project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/datasets/'
-data_name = 'data_02_bandwidth.h5'
+data_name = 'data_step_func.h5'
 data_file = project_path + data_name
 
 # with h5py.File(data_file, 'w') as f:
@@ -49,9 +47,9 @@ with h5py.File(data_file, 'r') as f:
     val_data = f['data'][:5000]
     val_labels = f['labels'][:5000]
     val_params = f['params'][:5000]
-    train_data = f['data'][5000:7000]
-    train_labels = f['labels'][5000:7000]
-    train_params = f['params'][5000:7000]
+    train_data = f['data'][5000:8000]
+    train_labels = f['labels'][5000:8000]
+    train_params = f['params'][5000:8000]
 
 train_dataset_1 = md.n_channel_dataset(train_data, train_labels, train_params)
 train_dataloader_1 = DataLoader(train_dataset_1, batch_size=32, shuffle=True)
@@ -62,11 +60,11 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 
 
-# model1 = md.NewModelGeneral(data_channels=np.sum(outputs1), 
-#                             out_channels=[4,4,8,4,4,2,1],
-#                             kernel_size=[13],
+# model1 = md.RegressionModel1(data_channels=np.sum(outputs1), 
+#                             out_channels=[4,4,8,12,8,4,2,1],
+#                             kernel_size=[5],
 #                             batch_norm=True,
-#                             P_dropout=0.1,
+#                             P_dropout=0.0,
 #                             max_pool=False,
 #                             )
 # print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
@@ -75,8 +73,8 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 
 # model2 = md.NewModelGeneral(data_channels=np.sum(outputs2),
-#                             out_channels=[4,6,8,6,4,2,1],
-#                             kernel_size=[11],
+#                             out_channels=[4,4,8,8,4,2,1],
+#                             kernel_size=[15],
 #                             batch_norm=True,
 #                             P_dropout=0.0,
 #                             max_pool=False,
@@ -112,8 +110,6 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 # results.append(result_dict1)
 # end1 = time.time()
 
-
-
 # start2 = time.time()
 # result_dict2,_ = rt.train_model_binary(
 #                 model2, 
@@ -132,7 +128,18 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 # results.append(result_dict2)
 # end2 = time.time()
 
-
+# start1 = time.time()
+# result_dict1,_ = rt.train_model_regression(
+#                 model1, 
+#                 train_dataloader_1, 
+#                 val_dataloader_1,
+#                 save_suffix = save1 + '_step',
+#                 num_epochs = 200, 
+#                 plotting=plot_during,
+#                 patience = 20,
+#                 )
+# results.append(result_dict1)
+# end1 = time.time()
 
 # rt.plot_loss_history(results, log_scale=True, show=False)
 # rt.plot_precision_history(results, log_scale=False, show=False)
@@ -143,20 +150,27 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 
 
-#  models from save files or train above
-model1 = rt.load_model('02_14_10_37_48421_5_True_0.0_False.pth')
-model2 = rt.load_model('02_14_10_43_48421_7_True_0.0_False.pth')
+# #  models from save files or train above
+# model1 = rt.load_model('02_20_20_51_4488421_13_True_0.0_False.pth')
+# model2 = rt.load_model('02_20_15_19_4488421_5_True_0.0_False.pth')
+model1 = rt.load_model('02_21_10_44_4488421_13_True_0.0_False_step.pth')
 
-criterion=nn.BCELoss()
-rt.compare_models(
-    model1, 
-    model2,
-    val_dataloader_1,
-    val_dataloader_1,
-    criterion,
-    acceptance1=0.5,
-    acceptance2=0.5,
-)
+# criterion=nn.BCELoss()
+# rt.compare_models(
+#     model1, 
+#     model2,
+#     val_dataloader_1,
+#     val_dataloader_1,
+#     criterion,
+#     acceptance1=0.5,
+#     acceptance2=0.5,
+# )
 
-rt.plot_predictions([model1, model2], val_dataloader_1, 5, acceptance=0.5)
+# rt.plot_predictions([model1, model2], val_dataloader_1, 5, acceptance=0.5)
 
+rt.plot_step_predictions([model1], val_dataloader_1, 5, threshold=0.5)
+
+# print(rt.calculate_mean_frequency_error(model1, val_dataloader_1, 0.5, 'midpoint', 1, None, 0.5))
+# print()
+# print(rt.calculate_mean_frequency_error(model1, val_dataloader_1, 0.5, 'midpoint', 1, 0.04, 0.5))
+# print(rt.calculate_mean_frequency_error(model2, val_dataloader_1, 0.5, 'midpoint', 1, 0.04, 0.5))
