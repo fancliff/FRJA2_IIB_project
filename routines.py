@@ -692,9 +692,8 @@ def est_nat_freq_triangle_rise(curve, up_inc=0.4):
         # Check if the drop to the left is greater than up_inc
         if curve[peak_idx] - curve[min_left_trough] > up_inc: 
             filtered_peak_indices.append(peak_idx)
-        
-        # Update prev_peak_idx
-        prev_peak_idx = peak_idx
+            # Update prev_peak_idx only for detected peaks
+            prev_peak_idx = peak_idx
     
     freq_estimates = x[filtered_peak_indices]
     return np.array(freq_estimates)
