@@ -429,7 +429,7 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
                     return # Exit if enough samples are plotted
 
 
-def plot_samples(dataloader, num_samples):
+def plot_samples(dataloader, num_samples, binary_labels=True):
     samples_plotted = 0
     for data, labels, params in dataloader:
         for i in range(min(num_samples, len(data))):
@@ -448,37 +448,38 @@ def plot_samples(dataloader, num_samples):
                 axes[j].plot(x,labels_arr, label="Actual Labels", linestyle="--", color="green")
                 #axes[j].set_ylabel('Amplitude / Label')
                 
-                # Define explicit colors for each label
-                label_colors = {
-                    1: (0.1, 0.6, 0.1, 0.4),  # Green for label 1
-                    2: (0.6, 0.1, 0.1, 0.4),  # Red for label 2
-                    3: (0.1, 0.1, 0.6, 0.4),  # Blue for label 3
-                    4: (0.6, 0.6, 0.1, 0.4),  # Yellow for label 4
-                    5: (0.6, 0.1, 0.6, 0.4),  # Purple for label 5
-                }
                 mask_patches = []
-                # Overlay the masks
-                for class_label in np.unique(labels_arr):
-                    if class_label == 0:
-                        continue
-                    mask = np.zeros_like(labels_arr)
-                    mask[labels_arr == class_label] = 1
-                    label_alpha = label_colors[class_label][3]  # Use transparency from the RGBA tuple
-                    label_color = label_colors[class_label]  # Set explicit color
-                    label_cmap = mcolors.LinearSegmentedColormap.from_list("", ["white", label_color])
-                    
-                    axes[j].imshow(
-                        mask.reshape(1, -1),
-                        cmap=label_cmap,  # Disable automatic colormap
-                        extent=(0, 1, axes[j].get_ylim()[0], axes[j].get_ylim()[1]),
-                        aspect='auto',
-                        alpha=label_alpha,  # Use transparency from the RGBA tuple
-                    )
-                    
-                    #add a proxy legend element for the mask for labels other than 0
-                    if class_label != 0:
-                        mask_patch = mpatches.Patch(color=label_color, alpha=label_alpha, label=f'Modes: {class_label}')
-                        mask_patches.append(mask_patch)
+                if binary_labels:
+                    # Define explicit colors for each label
+                    label_colors = {
+                        1: (0.1, 0.6, 0.1, 0.4),  # Green for label 1
+                        2: (0.6, 0.1, 0.1, 0.4),  # Red for label 2
+                        3: (0.1, 0.1, 0.6, 0.4),  # Blue for label 3
+                        4: (0.6, 0.6, 0.1, 0.4),  # Yellow for label 4
+                        5: (0.6, 0.1, 0.6, 0.4),  # Purple for label 5
+                    }
+                    # Overlay the masks
+                    for class_label in np.unique(labels_arr):
+                        if class_label == 0:
+                            continue
+                        mask = np.zeros_like(labels_arr)
+                        mask[labels_arr == class_label] = 1
+                        label_alpha = label_colors[class_label][3]  # Use transparency from the RGBA tuple
+                        label_color = label_colors[class_label]  # Set explicit color
+                        label_cmap = mcolors.LinearSegmentedColormap.from_list("", ["white", label_color])
+                        
+                        axes[j].imshow(
+                            mask.reshape(1, -1),
+                            cmap=label_cmap,  # Disable automatic colormap
+                            extent=(0, 1, axes[j].get_ylim()[0], axes[j].get_ylim()[1]),
+                            aspect='auto',
+                            alpha=label_alpha,  # Use transparency from the RGBA tuple
+                        )
+                        
+                        #add a proxy legend element for the mask for labels other than 0
+                        if class_label != 0:
+                            mask_patch = mpatches.Patch(color=label_color, alpha=label_alpha, label=f'Modes: {class_label}')
+                            mask_patches.append(mask_patch)
                 
                 #Plot the omegas as vertical dashed lines
                 for k, omega in enumerate(omegas):
