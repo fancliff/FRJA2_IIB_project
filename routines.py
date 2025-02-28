@@ -551,6 +551,54 @@ def plot_step_predictions(models, dataloader, num_samples, threshold=0.5):
                     return # Exit if enough samples are plotted
 
 
+def plot_triangle_predictions(models, dataloader, num_samples, N=2, Wn=0.2):
+    samples_plotted = 0
+    with torch.no_grad():
+        for data, labels, params in dataloader:
+            batch_size = len(data)
+            for i in range(min(num_samples,batch_size)):
+                x = np.linspace(0, 1, len(data[i][0]))
+                omegas = params[i, :, 0].cpu().numpy() if params is not None else []
+                omegas = omegas[~np.isnan(omegas)] # Remove NaN values
+                
+                for model_idx, model in enumerate(models):
+                    model.eval()
+                    model_output = model(data).squeeze()
+                    num_channels = data[i].shape[0]
+                    fig, axes = plt.subplots(num_channels, 1, figsize=(8, 4), sharex=True)
+                    if num_channels == 1:
+                        axes = [axes]  # Convert single axis to list for iteration
+
+                    for j in range(num_channels):
+                        labels_arr = labels[i].cpu().numpy()
+                        signal_arr = data[i][j].cpu().numpy()
+                        fitted_curve = model_output[i].cpu().numpy()
+                        b,a = scipy.signal.butter(N,Wn)
+                        smoothed_curve = scipy.signal.filtfilt(b,a,fitted_curve)
+
+                        axes[j].plot(x, signal_arr, label="Signal", color="blue")
+                        axes[j].plot(x, fitted_curve, label="Predicted curve", color="orange")
+                        axes[j].plot(x, smoothed_curve, label="Smoothed curve", color="red")
+                        axes[j].plot(x, labels_arr, label="Actual Labels", linestyle="--", color="green")
+                        
+                        # Plot the true omegas as vertical dashed lines
+                        for k, omega in enumerate(omegas):
+                            axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
+                        
+                        predicted_omegas = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.5, down_inc=0.05)
+                        for k, omega in enumerate(predicted_omegas):
+                            axes[j].axvline(x=omega, color='cyan', linestyle=':', label='Predicted Mode Frequency' if k==0 else '')
+                        
+                    plt.legend()
+                    
+                    plt.tight_layout()
+                    plt.show()
+                
+                samples_plotted += 1
+                if samples_plotted >= num_samples:
+                    return # Exit if enough samples are plotted
+
+
 def est_nat_freq_binary(prob_arr, acceptance=0.5, method='midpoint', bandwidth=None, overlap_threshold=0.5):
     """
     Estimate natural frequencies from a PyTorch CNN model.
@@ -614,6 +662,21 @@ def est_nat_freq_binary(prob_arr, acceptance=0.5, method='midpoint', bandwidth=N
                     weighted_avg = np.sum(mode_freqs * mode_probs) / np.sum(mode_probs)
                     freq_estimates.append(weighted_avg)
 
+    return np.array(freq_estimates)
+
+
+def est_nat_freq_triangle_rise(curve, up_inc=0.5, down_inc=0.05):
+    start_idx = 0
+    start_val = curve[0]
+    freq_estimates = []
+    for i in range(1, len(curve)):
+        if curve[i] > curve[start_idx] + up_inc:
+            freq_estimates.append(i/len(curve))
+            start_idx = i
+            start_val = curve[i]
+        elif curve[i] < start_val - down_inc:
+            start_idx = i
+            start_val = curve[i]
     return np.array(freq_estimates)
 
 
