@@ -585,7 +585,7 @@ def plot_triangle_predictions(models, dataloader, num_samples, N=2, Wn=0.2):
                         for k, omega in enumerate(omegas):
                             axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
                         
-                        predicted_omegas = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.5, down_inc=0.05)
+                        predicted_omegas = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.5)
                         for k, omega in enumerate(predicted_omegas):
                             axes[j].axvline(x=omega, color='cyan', linestyle=':', label='Predicted Mode Frequency' if k==0 else '')
                         
@@ -665,18 +665,23 @@ def est_nat_freq_binary(prob_arr, acceptance=0.5, method='midpoint', bandwidth=N
     return np.array(freq_estimates)
 
 
-def est_nat_freq_triangle_rise(curve, up_inc=0.5, down_inc=0.05):
-    start_idx = 0
-    start_val = curve[0]
-    freq_estimates = []
-    for i in range(1, len(curve)):
-        if curve[i] > curve[start_idx] + up_inc:
-            freq_estimates.append(i/len(curve))
-            start_idx = i
-            start_val = curve[i]
-        elif curve[i] < start_val - down_inc:
-            start_idx = i
-            start_val = curve[i]
+def est_nat_freq_triangle_rise(curve, up_inc=0.5):
+    length = len(curve)
+    x = np.linspace(0, 1, length)
+    dY = np.gradient(curve,x)
+    d2Y = np.gradient(dY,x)
+    
+    zero_crossings = np.where(np.diff(np.sign(dY)))[0]
+    peak_indices = [idx for idx in zero_crossings if d2Y[idx] < 0] # find all peaks
+    peak_indices = [idx for idx in peak_indices if curve[idx] > up_inc*0.95] # remove any peaks below up_inc (and a small factor)
+    trough_indices = [idx for idx in zero_crossings if d2Y[idx] > 0] # find all troughs
+    
+    filtered_peak_indices = []
+    for peak_idx in peak_indices:
+        closest_left_trough = max([trough_idx for trough_idx in trough_indices if trough_idx < peak_idx], default=0)
+        if curve[peak_idx] - curve[closest_left_trough] > up_inc: 
+            filtered_peak_indices.append(peak_idx) # only consider peaks where the drop to the left is greater than up_inc
+    freq_estimates = x[filtered_peak_indices]
     return np.array(freq_estimates)
 
 
