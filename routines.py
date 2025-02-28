@@ -665,22 +665,37 @@ def est_nat_freq_binary(prob_arr, acceptance=0.5, method='midpoint', bandwidth=N
     return np.array(freq_estimates)
 
 
-def est_nat_freq_triangle_rise(curve, up_inc=0.5):
+def est_nat_freq_triangle_rise(curve, up_inc=0.4):
     length = len(curve)
     x = np.linspace(0, 1, length)
-    dY = np.gradient(curve,x)
-    d2Y = np.gradient(dY,x)
+    dY = np.gradient(curve, x)
+    d2Y = np.gradient(dY, x)
     
     zero_crossings = np.where(np.diff(np.sign(dY)))[0]
-    peak_indices = [idx for idx in zero_crossings if d2Y[idx] < 0] # find all peaks
-    peak_indices = [idx for idx in peak_indices if curve[idx] > up_inc*0.95] # remove any peaks below up_inc (and a small factor)
-    trough_indices = [idx for idx in zero_crossings if d2Y[idx] > 0] # find all troughs
+    peak_indices = [idx for idx in zero_crossings if d2Y[idx] < 0]  # find all peaks
+    peak_indices = [idx for idx in peak_indices if curve[idx] > up_inc * 0.95]  # remove peaks below up_inc (and a small factor)
+    trough_indices = [idx for idx in zero_crossings if d2Y[idx] > 0]  # find all troughs
     
     filtered_peak_indices = []
+    prev_peak_idx = 0
     for peak_idx in peak_indices:
-        closest_left_trough = max([trough_idx for trough_idx in trough_indices if trough_idx < peak_idx], default=0)
-        if curve[peak_idx] - curve[closest_left_trough] > up_inc: 
-            filtered_peak_indices.append(peak_idx) # only consider peaks where the drop to the left is greater than up_inc
+        # Find troughs between prev_peak_idx and peak_idx
+        inbetween_troughs = [trough_idx for trough_idx in trough_indices if trough_idx < peak_idx and trough_idx > prev_peak_idx]
+        
+        if len(inbetween_troughs) == 0:
+            # If no troughs, find the minimum value between prev_peak_idx and peak_idx
+            min_left_trough = np.argmin(curve[prev_peak_idx:peak_idx]) + prev_peak_idx
+        else:
+            # Find the trough with the minimum value
+            min_left_trough = inbetween_troughs[np.argmin(curve[inbetween_troughs])]
+        
+        # Check if the drop to the left is greater than up_inc
+        if curve[peak_idx] - curve[min_left_trough] > up_inc: 
+            filtered_peak_indices.append(peak_idx)
+        
+        # Update prev_peak_idx
+        prev_peak_idx = peak_idx
+    
     freq_estimates = x[filtered_peak_indices]
     return np.array(freq_estimates)
 
@@ -741,6 +756,28 @@ def calculate_mean_frequency_error(model, dataloader, acceptance=0.5, method='mi
                                                             bandwidth,
                                                             overlap_threshold
                                                             )
+                true_frequencies = params[i, :, 0].cpu().numpy()
+                true_frequencies = true_frequencies[~np.isnan(true_frequencies)]  # Remove NaN values
+                error = calculate_frequency_error(predicted_frequencies, true_frequencies, max_error=max_error)
+                total_error += error
+                total_samples += 1
+    mean_error = total_error / total_samples
+    return mean_error
+
+
+def calculate_mean_frequency_error_triangle(model, dataloader, up_inc=0.4, N=2, Wn=0.2, max_error=1.0):
+    total_error = 0.0
+    total_samples = 0
+    with torch.no_grad():
+        for data, labels, params in dataloader:
+            batch_size = len(data)
+            for i in range(batch_size):
+                model.eval()
+                model_output = model(data).squeeze()
+                fitted_curve = model_output[i].cpu().numpy()
+                b,a = scipy.signal.butter(N,Wn)
+                smoothed_curve = scipy.signal.filtfilt(b,a,fitted_curve)
+                predicted_frequencies = est_nat_freq_triangle_rise(smoothed_curve, up_inc=up_inc)
                 true_frequencies = params[i, :, 0].cpu().numpy()
                 true_frequencies = true_frequencies[~np.isnan(true_frequencies)]  # Remove NaN values
                 error = calculate_frequency_error(predicted_frequencies, true_frequencies, max_error=max_error)
