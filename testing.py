@@ -8,7 +8,7 @@ import scipy
 import matplotlib.pyplot as plt
 from numba import jit
 
-from generators import n_channels_gen
+from generators import n_channels_gen, n_channels_triangle_gen
 import models as md
 import routines as rt 
 
@@ -18,8 +18,19 @@ import time
 outputs1 = np.array([True, False, False, False, False])
 outputs2 = np.array([False, True, True, False, False])
 
-data, labels = n_channels_gen(num_samples=32, signal_length=1024, enabled_outputs=outputs2, noise=True, sigma_max=0.1, min_max=True, multiclass=1)
-val_dataset_1 = md.n_channel_dataset(data, labels)
+data, labels, params = n_channels_triangle_gen(
+    num_samples=2, 
+    signal_length=1024, 
+    sigma_min=0.01, 
+    sigma_max=0.1, 
+    zeta_max=0.1,
+    zeta_min=0.01,
+    min_max=True, 
+    enabled_outputs=outputs1,
+    params_out=True,
+    pulse_width=0.1,
+    )
+val_dataset_1 = md.n_channel_dataset(data, labels, params)
 val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
-rt.plot_samples(val_dataloader_1, 10)
+rt.plot_samples(val_dataloader_1, 2, binary_labels=False)
