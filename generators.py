@@ -12,30 +12,16 @@ def make_step_func_labels(
     ) -> np.ndarray:
     
     label = np.zeros(signal_length, dtype=np.float64)
-    sort_indices = np.argsort(natural_frequencies)
-    natural_frequencies = natural_frequencies[sort_indices]
-    values = values[sort_indices]
     
     for i, freq in enumerate(frequencies):
-        distances = np.abs(natural_frequencies - freq)
-        nearest_idx = np.argmin(distances)
-        
-        if distances[nearest_idx] <= label_bandwidth:
-            overlap = False
-            for j, other_freq in enumerate(natural_frequencies):
-                if j != nearest_idx and np.abs(other_freq - freq) <= label_bandwidth:
-                    midpoint = (other_freq + natural_frequencies[nearest_idx])/2
-                    if freq < midpoint:
-                        label[i] = values[nearest_idx]
-                    else:
-                        label[i] = values[j]
-                    overlap = True
-                    break
-            if not overlap:
-                label[i] = values[nearest_idx]
+        within_bandwidth = np.abs(natural_frequencies - freq) <= label_bandwidth
+        if np.any(within_bandwidth):
+            overlapping_indices = np.where(within_bandwidth)[0]
+            distances = np.abs(natural_frequencies[overlapping_indices] - freq)
+            nearest_idx = overlapping_indices[np.argmin(distances)]
+            label[i] = values[nearest_idx]
         else:
             label[i] = 0.0
-    
     return label
 
 
