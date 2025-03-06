@@ -2,6 +2,189 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numba import jit
 
+@jit(nopython=True)
+def make_step_func_labels(
+    natural_frequencies: np.ndarray,
+    values: np.ndarray,
+    frequencies: np.ndarray,
+    signal_length: int,
+    label_bandwidth: float = 0.02,
+    ) -> np.ndarray:
+    
+    label = np.zeros(signal_length, dtype=np.float64)
+    sort_indices = np.argsort(natural_frequencies)
+    natural_frequencies = natural_frequencies[sort_indices]
+    values = values[sort_indices]
+    
+    for i, freq in enumerate(frequencies):
+        distances = np.abs(natural_frequencies - freq)
+        nearest_idx = np.argmin(distances)
+        
+        if distances[nearest_idx] <= label_bandwidth:
+            overlap = False
+            for j, other_freq in enumerate(natural_frequencies):
+                if j != nearest_idx and np.abs(other_freq - freq) <= label_bandwidth:
+                    midpoint = (other_freq + natural_frequencies[nearest_idx])/2
+                    if freq < midpoint:
+                        label[i] = values[nearest_idx]
+                    else:
+                        label[i] = values[j]
+                    overlap = True
+                    break
+            if not overlap:
+                label[i] = values[nearest_idx]
+        else:
+            label[i] = 0.0
+    
+    return label
+
+
+@jit(nopython=True)
+def n_channels_multi_labels_gen(
+    num_samples: int,
+    signal_length: int,
+    enabled_outputs: np.ndarray,
+    label_outputs: np.ndarray,
+    noise: bool = True,
+    sigma_min: float = 0.01,
+    sigma_max: float = 0.1,
+    zeta_min: float = 0.0001,
+    zeta_max: float = 0.5,
+    max_modes: int = 5,
+    min_max: bool = False,
+    params_out: bool = True,
+    pulse_width: float = 0.02,
+    ):
+    
+    num_outs = np.sum(enabled_outputs)
+    num_labels = np.sum(label_outputs)
+
+    data = np.empty((num_samples, num_outs, signal_length),dtype=np.float64)
+    labels = np.empty((num_samples, num_labels, signal_length),dtype=np.float64)
+    if params_out:
+        params = np.full((num_samples, max_modes, 3), np.nan, dtype=np.float64)
+
+    frequencies = np.linspace(0,1,signal_length)
+    
+    for i in range(num_samples):
+        
+        H_v = np.zeros(signal_length, dtype=np.complex128)
+        
+        if label_outputs[0]: # mode triangles
+            triangle_label = np.zeros(signal_length, dtype=np.float64)
+        
+        num_modes = np.random.randint(0,max_modes+1)
+        
+        alphas = np.random.choice(np.array([-1,1]),size=num_modes)*np.random.uniform(1, 2, size=num_modes)
+        
+        zetas = 10**(np.random.uniform(np.log10(zeta_min), np.log10(zeta_max), size=num_modes))
+        # no modes at very edge of frequency range
+        omegas = np.random.uniform(0.001, 0.999, size=num_modes)
+        
+        if params_out:
+            params[i, :num_modes, 0] = omegas
+            params[i, :num_modes, 1] = alphas
+            params[i, :num_modes, 2] = zetas
+        
+        if noise:
+            # noise for each sample is different and random
+            # should sigma be log uniform like zetas?
+            sigma = np.random.uniform(sigma_min, sigma_max)
+            
+            # add noise to real and imaginary parts
+            noise_arr = np.random.normal(0, np.exp(sigma), signal_length) + 1j*np.random.normal(0, np.exp(sigma), signal_length)
+            H_v += noise_arr
+        
+        for n in range(num_modes):
+            # to improve model add a random sign to alpha_j 
+            alpha_n = alphas[n]
+            zeta_n = zetas[n]
+            omega_n = omegas[n]
+            
+            for j, w in enumerate(frequencies):
+                H_f = 0.0j
+                
+                denominator = omega_n**2 - w**2 + 2j * zeta_n * w
+                numerator = 1j*w*alpha_n
+                
+                H_f += numerator/denominator
+                
+                H_v[j] += H_f
+            
+            if label_outputs[0]: # mode triangles
+                pulse = np.zeros(signal_length, dtype=np.float64)
+                idx = np.argmin(np.abs(frequencies - omega_n))
+                pulse[idx] = 1.0
+            
+                for j in range(idx + 1, signal_length):
+                    if frequencies[j] > omega_n + pulse_width:
+                        break
+                    pulse[j] = 1.0 - (frequencies[j] - omega_n)/pulse_width
+            
+                triangle_label += pulse
+        
+        k = 0
+        if label_outputs[0]: # mode triangles
+            labels[i, k, :] = triangle_label
+            k += 1
+        
+        if label_outputs[1]: # amplitude step function
+            labels[i, k, :] = make_step_func_labels(omegas, alphas, frequencies, signal_length)
+            k += 1
+        
+        if label_outputs[2]: # damping ratio step function
+            labels[i, k, :] = make_step_func_labels(omegas, zetas, frequencies, signal_length)
+            k += 1
+        
+        if label_outputs[3]: # omega step function
+            labels[i, k, :] = make_step_func_labels(omegas, omegas, frequencies, signal_length)
+            k += 1
+
+
+        mag_no_norm = np.abs(H_v)
+        mag = mag_no_norm
+        
+        real_pt = np.real(H_v)
+        imag_pt = np.imag(H_v)
+        
+        phase = np.angle(H_v) 
+        #phase is by definition normalised between -pi and pi
+        
+        log10_mag = np.log10(mag_no_norm)
+        #separate normalisation. Still min max normalisation
+        
+        if min_max:
+            #aim is to maintain the phase of out if using real and imaginary parts
+            max_mag = np.max(mag_no_norm)
+            min_mag = np.min(mag_no_norm)
+            mag = (mag_no_norm - min_mag)/(max_mag - min_mag)
+            real_pt = real_pt * mag/mag_no_norm
+            imag_pt = imag_pt * mag/mag_no_norm
+            log10_mag = (log10_mag - np.min(log10_mag))/(np.max(log10_mag) - np.min(log10_mag))
+        
+        # Populate output data based on enabled_outputs
+        j = 0
+        if enabled_outputs[0]:  # mag
+            data[i, j, :] = mag
+            j += 1
+        if enabled_outputs[1]:  # real
+            data[i, j, :] = real_pt
+            j += 1
+        if enabled_outputs[2]:  # imag
+            data[i, j, :] = imag_pt
+            j += 1
+        if enabled_outputs[3]:  # phase
+            data[i, j, :] = phase
+            j += 1
+        if enabled_outputs[4]:  # log_mag
+            data[i, j, :] = log10_mag
+            j += 1
+
+    return data, labels, params if params_out else None
+
+
+
+
 
 #with noise and normalisation
 @jit(nopython=True)
@@ -125,8 +308,6 @@ def n_channels_triangle_gen(
         labels[i, :] = label
 
     return data, labels, params if params_out else None
-
-
 
 
 
