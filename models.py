@@ -110,6 +110,103 @@ class EarlyStopping:
         model.load_state_dict(torch.load(self.path))
 
 
+class ResidualBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, padding, batch_norm=True, P_dropout=0.0):
+        super(ResidualBlock, self).__init__()
+        self.conv1 = nn.Sequential(
+            nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, padding=padding),
+            nn.BatchNorm1d(out_channels),
+            nn.ReLU()
+        )
+        self.conv2 = nn.Sequential(
+            nn.Conv1d(out_channels, out_channels, kernel_size=kernel_size, padding=padding),
+            nn.BatchNorm1d(out_channels),
+        )
+        self.ReLU = nn.ReLU()
+        self.out_channels = out_channels
+        
+        # Projection shortcut if dimensions don't match
+        self.shortcut = nn.Identity()
+        if in_channels != out_channels:
+            self.shortcut = nn.Sequential(
+                nn.Conv1d(in_channels, out_channels, kernel_size=1, padding=0),
+                nn.BatchNorm1d(out_channels)
+            )
+    
+    def forward(self, x):
+        residual = self.shortcut(x)
+        out = self.conv1(x)
+        out = self.conv2(out)
+        out += residual
+        out = self.ReLU(out)
+        return out
+
+
+class ResNet1(nn.Module):
+    def __init__(self,
+                data_channels: int,
+                out_channels: List[int],
+                kernel_size: List[int] = [13],
+                input_length: int = 1024,
+                ):
+        
+        super(ResNet1, self).__init__()
+        self.data_channels = data_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size
+        self.input_length = input_length
+        
+        if len(kernel_size) == 1:
+            kernel_size = kernel_size * len(out_channels)
+        else:
+            assert len(kernel_size) == len(out_channels), \
+                "The length of kernel_size list must be 1 or match the length of out_channels list."
+
+        # Default to calculating padding as (kernel_size - 1) / 2 for each layer
+        paddings = [(k - 1) // 2 for k in kernel_size]
+        
+        self.initial_conv = nn.Sequential(
+            nn.Conv1d(data_channels, out_channels[0], kernel_size=kernel_size[0], padding=paddings[0]),
+            nn.BatchNorm1d(out_channels[0]),
+            nn.ReLU()
+        )
+        self.initial_bn = nn.BatchNorm1d(out_channels[0])
+        
+        self.res_blocks = nn.ModuleList()
+        
+        for i in range(len(out_channels)-1):
+            self.res_blocks.append(
+                ResidualBlock(
+                    in_channels=out_channels[i],
+                    out_channels=out_channels[i+1],
+                    kernel_size=kernel_size[i+1],
+                    padding=paddings[i+1]
+                )
+            )
+        
+        # Final convolution layer without BatchNorm or ReLU for regression output
+        self.final_conv = nn.Conv1d(
+            out_channels[-1],
+            out_channels[-1],  # Same number of channels for output
+            kernel_size=kernel_size[-1],
+            padding=paddings[-1]
+        )
+
+    def forward(self, x):
+        x = self.initial_conv(x)
+        x = self.initial_bn(x)
+        x = F.relu(x)
+        
+        # Residual blocks with pooling
+        for res_block in self.res_blocks:
+            x = res_block(x)
+        
+        # Final convolution without activation for regression
+        x = self.final_conv(x)
+        
+        return x
+
+
 class RegressionModel1(nn.Module):
     def __init__(self, 
                 data_channels: int, 
