@@ -60,9 +60,26 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 # rt.plot_samples(train_dataloader_1, 5, binary_labels=False)
 
 
+model1 = md.DenseNet1(data_channels=np.sum(outputs1),
+                    out_channels=1,
+                    growth_rate=12,
+                    block_config=[6,12,24,16],
+                    transition_channels=36, 
+                    # Change this to be a constant factor e.g divide by 2 or 3 instead of constant number?????
+                    kernel_size=3,
+)
+
+
+model1 = md.ResNet1(data_channels=np.sum(outputs1), 
+                    out_channels=[4,4,6,6,8,8,6,6,4,4,1],
+                    kernel_size=[7],
+)
+print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
+print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
+
 
 # model1 = md.RegressionModel1(data_channels=np.sum(outputs1), 
-#                             out_channels=[4,4,8,8,4,2,1],
+#                             out_channels=[4,4,8,12,12,8,4,2,1],
 #                             kernel_size=[13],
 #                             batch_norm=True,
 #                             P_dropout=0.0,
@@ -85,9 +102,16 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 
 
-# results = []
+results = []
 
-# plot_during = False
+plot_during = False
+
+# Save names for ResNet
+save1 = '_' + '_'.join([''.join(map(str, model1.out_channels)), ''.join(map(str, model1.kernel_size)), str(model1.__class__.__name__)])
+
+# Save names for DenseNet
+# save1 = '_' + '_'.join([str(model1.out_channels), str(model1.kernel_size), str(model1.num_blocks), str(model1.num_layers_per_block), str(model1.growth_rate), str(model1.transition_channels), str(model1.__class__.__name__)])
+
 
 # save1 = '_' + '_'.join([''.join(map(str, model1.out_channels)), ''.join(map(str, model1.kernel_size)), str(model1.batch_norm), str(model1.P_dropout), str(model1.max_pool)])
 # save2 = '_' + '_'.join([''.join(map(str, model2.out_channels)), ''.join(map(str, model2.kernel_size)), str(model2.batch_norm), str(model2.P_dropout), str(model2.max_pool)])
@@ -129,24 +153,24 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 # results.append(result_dict2)
 # end2 = time.time()
 
-# start1 = time.time()
-# result_dict1,_ = rt.train_model_regression(
-#                 model1, 
-#                 train_dataloader_1, 
-#                 val_dataloader_1,
-#                 save_suffix = save1 + '_triangle',
-#                 num_epochs = 200, 
-#                 plotting=plot_during,
-#                 patience = 20,
-#                 )
-# results.append(result_dict1)
-# end1 = time.time()
+start1 = time.time()
+result_dict1,_ = rt.train_model_regression(
+                model1, 
+                train_dataloader_1, 
+                val_dataloader_1,
+                save_suffix = save1 + '_triangle',
+                num_epochs = 200, 
+                plotting=plot_during,
+                patience = 20,
+                )
+results.append(result_dict1)
+end1 = time.time()
 
 # rt.plot_loss_history(results, log_scale=True, show=False)
 # rt.plot_precision_history(results, log_scale=False, show=False)
 # rt.plot_recall_history(results, log_scale=False, show=False)
 
-# print('Time taken for model 1 training: ', end1-start1)
+print('Time taken for model 1 training: ', end1-start1)
 # print('Time taken for model 2 training: ', end2-start2)
 
 
@@ -154,7 +178,7 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 # #  models from save files or train above
 # model1 = rt.load_model('02_20_20_51_4488421_13_True_0.0_False.pth')
 # model2 = rt.load_model('02_20_15_19_4488421_5_True_0.0_False.pth')
-model1 = rt.load_model('02_28_12_01_4488421_13_True_0.0_False_triangle.pth')
+model2 = rt.load_model('02_28_12_01_4488421_13_True_0.0_False_triangle.pth')
 
 # criterion=nn.BCELoss()
 # rt.compare_models(
@@ -169,8 +193,9 @@ model1 = rt.load_model('02_28_12_01_4488421_13_True_0.0_False_triangle.pth')
 
 # rt.plot_predictions([model1, model2], val_dataloader_1, 5, acceptance=0.5)
 
-rt.plot_triangle_predictions([model1], val_dataloader_1, 5, 2, 0.2)
-
+rt.plot_triangle_predictions([model1, model2], val_dataloader_1, 10, 2, 0.2)
+print(rt.calculate_mean_frequency_error_triangle(model1, val_dataloader_1, up_inc=0.4, N=2, Wn=0.2, max_error=1.0)) 
+print(rt.calculate_mean_frequency_error_triangle(model2, val_dataloader_1, up_inc=0.4, N=2, Wn=0.2, max_error=1.0))
 # print(rt.calculate_mean_frequency_error(model1, val_dataloader_1, 0.5, 'midpoint', 1, None, 0.5))
 # print()
 # print(rt.calculate_mean_frequency_error(model1, val_dataloader_1, 0.5, 'midpoint', 1, 0.04, 0.5))

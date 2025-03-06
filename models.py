@@ -151,7 +151,7 @@ class TransitionLayer(nn.Module):
 
 # Does not include max pooling or upsampling
 # If transition channels is not None then the channels after each block are set to this value
-class DenseNet1D(nn.Module):
+class DenseNet1(nn.Module):
     def __init__(self,
                 data_channels: int,
                 out_channels: int,
@@ -161,7 +161,7 @@ class DenseNet1D(nn.Module):
                 kernel_size: int = 3,
                 input_length: int = 1024
                 ):
-        super(DenseNet1D, self).__init__()
+        super(DenseNet1, self).__init__()
         
         self.data_channels = data_channels
         self.out_channels = out_channels
@@ -201,7 +201,6 @@ class DenseNet1D(nn.Module):
             x = transition(x)  # Reduce channels while keeping sequence length fixed
         x = self.final_conv(x)  # Regression output
         return x
-
 
 
 class ResidualBlock(nn.Module):
