@@ -110,8 +110,102 @@ class EarlyStopping:
         model.load_state_dict(torch.load(self.path))
 
 
+class DenseBlock(nn.Module):
+    def __init__(self, in_channels, growth_rate, num_layers, kernel_size, padding):
+        super(DenseBlock, self).__init__()
+        self.layers = nn.ModuleList()
+        current_channels = in_channels
+        
+        for _ in range(num_layers):
+            self.layers.append(nn.Sequential(
+                nn.Conv1d(current_channels, growth_rate, kernel_size=kernel_size, padding=padding),
+                nn.BatchNorm1d(growth_rate),
+                nn.ReLU()
+            ))
+            current_channels += growth_rate  # Increase channel count after each layer
+
+    def forward(self, x):
+        for layer in self.layers:
+            out = layer(x)
+            x = torch.cat([x, out], dim=1)  # Concatenating input with output (Dense Connection)
+        return x
+
+
+# Kernel size 1 convolutional layer for channel size reduction
+class TransitionLayer(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(TransitionLayer, self).__init__()
+        self.conv = None
+        if out_channels is not None:
+            self.conv = nn.Sequential(
+                nn.Conv1d(in_channels, out_channels, kernel_size=1),  # 1x1 convolution for channel reduction
+                nn.BatchNorm1d(out_channels),
+                nn.ReLU()
+            )
+
+    def forward(self, x):
+        if self.conv is not None:
+            return self.conv(x)  # Maintain sequence length while reducing channels
+        return x  # Skip transition if None
+
+
+# Does not include max pooling or upsampling
+# If transition channels is not None then the channels after each block are set to this value
+class DenseNet1D(nn.Module):
+    def __init__(self,
+                data_channels: int,
+                out_channels: int,
+                growth_rate: int,
+                block_config: List[int],
+                transition_channels: int = None,
+                kernel_size: int = 3,
+                input_length: int = 1024
+                ):
+        super(DenseNet1D, self).__init__()
+        
+        self.data_channels = data_channels
+        self.out_channels = out_channels
+        self.growth_rate = growth_rate
+        self.block_config = block_config
+        self.transition_channels = transition_channels
+        self.kernel_size = kernel_size
+        self.input_length = input_length
+        
+        padding = (kernel_size - 1) // 2
+        
+        # Initial convolution
+        self.initial_conv = nn.Sequential(
+            nn.Conv1d(data_channels, growth_rate, kernel_size=kernel_size, padding=padding),
+            nn.BatchNorm1d(growth_rate),
+            nn.ReLU()
+        )
+        
+        # Dense blocks with optional transition layers
+        self.blocks = nn.ModuleList()
+        self.transitions = nn.ModuleList()
+        in_channels = growth_rate
+        for num_layers in block_config:
+            self.blocks.append(DenseBlock(in_channels, growth_rate, num_layers, kernel_size, padding))
+            in_channels += growth_rate * num_layers  # Each block increases the number of channels
+            self.transitions.append(TransitionLayer(in_channels, transition_channels))
+            if transition_channels is not None:
+                in_channels = transition_channels  # Reduce channels after each block if transition is used
+        
+        # Final regression layer
+        self.final_conv = nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, padding=padding)
+
+    def forward(self, x):
+        x = self.initial_conv(x)
+        for block, transition in zip(self.blocks, self.transitions):
+            x = block(x)
+            x = transition(x)  # Reduce channels while keeping sequence length fixed
+        x = self.final_conv(x)  # Regression output
+        return x
+
+
+
 class ResidualBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, padding, batch_norm=True, P_dropout=0.0):
+    def __init__(self, in_channels, out_channels, kernel_size, padding):
         super(ResidualBlock, self).__init__()
         self.conv1 = nn.Sequential(
             nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, padding=padding),
