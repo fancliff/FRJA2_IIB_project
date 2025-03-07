@@ -63,7 +63,7 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 # rt.plot_samples(train_dataloader_1, 5, binary_labels=False)
 
-rt.plot_predictions_all_labels(None, val_dataloader_1, 5, labels1)
+# rt.plot_predictions_all_labels(None, val_dataloader_1, 5, labels1)
 
 
 # model1 = md.DenseNet1(data_channels=np.sum(outputs1),
@@ -77,12 +77,13 @@ rt.plot_predictions_all_labels(None, val_dataloader_1, 5, labels1)
 # print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
 # print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
 
-# model1 = md.ResNet1(data_channels=np.sum(outputs1), 
-#                     out_channels=[4,4,6,6,8,8,6,6,4,4,1],
-#                     kernel_size=[7],
-# )
-# print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
-# print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
+model1 = md.ResNet1(data_channels=np.sum(outputs1), 
+                    out_channels=[4,4,8,8,6,6,4],
+                    kernel_size=[13]
+                    )
+
+print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
+print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
 
 
 # model1 = md.RegressionModel1(data_channels=np.sum(outputs1), 
@@ -109,12 +110,12 @@ rt.plot_predictions_all_labels(None, val_dataloader_1, 5, labels1)
 
 
 
-# results = []
+results = []
 
-# plot_during = False
+plot_during = False
 
 # Save names for ResNet
-# save1 = '_' + '_'.join([''.join(map(str, model1.out_channels)), ''.join(map(str, model1.kernel_size)), str(model1.__class__.__name__)])
+save1 = '_' + '_'.join([''.join(map(str, model1.out_channels)), ''.join(map(str, model1.kernel_size)), str(model1.__class__.__name__)])
 
 # Save names for DenseNet
 # save1 = '_' + '_'.join([str(model1.out_channels), str(model1.kernel_size), '.'.join(map(str, model1.block_config)), str(model1.growth_rate), str(model1.transition_channels), str(model1.__class__.__name__)])
@@ -160,18 +161,18 @@ rt.plot_predictions_all_labels(None, val_dataloader_1, 5, labels1)
 # results.append(result_dict2)
 # end2 = time.time()
 
-# start1 = time.time()
-# result_dict1,_ = rt.train_model_regression(
-#                 model1, 
-#                 train_dataloader_1, 
-#                 val_dataloader_1,
-#                 save_suffix = save1 + '_triangle',
-#                 num_epochs = 200, 
-#                 plotting=plot_during,
-#                 patience = 20,
-#                 )
-# results.append(result_dict1)
-# end1 = time.time()
+start1 = time.time()
+result_dict1,_ = rt.train_model_regression(
+                model1, 
+                train_dataloader_1, 
+                val_dataloader_1,
+                save_suffix = save1 + '_triangle',
+                num_epochs = 200, 
+                plotting=plot_during,
+                patience = 20,
+                )
+results.append(result_dict1)
+end1 = time.time()
 
 # rt.plot_loss_history(results, log_scale=True, show=False)
 # rt.plot_precision_history(results, log_scale=False, show=False)
@@ -197,6 +198,9 @@ rt.plot_predictions_all_labels(None, val_dataloader_1, 5, labels1)
 #     acceptance1=0.5,
 #     acceptance2=0.5,
 # )
+
+
+rt.plot_predictions_all_labels([model1], val_dataloader_1, 5, labels1)
 
 # rt.plot_predictions([model1, model2], val_dataloader_1, 5, acceptance=0.5)
 
