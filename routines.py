@@ -599,6 +599,107 @@ def plot_triangle_predictions(models, dataloader, num_samples, N=2, Wn=0.2):
                     return # Exit if enough samples are plotted
 
 
+def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, N=2, Wn=0.2):
+    samples_plotted = 0
+    with torch.no_grad():
+        for data, labels, params in dataloader:
+            assert len(label_defs) == len(labels[0]), "Number of label definitions must match number of labels"
+            batch_size = len(data)
+            for i in range(min(num_samples,batch_size)):
+                x = np.linspace(0, 1, len(data[i][0]))
+                omegas = params[i, :, 0].cpu().numpy() if params is not None else []
+                omegas = omegas[~np.isnan(omegas)] # Remove NaN values
+                
+                if models is None: # Plot just sample and labels
+                    num_data_channels = data[i].shape[0] 
+                    num_label_channels = labels[i].shape[0] # Add subfigure for each label
+                    num_channels = num_data_channels + num_label_channels
+                    fig, axes = plt.subplots(num_channels, 1, figsize=(8, 4), sharex=True)
+
+                    for j in range(num_data_channels):
+                        signal_arr = data[i][j].cpu().numpy()
+                        axes[j].plot(x, signal_arr, label="Signal", color="blue")
+                        
+                        # Plot the true omegas as vertical dashed lines
+                        for k, omega in enumerate(omegas):
+                            axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
+                    
+                    j = 0 # Reset channel index for labels
+                    if label_defs[0]: # Mode triangle labelling
+                        subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "modes", N, Wn)
+                        j += 1
+                    if label_defs[1]: # Amplitude
+                        subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "amplitude", N, Wn)
+                        j += 1
+                    if label_defs[2]: # Log10_zeta
+                        subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "log10_zeta", N, Wn)
+                        j += 1
+                    if label_defs[3]: # omega_n
+                        subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "omega_n", N, Wn)
+                        j += 1
+                    
+                    plt.legend()
+                    
+                    plt.tight_layout()
+                    plt.show()
+                
+                else:
+                    for model_idx, model in enumerate(models): # Plot predictions
+                        model.eval()
+                        model_output = model(data).squeeze()
+                        num_data_channels = data[i].shape[0] 
+                        num_label_channels = labels[i].shape[0] # Add subfigure for each label
+                        num_channels = num_data_channels + num_label_channels
+                        fig, axes = plt.subplots(num_channels, 1, figsize=(8, 4), sharex=True)
+
+                        for j in range(num_data_channels):
+                            signal_arr = data[i][j].cpu().numpy()
+                            axes[j].plot(x, signal_arr, label="Signal", color="blue")
+                            
+                            # Plot the true omegas as vertical dashed lines
+                            for k, omega in enumerate(omegas):
+                                axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
+                        
+                        j = 0 # Reset channel index for labels
+                        if label_defs[0]: # Mode triangle labelling
+                            subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "modes", N, Wn)
+                            j += 1
+                        if label_defs[1]: # Amplitude
+                            subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "amplitude", N, Wn)
+                            j += 1
+                        if label_defs[2]: # Log10_zeta
+                            subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "log10_zeta", N, Wn)
+                            j += 1
+                        if label_defs[3]: # omega_n
+                            subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "omega_n", N, Wn)
+                            j += 1
+                        
+                        plt.legend()
+                        
+                        plt.tight_layout()
+                        plt.show()
+                
+                samples_plotted += 1
+                if samples_plotted >= num_samples:
+                    return # Exit if enough samples are plotted
+
+
+def subplot_labels(axes_j, x, model_output_i_j, labels_arr_i_j, name, N, Wn):
+    if model_output_i_j is not None:
+        fitted_curve = model_output_i_j.cpu().numpy()
+        b,a = scipy.signal.butter(N,Wn)
+        smoothed_curve = scipy.signal.filtfilt(b,a,fitted_curve)
+        
+        axes_j.plot(x, fitted_curve, label=f"Predicted {name}", color="orange")
+        axes_j.plot(x, smoothed_curve, label=f"Smoothed {name}", color="red")
+        if name == 'modes':
+            predicted_omegas = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.5)
+            for k, omega in enumerate(predicted_omegas):
+                axes_j.axvline(x=omega, color='cyan', linestyle=':', label='Predicted Mode Frequency' if k==0 else '')
+                
+    axes_j.plot(x, labels_arr_i_j, label=f"Actual {name} Labels", linestyle="--", color="green")
+
+
 def est_nat_freq_binary(prob_arr, acceptance=0.5, method='midpoint', bandwidth=None, overlap_threshold=0.5):
     """
     Estimate natural frequencies from a PyTorch CNN model.
