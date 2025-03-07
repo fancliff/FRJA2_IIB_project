@@ -623,6 +623,8 @@ def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, N=2
                         # Plot the true omegas as vertical dashed lines
                         for k, omega in enumerate(omegas):
                             axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
+                        
+                        axes[j].legend()
                     
                     j = 0 # Reset channel index for labels
                     if label_defs[0]: # Mode triangle labelling
@@ -659,6 +661,8 @@ def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, N=2
                             # Plot the true omegas as vertical dashed lines
                             for k, omega in enumerate(omegas):
                                 axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
+                            
+                            axes[j].legend()
                         
                         j = 0 # Reset channel index for labels
                         if label_defs[0]: # Mode triangle labelling
@@ -685,19 +689,31 @@ def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, N=2
 
 
 def subplot_labels(axes_j, x, model_output_i_j, labels_arr_i_j, name, N, Wn):
+    handles, labels = axes_j.get_legend_handles_labels() # Get existing legend handles and labels
+
     if model_output_i_j is not None:
         fitted_curve = model_output_i_j.cpu().numpy()
         b,a = scipy.signal.butter(N,Wn)
         smoothed_curve = scipy.signal.filtfilt(b,a,fitted_curve)
         
-        axes_j.plot(x, fitted_curve, label=f"Predicted {name}", color="orange")
-        axes_j.plot(x, smoothed_curve, label=f"Smoothed {name}", color="red")
+        h1, = axes_j.plot(x, fitted_curve, label=f"Predicted {name}", color="orange")
+        h2, = axes_j.plot(x, smoothed_curve, label=f"Smoothed {name}", color="red")
+        handles.extend([h1, h2])
+        labels.extend([f"Predicted {name}", f"Smoothed {name}"])
+        
         if name == 'modes':
             predicted_omegas = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.5)
             for k, omega in enumerate(predicted_omegas):
-                axes_j.axvline(x=omega, color='cyan', linestyle=':', label='Predicted Mode Frequency' if k==0 else '')
-                
-    axes_j.plot(x, labels_arr_i_j, label=f"Actual {name} Labels", linestyle="--", color="green")
+                h3 = axes_j.axvline(x=omega, color='cyan', linestyle=':', label='Predicted Mode Frequency' if k == 0 else '')
+                if k == 0:  # Only add one label to avoid duplicates
+                    handles.append(h3)
+                    labels.append('Predicted Mode Frequency')
+
+    h4, = axes_j.plot(x, labels_arr_i_j, label=f"Actual {name} Labels", linestyle="--", color="green")
+    handles.append(h4)
+    labels.append(f"Actual {name} Labels")
+
+    axes_j.legend(handles, labels) # Update the legend
 
 
 def est_nat_freq_binary(prob_arr, acceptance=0.5, method='midpoint', bandwidth=None, overlap_threshold=0.5):
