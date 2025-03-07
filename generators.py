@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numba import jit
 
+
+
 @jit(nopython=True)
 def make_step_func_labels(
     natural_frequencies: np.ndarray,
@@ -118,8 +120,8 @@ def n_channels_multi_labels_gen(
             labels[i, k, :] = make_step_func_labels(omegas, alphas, frequencies, signal_length)
             k += 1
         
-        if label_outputs[2]: # damping ratio step function
-            labels[i, k, :] = make_step_func_labels(omegas, zetas, frequencies, signal_length)
+        if label_outputs[2]: # damping ratio step function (log 10 scale)
+            labels[i, k, :] = make_step_func_labels(omegas, np.log10(zetas), frequencies, signal_length)
             k += 1
         
         if label_outputs[3]: # omega step function
@@ -167,8 +169,6 @@ def n_channels_multi_labels_gen(
             j += 1
 
     return data, labels, params if params_out else None
-
-
 
 
 
