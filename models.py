@@ -219,6 +219,7 @@ class ResidualBlock(nn.Module):
         self.out_channels = out_channels
         
         # Projection shortcut if dimensions don't match
+        # Cite where this shortcut came from in the report
         self.shortcut = nn.Identity()
         if in_channels != out_channels:
             self.shortcut = nn.Sequential(
