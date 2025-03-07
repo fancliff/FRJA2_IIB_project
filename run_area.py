@@ -8,7 +8,7 @@ import scipy
 import matplotlib.pyplot as plt
 from numba import jit
 
-from generators import n_channels_gen, n_channels_stepped_gen, n_channels_triangle_gen
+from generators import n_channels_gen, n_channels_stepped_gen, n_channels_triangle_gen, n_channels_multi_labels_gen
 import models as md
 import routines as rt 
 
@@ -20,29 +20,33 @@ import h5py
 
 #                      mag, real, imag, phase, log_mag
 outputs1 = np.array([False, True, True, False, False])
-outputs2 = np.array([False, True, True, False, False])
 
-# data, labels, params = n_channels_triangle_gen(
-#     num_samples=100000, 
-#     signal_length=1024, 
-#     sigma_min=0.01, 
-#     sigma_max=0.1, 
-#     zeta_max=0.1,
-#     zeta_min=0.01,
-#     min_max=True, 
-#     enabled_outputs=outputs1,
-#     params_out=True,
-#     pulse_width=0.05,
-#     )
+#                  modes, alpha, zeta, omega
+labels1 = np.array([True, True, True, True])
+
+
+data, labels, params = n_channels_multi_labels_gen(
+    num_samples=100000, 
+    signal_length=1024, 
+    sigma_min=0.01, 
+    sigma_max=0.1, 
+    zeta_max=0.1,
+    zeta_min=0.01,
+    min_max=True, 
+    enabled_outputs=outputs1,
+    label_outputs=labels1,
+    params_out=True,
+    pulse_width=0.05,
+    )
 
 project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/datasets/'
-data_name = 'data_triangle_func_05.h5'
+data_name = 'data_all_labels.h5'
 data_file = project_path + data_name
 
-# with h5py.File(data_file, 'w') as f:
-#     f.create_dataset('data', data=data)
-#     f.create_dataset('labels', data=labels)
-#     f.create_dataset('params', data=params)
+with h5py.File(data_file, 'w') as f:
+    f.create_dataset('data', data=data)
+    f.create_dataset('labels', data=labels)
+    f.create_dataset('params', data=params)
 
 with h5py.File(data_file, 'r') as f:
     val_data = f['data'][:5000]
