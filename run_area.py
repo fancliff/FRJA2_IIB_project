@@ -25,28 +25,28 @@ outputs1 = np.array([False, True, True, False, False])
 labels1 = np.array([True, True, True, True])
 
 
-data, labels, params = n_channels_multi_labels_gen(
-    num_samples=100000, 
-    signal_length=1024, 
-    sigma_min=0.01, 
-    sigma_max=0.1, 
-    zeta_max=0.1,
-    zeta_min=0.01,
-    min_max=True, 
-    enabled_outputs=outputs1,
-    label_outputs=labels1,
-    params_out=True,
-    pulse_width=0.05,
-    )
+# data, labels, params = n_channels_multi_labels_gen(
+#     num_samples=100000, 
+#     signal_length=1024, 
+#     sigma_min=0.01, 
+#     sigma_max=0.1, 
+#     zeta_max=0.1,
+#     zeta_min=0.01,
+#     min_max=True, 
+#     enabled_outputs=outputs1,
+#     label_outputs=labels1,
+#     params_out=True,
+#     pulse_width=0.05,
+#     )
 
 project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/datasets/'
 data_name = 'data_all_labels.h5'
 data_file = project_path + data_name
 
-with h5py.File(data_file, 'w') as f:
-    f.create_dataset('data', data=data)
-    f.create_dataset('labels', data=labels)
-    f.create_dataset('params', data=params)
+# with h5py.File(data_file, 'w') as f:
+#     f.create_dataset('data', data=data)
+#     f.create_dataset('labels', data=labels)
+#     f.create_dataset('params', data=params)
 
 with h5py.File(data_file, 'r') as f:
     val_data = f['data'][:5000]
@@ -63,17 +63,19 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 # rt.plot_samples(train_dataloader_1, 5, binary_labels=False)
 
+rt.plot_predictions_all_labels(None, val_dataloader_1, 5, labels1)
 
-model1 = md.DenseNet1(data_channels=np.sum(outputs1),
-                    out_channels=1,
-                    growth_rate=8,
-                    block_config=[6,6,6,6],
-                    transition_channels=16, 
-                    # Change this to be a constant factor e.g divide by 2 or 3 instead of constant number?????
-                    kernel_size=3,
-)
-print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
-print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
+
+# model1 = md.DenseNet1(data_channels=np.sum(outputs1),
+#                     out_channels=1,
+#                     growth_rate=8,
+#                     block_config=[6,6,6,6],
+#                     transition_channels=16, 
+#                     # Change this to be a constant factor e.g divide by 2 or 3 instead of constant number?????
+#                     kernel_size=3,
+# )
+# print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
+# print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
 
 # model1 = md.ResNet1(data_channels=np.sum(outputs1), 
 #                     out_channels=[4,4,6,6,8,8,6,6,4,4,1],
@@ -107,15 +109,15 @@ print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
 
 
 
-results = []
+# results = []
 
-plot_during = False
+# plot_during = False
 
 # Save names for ResNet
 # save1 = '_' + '_'.join([''.join(map(str, model1.out_channels)), ''.join(map(str, model1.kernel_size)), str(model1.__class__.__name__)])
 
 # Save names for DenseNet
-save1 = '_' + '_'.join([str(model1.out_channels), str(model1.kernel_size), '.'.join(map(str, model1.block_config)), str(model1.growth_rate), str(model1.transition_channels), str(model1.__class__.__name__)])
+# save1 = '_' + '_'.join([str(model1.out_channels), str(model1.kernel_size), '.'.join(map(str, model1.block_config)), str(model1.growth_rate), str(model1.transition_channels), str(model1.__class__.__name__)])
 
 
 # save1 = '_' + '_'.join([''.join(map(str, model1.out_channels)), ''.join(map(str, model1.kernel_size)), str(model1.batch_norm), str(model1.P_dropout), str(model1.max_pool)])
@@ -158,24 +160,24 @@ save1 = '_' + '_'.join([str(model1.out_channels), str(model1.kernel_size), '.'.j
 # results.append(result_dict2)
 # end2 = time.time()
 
-start1 = time.time()
-result_dict1,_ = rt.train_model_regression(
-                model1, 
-                train_dataloader_1, 
-                val_dataloader_1,
-                save_suffix = save1 + '_triangle',
-                num_epochs = 200, 
-                plotting=plot_during,
-                patience = 20,
-                )
-results.append(result_dict1)
-end1 = time.time()
+# start1 = time.time()
+# result_dict1,_ = rt.train_model_regression(
+#                 model1, 
+#                 train_dataloader_1, 
+#                 val_dataloader_1,
+#                 save_suffix = save1 + '_triangle',
+#                 num_epochs = 200, 
+#                 plotting=plot_during,
+#                 patience = 20,
+#                 )
+# results.append(result_dict1)
+# end1 = time.time()
 
 # rt.plot_loss_history(results, log_scale=True, show=False)
 # rt.plot_precision_history(results, log_scale=False, show=False)
 # rt.plot_recall_history(results, log_scale=False, show=False)
 
-print('Time taken for model 1 training: ', end1-start1)
+# print('Time taken for model 1 training: ', end1-start1)
 # print('Time taken for model 2 training: ', end2-start2)
 
 
@@ -183,7 +185,7 @@ print('Time taken for model 1 training: ', end1-start1)
 # #  models from save files or train above
 # model1 = rt.load_model('02_20_20_51_4488421_13_True_0.0_False.pth')
 # model2 = rt.load_model('02_20_15_19_4488421_5_True_0.0_False.pth')
-model2 = rt.load_model('03_06_15_58_44668866441_7_ResNet1_triangle.pth')
+# model2 = rt.load_model('03_06_15_58_44668866441_7_ResNet1_triangle.pth')
 
 # criterion=nn.BCELoss()
 # rt.compare_models(
@@ -198,9 +200,9 @@ model2 = rt.load_model('03_06_15_58_44668866441_7_ResNet1_triangle.pth')
 
 # rt.plot_predictions([model1, model2], val_dataloader_1, 5, acceptance=0.5)
 
-rt.plot_triangle_predictions([model1, model2], val_dataloader_1, 10, 2, 0.2)
-print(rt.calculate_mean_frequency_error_triangle(model1, val_dataloader_1, up_inc=0.4, N=2, Wn=0.2, max_error=1.0)) 
-print(rt.calculate_mean_frequency_error_triangle(model2, val_dataloader_1, up_inc=0.4, N=2, Wn=0.2, max_error=1.0))
+# rt.plot_triangle_predictions([model1, model2], val_dataloader_1, 10, 2, 0.2)
+# print(rt.calculate_mean_frequency_error_triangle(model1, val_dataloader_1, up_inc=0.4, N=2, Wn=0.2, max_error=1.0)) 
+# print(rt.calculate_mean_frequency_error_triangle(model2, val_dataloader_1, up_inc=0.4, N=2, Wn=0.2, max_error=1.0))
 # print(rt.calculate_mean_frequency_error(model1, val_dataloader_1, 0.5, 'midpoint', 1, None, 0.5))
 # print()
 # print(rt.calculate_mean_frequency_error(model1, val_dataloader_1, 0.5, 'midpoint', 1, 0.04, 0.5))
