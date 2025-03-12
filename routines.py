@@ -231,7 +231,8 @@ def train_model_regression(model, train_dataloader, val_dataloader, save_suffix,
     early_stopping.load_checkpoint(model)
     
     #save the model if a save name is provided
-    save_suffix is not None and save_model(model, save_suffix)
+    if save_suffix is not None:
+        save_model(model, save_suffix)
     
     if plotting:
         plt.ioff()
