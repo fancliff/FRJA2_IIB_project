@@ -635,14 +635,14 @@ def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, N=2
                     if label_defs[0]: # Mode triangle labelling
                         subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "modes", N, Wn)
                         j += 1
-                    if label_defs[1]: # Amplitude
-                        subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "amplitude", N, Wn)
+                    if label_defs[1]: # Amplitude magnitude
+                        subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "amplitude magnitude", N, Wn)
                         j += 1
-                    if label_defs[2]: # Log10_zeta
+                    if label_defs[2]: # Amplitude phase
+                        subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "amplitude phase", N, Wn)
+                        j += 1
+                    if label_defs[3]: # Log10_zeta
                         subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "log10_zeta", N, Wn)
-                        j += 1
-                    if label_defs[3]: # omega_n
-                        subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "omega_n", N, Wn)
                         j += 1
                     
                     plt.legend()
@@ -673,14 +673,14 @@ def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, N=2
                         if label_defs[0]: # Mode triangle labelling
                             subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "modes", N, Wn)
                             j += 1
-                        if label_defs[1]: # Amplitude
-                            subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "amplitude", N, Wn)
+                        if label_defs[1]: # Amplitude magnitude
+                            subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "amplitude magnitude", N, Wn)
                             j += 1
-                        if label_defs[2]: # Log10_zeta
+                        if label_defs[2]: # Amplitude phase
+                            subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "amplitude phase", N, Wn)
+                            j += 1
+                        if label_defs[3]: # Log10 zeta
                             subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "log10_zeta", N, Wn)
-                            j += 1
-                        if label_defs[3]: # omega_n
-                            subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "omega_n", N, Wn)
                             j += 1
                         
                         plt.legend()
