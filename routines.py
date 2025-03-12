@@ -182,57 +182,61 @@ def train_model_regression(model, train_dataloader, val_dataloader, save_suffix,
         "validation_mae": [],
         "validation_r2": [],
         "epochs": []}
-    
-    for epoch in range(num_epochs):
-        model.train() #!!!
-        train_loss, train_mse, train_mae, train_r2 = training_step_regression(model, train_dataloader, criterion, optimiser)
+    try:
+        for epoch in range(num_epochs):
+            model.train() #!!!
+            train_loss, train_mse, train_mae, train_r2 = training_step_regression(model, train_dataloader, criterion, optimiser)
+            
+            model.eval() #!!!
+            val_loss, val_mse, val_mae, val_r2 = validation_loss_regression(model, val_dataloader, criterion)
+            
+            print()
+            print(f'Epoch [{epoch+1}/{num_epochs}]')
+            print(f'Training Loss: {train_loss:.4f}, Training MSE: {train_mse:.4f}, Training MAE: {train_mae:.4f}, Training R²: {train_r2:.4f}')
+            print(f'Validation Loss: {val_loss:.4f}, Validation MSE: {val_mse:.4f}, Validation MAE: {val_mae:.4f}, Validation R²: {val_r2:.4f}')
+            
+            result_dict["training_loss"].append(train_loss)
+            result_dict["training_mse"].append(train_mse)
+            result_dict["training_mae"].append(train_mae)
+            result_dict["training_r2"].append(train_r2)
+            result_dict["validation_loss"].append(val_loss)
+            result_dict["validation_mse"].append(val_mse)
+            result_dict["validation_mae"].append(val_mae)
+            result_dict["validation_r2"].append(val_r2)
+            result_dict["epochs"].append(epoch + 1)
+            
+            if plotting:
+                # Update the plot
+                train_loss_line.set_xdata(result_dict["epochs"])
+                train_loss_line.set_ydata(result_dict["training_loss"])
+                val_loss_line.set_xdata(result_dict["epochs"])
+                val_loss_line.set_ydata(result_dict["validation_loss"])
+                ax.relim()
+                ax.autoscale_view()
+                plt.draw()
+                plt.pause(0.01)
         
-        model.eval() #!!!
-        val_loss, val_mse, val_mae, val_r2 = validation_loss_regression(model, val_dataloader, criterion)
+            early_stopping(val_loss, model)
         
+            if early_stopping.early_stop:
+                print('Early stopping triggered, stopping training...')
+                #early_stopping.load_checkpoint(model)
+                break
+    except KeyboardInterrupt:
+        print('\nTraining interrupted by user')
+    except Exception as e:
+        print(f'\nTraining failed with error: {e}')
+    finally: # Always save the model regardless of error e.g out of memory etc.
         print()
-        print(f'Epoch [{epoch+1}/{num_epochs}]')
-        print(f'Training Loss: {train_loss:.4f}, Training MSE: {train_mse:.4f}, Training MAE: {train_mae:.4f}, Training R²: {train_r2:.4f}')
-        print(f'Validation Loss: {val_loss:.4f}, Validation MSE: {val_mse:.4f}, Validation MAE: {val_mae:.4f}, Validation R²: {val_r2:.4f}')
+        print('Finished Training. Loading best model...')
         
-        result_dict["training_loss"].append(train_loss)
-        result_dict["training_mse"].append(train_mse)
-        result_dict["training_mae"].append(train_mae)
-        result_dict["training_r2"].append(train_r2)
-        result_dict["validation_loss"].append(val_loss)
-        result_dict["validation_mse"].append(val_mse)
-        result_dict["validation_mae"].append(val_mae)
-        result_dict["validation_r2"].append(val_r2)
-        result_dict["epochs"].append(epoch + 1)
+        #load the best model using EarlyStopping class 
+        #do this regardless of whether training was stopped early
+        early_stopping.load_checkpoint(model)
         
-        if plotting:
-            # Update the plot
-            train_loss_line.set_xdata(result_dict["epochs"])
-            train_loss_line.set_ydata(result_dict["training_loss"])
-            val_loss_line.set_xdata(result_dict["epochs"])
-            val_loss_line.set_ydata(result_dict["validation_loss"])
-            ax.relim()
-            ax.autoscale_view()
-            plt.draw()
-            plt.pause(0.01)
-        
-        early_stopping(val_loss, model)
-        
-        if early_stopping.early_stop:
-            print('Early stopping triggered, stopping training...')
-            #early_stopping.load_checkpoint(model)
-            break
-    
-    print()
-    print('Finished Training')
-    
-    #load the best model using EarlyStopping class 
-    #do this regardless of whether training was stopped early
-    early_stopping.load_checkpoint(model)
-    
-    #save the model if a save name is provided
-    if save_suffix is not None:
-        save_model(model, save_suffix)
+        #save the model if a save name is provided
+        if save_suffix is not None:
+            save_model(model, save_suffix)
     
     if plotting:
         plt.ioff()
