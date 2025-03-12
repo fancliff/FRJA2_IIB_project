@@ -790,20 +790,25 @@ def est_nat_freq_triangle_rise(curve, up_inc=0.4):
     
     zero_crossings = np.where(np.diff(np.sign(dY)))[0]
     peak_indices = [idx for idx in zero_crossings if d2Y[idx] < 0]  # find all peaks
-    peak_indices = [idx for idx in peak_indices if curve[idx] > up_inc * 0.95]  # remove peaks below up_inc (and a small factor)
+    peak_indices.append(length-1)  
+    # add the last point as a peak in case the regression curve has not rounded over yet
+    # if there is no mode present it will be removed by the next line anyway
+    peak_indices = [idx for idx in peak_indices if curve[idx] >= up_inc * 0.95]  # remove peaks below up_inc (and a small factor)
+    trough_indices = [idx for idx in zero_crossings if d2Y[idx] > 0]  # find all troughs
     
-    filtered_peak_indices = []
+    max_dy_indices = []
     prev_peak_idx = 0
     for peak_idx in peak_indices:
         min_left_value = curve[prev_peak_idx:peak_idx].min()
-        
         # Check if the drop to the left is greater than up_inc
-        if curve[peak_idx] - min_left_value > up_inc: 
-            filtered_peak_indices.append(peak_idx)
+        if curve[peak_idx] - min_left_value > up_inc:
+            nearest_left_trough_idx = max([idx for idx in trough_indices if idx < peak_idx], default=0) 
+            # find nearest trough to left, if no trough found set to default 0
+            max_dy_indices.append(np.argmax(dY[nearest_left_trough_idx:peak_idx]) + nearest_left_trough_idx)
             # Update prev_peak_idx only for detected peaks
             prev_peak_idx = peak_idx
     
-    freq_estimates = x[filtered_peak_indices]
+    freq_estimates = x[max_dy_indices]
     return np.array(freq_estimates)
 
 
