@@ -10,13 +10,13 @@ def make_step_func_labels(
     values: np.ndarray,
     frequencies: np.ndarray,
     signal_length: int,
-    label_bandwidth: float = 0.02,
+    label_halfwidth: float = 0.02,
     ) -> np.ndarray:
     
     label = np.zeros(signal_length, dtype=np.float64)
     
     for i, freq in enumerate(frequencies):
-        within_bandwidth = np.abs(natural_frequencies - freq) <= label_bandwidth
+        within_bandwidth = np.abs(natural_frequencies - freq) <= label_halfwidth
         if np.any(within_bandwidth):
             overlapping_indices = np.where(within_bandwidth)[0]
             distances = np.abs(natural_frequencies[overlapping_indices] - freq)
