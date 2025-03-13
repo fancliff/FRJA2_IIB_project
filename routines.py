@@ -787,6 +787,7 @@ def est_nat_freq_binary(prob_arr, acceptance=0.5, method='midpoint', bandwidth=N
     return np.array(freq_estimates)
 
 
+# @jit(nopython=True)
 def est_nat_freq_triangle_rise(curve, up_inc=0.4):
     length = len(curve)
     x = np.linspace(0, 1, length)
@@ -881,17 +882,23 @@ def calculate_mean_frequency_error(model, dataloader, acceptance=0.5, method='mi
     mean_error = total_error / total_samples
     return mean_error
 
-
-def calculate_mean_frequency_error_triangle(model, dataloader, up_inc=0.4, N=2, Wn=0.2, max_error=1.0):
+# @jit(nopython=True)
+def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_inc=0.4, N=2, Wn=0.2, max_error=1.0):
     total_error = 0.0
     total_samples = 0
+    if not label_defs[0]: # Mode triangle labelling
+        print('\n Error calculation requires mode triangle labelling.')
+        return 0.0
     with torch.no_grad():
         for data, labels, params in dataloader:
             batch_size = len(data)
             for i in range(batch_size):
                 model.eval()
                 model_output = model(data).squeeze()
-                fitted_curve = model_output[i].cpu().numpy()
+                if model_output.shape[0] > 1: # If more than one label channel just extract mode triangle labels
+                    fitted_curve = model_output[i][0].cpu().numpy()
+                else:
+                    fitted_curve = model_output[i].cpu().numpy()
                 b,a = scipy.signal.butter(N,Wn)
                 smoothed_curve = scipy.signal.filtfilt(b,a,fitted_curve)
                 predicted_frequencies = est_nat_freq_triangle_rise(smoothed_curve, up_inc=up_inc)
@@ -930,6 +937,15 @@ def compare_models(model1, model2, dataloader1, dataloader2, criterion, acceptan
     print(f'Loss: {loss1:.4f}, Precision: {precision1:.4f}, Recall: {recall1:.4f}, F-score: {fscore1:.4f}\n')
     print('Model 2:')
     print(f'Loss: {loss2:.4f}, Precision: {precision2:.4f}, Recall: {recall2:.4f}, F-score: {fscore2:.4f}\n')
+
+
+def compare_models_regression(models, dataloader1, criterion=nn.MSELoss()):
+    # single dataloader for all models
+    for i, model in enumerate(models):
+        model.eval()
+        loss, mse, mae, r2 = validation_loss_regression(model, dataloader1, criterion)
+        print(f'\nModel {i+1}:')
+        print(f'MSE: {mse:.4f}, MAE: {mae:.4f}, R^2: {r2:.4f}')
 
 
 def calculate_precision_recall_binary(outputs, labels, acceptance):
