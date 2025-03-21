@@ -18,8 +18,8 @@ from typing import List
 
 import h5py
 
-#                      mag, real, imag, phase, log_mag
-inputs1 = np.array([False, True, True, True, False])
+#                    real, imag, phase, mag, log_mag
+inputs1 = np.array([ True, True, True, False, False])
 
 #                 modes, a mag, a phase, zeta 
 labels1 = np.array([True, True, True, True])
