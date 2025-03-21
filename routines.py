@@ -993,13 +993,55 @@ def calculate_mean_FRF_error(model, dataloader, FRF_type=0):
             batch_size = len(data)
             for i in range(batch_size):
                 output = model(data).squeeze()
-                input_signal = labels[i].cpu().numpy()
+                input_signal = data[i].cpu().numpy()
+                if FRF_type == 0:
+                    input_signal = np.abs(input_signal[0]+1j*input_signal[1])
+                else:
+                    input_signal = np.array([input_signal[0], input_signal[1]])
                 error, _ = compare_FRF(input_signal, output[i].cpu().numpy(), FRF_type)
                 total_error += error
                 total_samples += 1
     mean_error = total_error / total_samples
     return mean_error
 
+
+def plot_FRF_comparison(model, dataloader, num_samples, FRF_type=0):
+    samples_plotted = 0
+    with torch.no_grad():
+        for data, labels, params in dataloader:
+            batch_size = len(data)
+            for i in range(min(num_samples,batch_size)):
+                output = model(data).squeeze()
+                input_signal = data[i].cpu().numpy()
+                if FRF_type == 0:
+                    input_signal = np.abs(input_signal[0]+1j*input_signal[1])
+                else:
+                    input_signal = np.array([input_signal[0], input_signal[1]])
+                error, H_v = compare_FRF(input_signal, output[i].cpu().numpy(), FRF_type)
+                
+                if FRF_type == 0:
+                    fig, ax = plt.subplots(1, 1, figsize=(8, 4))
+                    ax.plot(H_v, label='Predicted FRF', color='orange')
+                    ax.plot(input_signal, label='True FRF', color='blue')
+                    ax.set_title('Magnitude Comparison')
+                    ax.legend()
+                else:
+                    fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+                    ax[0].plot(H_v[0], label='Predicted FRF (Real)', color='orange')
+                    ax[0].plot(input_signal[0], label='True FRF (Real)', color='blue')
+                    ax[1].plot(H_v[1], label='Predicted FRF (Imag)', color='orange')
+                    ax[1].plot(input_signal[1], label='True FRF (Imag)', color='blue')
+                    ax[0].set_title('Real Part Comparison')
+                    ax[1].set_title('Imaginary Part Comparison')
+                    ax[0].legend()
+                    ax[1].legend()
+                
+                plt.tight_layout()
+                plt.show()
+                
+                samples_plotted += 1
+                if samples_plotted >= num_samples:
+                    return
 
 
 def load_model(save_name):
