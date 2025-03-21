@@ -155,7 +155,7 @@ def n_channels_multi_labels_gen(
             mag = (mag_no_norm - min_mag)/(max_mag - min_mag)
             real_pt = real_pt * mag/mag_no_norm
             imag_pt = imag_pt * mag/mag_no_norm
-            log10_mag = (log10_mag - np.min(log10_mag))/(np.max(log10_mag) - np.min(log10_mag))
+            # log10_mag = (log10_mag - np.min(log10_mag))/(np.max(log10_mag) - np.min(log10_mag))
         
         # Populate output data based on enabled_inputs
         j = 0
