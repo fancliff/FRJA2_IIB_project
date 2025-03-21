@@ -590,7 +590,7 @@ def plot_triangle_predictions(models, dataloader, num_samples, N=2, Wn=0.2):
                         for k, omega in enumerate(omegas):
                             axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
                         
-                        predicted_omegas = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.5)
+                        predicted_omegas,_ = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.5)
                         for k, omega in enumerate(predicted_omegas):
                             axes[j].axvline(x=omega, color='cyan', linestyle=':', label='Predicted Mode Frequency' if k==0 else '')
                         
@@ -707,7 +707,7 @@ def subplot_labels(axes_j, x, model_output_i_j, labels_arr_i_j, name, N, Wn):
         labels.extend([f"Predicted {name}", f"Smoothed {name}"])
         
         if name == 'modes':
-            predicted_omegas = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.5)
+            predicted_omegas,_ = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.5)
             for k, omega in enumerate(predicted_omegas):
                 h3 = axes_j.axvline(x=omega, color='cyan', linestyle=':', label='Predicted Mode Frequency' if k == 0 else '')
                 if k == 0:  # Only add one label to avoid duplicates
@@ -914,7 +914,11 @@ def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_in
 
 
 
-def estimate_parameter(output, predicted_freq_idxs, label_halfwidth=0.02, window_scale=0.9):
+def estimate_parameter(output, predicted_freq_idxs, label_halfwidth=0.02, window_scale=0.9, N=2, Wn=0.2):
+    # Smooth output signal
+    b,a = scipy.signal.butter(N,Wn)
+    output = scipy.signal.filtfilt(b,a,output)
+    
     # Convert window_halfwidth to index space
     window_halfwidth_idx = int(label_halfwidth * window_scale * len(output))
     
@@ -938,15 +942,63 @@ def estimate_parameter(output, predicted_freq_idxs, label_halfwidth=0.02, window
 
 
 
-
-def compare_FRF(input_signal, all_outputs, label_halfwidth=0.02, window_scale=0.9):
-    # Assumes 
+def compare_FRF(input_signal, all_outputs, FRF_type = 0, signal_length = 1024):
+    # Assumes model ouputs are modes, a mag, a phase, log10_zeta
+    # FRF type: 0 for just magnitude, 1 for real and imaginary
     
+    # Extract the predicted frequencies
+    mode_channel = all_outputs[0]
+    predicted_freqs,predicted_freq_idxs = est_nat_freq_triangle_rise(mode_channel)
+    a_mag = estimate_parameter(all_outputs[1], predicted_freq_idxs)[0]
+    a_phase = estimate_parameter(all_outputs[2], predicted_freq_idxs)[0]
+    log10_zeta = estimate_parameter(all_outputs[3], predicted_freq_idxs)[0]
+    
+    # Reconstruct FRF
+    H_v = np.zeros(signal_length, dtype=np.complex128)
+    frequencies = np.linspace(0, 1, signal_length)
+    for n in range(len(predicted_freqs)):
+        alpha_n = a_mag[n]
+        zeta_n = 10**log10_zeta[n]
+        omega_n = predicted_freqs[n]
+        alpha_phase_n = a_phase[n]
+        
+        for j, w in enumerate(frequencies):
+            H_f = 0.0j
+            
+            denominator = omega_n**2 - w**2 + 2j * zeta_n * w
+            numerator = 1j*w*alpha_n*np.exp(1j*alpha_phase_n)
+            
+            H_f += numerator/denominator
+            
+            H_v[j] += H_f
+
+    # Compare the FRFs
+    if FRF_type == 0:
+        H_v = np.abs(H_v)
+        return np.mean((input_signal - H_v)**2), H_v
+    else:
+        H_v_real = np.real(H_v)
+        H_v_imag = np.imag(H_v)
+        MSE_real = np.mean((input_signal[0] - H_v_real)**2)
+        MSE_imag = np.mean((input_signal[1] - H_v_imag)**2)
+        return (MSE_real+MSE_imag)/2, np.array([H_v_real, H_v_imag])
 
 
 
-def calculate_mean_FRF_error(model, dataloader):
-    pass
+def calculate_mean_FRF_error(model, dataloader, FRF_type=0):
+    total_error = 0.0
+    total_samples = 0
+    with torch.no_grad():
+        for data, labels, params in dataloader:
+            batch_size = len(data)
+            for i in range(batch_size):
+                output = model(data).squeeze()
+                input_signal = labels[i].cpu().numpy()
+                error, _ = compare_FRF(input_signal, output[i].cpu().numpy(), FRF_type)
+                total_error += error
+                total_samples += 1
+    mean_error = total_error / total_samples
+    return mean_error
 
 
 
