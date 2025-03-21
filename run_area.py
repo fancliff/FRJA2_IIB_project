@@ -19,7 +19,7 @@ from typing import List
 import h5py
 
 #                      mag, real, imag, phase, log_mag
-outputs1 = np.array([False, True, True, False, True])
+inputs1 = np.array([False, True, True, True, False])
 
 #                 modes, a mag, a phase, zeta 
 labels1 = np.array([True, True, True, True])
@@ -34,14 +34,14 @@ data, labels, params = n_channels_multi_labels_gen(
     zeta_min=0.01,
     alpha_phase_std_dev=np.pi/6,
     min_max=True, 
-    enabled_outputs=outputs1,
+    enabled_inputs=inputs1,
     label_outputs=labels1,
     params_out=True,
     pulse_width=0.05,
     )
 
 project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/datasets/'
-data_name = 'data_all_labels_alpha_phase_w_log_mag.h5'
+data_name = 'data_all_labels_alpha_phase_w_phase.h5'
 data_file = project_path + data_name
 
 with h5py.File(data_file, 'w') as f:
@@ -75,21 +75,21 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 # print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
 # print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
 
-model1 = md.ResNet1(data_channels=np.sum(outputs1), 
+model1 = md.ResNet1(data_channels=np.sum(inputs1), 
                     out_channels=[4,4,8,8,6,6,4],
                     kernel_size=[13]
                     )
 print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
 print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
 
-# model2 = md.ResNet1(data_channels=np.sum(outputs1), 
+# model2 = md.ResNet1(data_channels=np.sum(inputs1), 
 #                     out_channels=[4,6,6,8,8,12,8,8,6,6,4],
 #                     kernel_size=[13]
 #                     )
 # print(f'Model 2 trainable parameters: {rt.count_parameters(model2)}')
 # print(f'Model 2 receptive field: {rt.calculate_total_receptive_field(model2)}')
 
-# model1 = md.RegressionModel1(data_channels=np.sum(outputs1), 
+# model1 = md.RegressionModel1(data_channels=np.sum(inputs1), 
 #                             out_channels=[4,4,8,12,12,8,4,2,1],
 #                             kernel_size=[13],
 #                             batch_norm=True,
@@ -117,7 +117,7 @@ result_dict1,_ = rt.train_model_regression(
                 model1, 
                 train_dataloader_1, 
                 val_dataloader_1,
-                save_suffix = save1 + '_a_phase_w_log_mag',
+                save_suffix = save1 + '_a_phase_w_phase',
                 num_epochs = 200, 
                 plotting=plot_during,
                 patience = 20,
@@ -144,8 +144,9 @@ print('Time taken for model 1 training: ', end1-start1)
 
 
 # models from save files or train above
-model2 = rt.load_model('03_12_14_37_4488664_13_ResNet1_a_phase.pth')
+# model2 = rt.load_model('03_12_14_37_4488664_13_ResNet1_a_phase.pth')
 # model2 = rt.load_model('03_12_19_10_4488664_13_ResNet1_0_a_phase.pth')
+
 
 
 # print('\nModel 1 mean frequency error:', rt.calculate_mean_frequency_error_triangle(model1, val_dataloader_1, labels1))
@@ -153,4 +154,4 @@ model2 = rt.load_model('03_12_14_37_4488664_13_ResNet1_a_phase.pth')
 
 # rt.compare_models_regression([model1, model2], val_dataloader_1)
 
-rt.plot_predictions_all_labels([model1, model2], val_dataloader_1, 5, labels1)
+# rt.plot_predictions_all_labels([model1, model2], val_dataloader_1, 5, labels1)

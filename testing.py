@@ -15,8 +15,8 @@ import routines as rt
 import time
 
 #                      mag, real, imag, phase, log_mag
-outputs1 = np.array([True, False, False, False, False])
-outputs2 = np.array([False, True, True, False, False])
+inputs1 = np.array([True, False, False, False, False])
+inputs2 = np.array([False, True, True, False, False])
 
 data, labels, params = n_channels_triangle_gen(
     num_samples=2, 
@@ -26,7 +26,7 @@ data, labels, params = n_channels_triangle_gen(
     zeta_max=0.1,
     zeta_min=0.01,
     min_max=True, 
-    enabled_outputs=outputs1,
+    enabled_inputs=inputs1,
     params_out=True,
     pulse_width=0.1,
     )

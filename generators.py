@@ -31,7 +31,7 @@ def make_step_func_labels(
 def n_channels_multi_labels_gen(
     num_samples: int,
     signal_length: int,
-    enabled_outputs: np.ndarray,
+    enabled_inputs: np.ndarray,
     label_outputs: np.ndarray,
     noise: bool = True,
     sigma_min: float = 0.01,
@@ -45,7 +45,7 @@ def n_channels_multi_labels_gen(
     pulse_width: float = 0.02,
     ):
     
-    num_outs = np.sum(enabled_outputs)
+    num_outs = np.sum(enabled_inputs)
     num_labels = np.sum(label_outputs)
 
     data = np.empty((num_samples, num_outs, signal_length),dtype=np.float64)
@@ -157,21 +157,21 @@ def n_channels_multi_labels_gen(
             imag_pt = imag_pt * mag/mag_no_norm
             log10_mag = (log10_mag - np.min(log10_mag))/(np.max(log10_mag) - np.min(log10_mag))
         
-        # Populate output data based on enabled_outputs
+        # Populate output data based on enabled_inputs
         j = 0
-        if enabled_outputs[0]:  # mag
+        if enabled_inputs[0]:  # mag
             data[i, j, :] = mag
             j += 1
-        if enabled_outputs[1]:  # real
+        if enabled_inputs[1]:  # real
             data[i, j, :] = real_pt
             j += 1
-        if enabled_outputs[2]:  # imag
+        if enabled_inputs[2]:  # imag
             data[i, j, :] = imag_pt
             j += 1
-        if enabled_outputs[3]:  # phase
+        if enabled_inputs[3]:  # phase
             data[i, j, :] = phase
             j += 1
-        if enabled_outputs[4]:  # log_mag
+        if enabled_inputs[4]:  # log_mag
             data[i, j, :] = log10_mag
             j += 1
 
@@ -183,7 +183,7 @@ def n_channels_multi_labels_gen(
 def n_channels_multi_labels_gen_old(
     num_samples: int,
     signal_length: int,
-    enabled_outputs: np.ndarray,
+    enabled_inputs: np.ndarray,
     label_outputs: np.ndarray,
     noise: bool = True,
     sigma_min: float = 0.01,
@@ -196,7 +196,7 @@ def n_channels_multi_labels_gen_old(
     pulse_width: float = 0.02,
     ):
     
-    num_outs = np.sum(enabled_outputs)
+    num_outs = np.sum(enabled_inputs)
     num_labels = np.sum(label_outputs)
 
     data = np.empty((num_samples, num_outs, signal_length),dtype=np.float64)
@@ -302,21 +302,21 @@ def n_channels_multi_labels_gen_old(
             imag_pt = imag_pt * mag/mag_no_norm
             log10_mag = (log10_mag - np.min(log10_mag))/(np.max(log10_mag) - np.min(log10_mag))
         
-        # Populate output data based on enabled_outputs
+        # Populate output data based on enabled_inputs
         j = 0
-        if enabled_outputs[0]:  # mag
+        if enabled_inputs[0]:  # mag
             data[i, j, :] = mag
             j += 1
-        if enabled_outputs[1]:  # real
+        if enabled_inputs[1]:  # real
             data[i, j, :] = real_pt
             j += 1
-        if enabled_outputs[2]:  # imag
+        if enabled_inputs[2]:  # imag
             data[i, j, :] = imag_pt
             j += 1
-        if enabled_outputs[3]:  # phase
+        if enabled_inputs[3]:  # phase
             data[i, j, :] = phase
             j += 1
-        if enabled_outputs[4]:  # log_mag
+        if enabled_inputs[4]:  # log_mag
             data[i, j, :] = log10_mag
             j += 1
 
@@ -329,7 +329,7 @@ def n_channels_multi_labels_gen_old(
 def n_channels_triangle_gen(
     num_samples: int,
     signal_length: int,
-    enabled_outputs: np.ndarray,
+    enabled_inputs: np.ndarray,
     noise: bool = True,
     sigma_min: float = 0.01,
     sigma_max: float = 0.1,
@@ -341,7 +341,7 @@ def n_channels_triangle_gen(
     pulse_width: float = 0.02,
     ):
     
-    num_outs = np.sum(enabled_outputs)
+    num_outs = np.sum(enabled_inputs)
 
     data = np.empty((num_samples, num_outs, signal_length),dtype=np.float64)
     labels = np.empty((num_samples,signal_length),dtype=np.float64)
@@ -425,21 +425,21 @@ def n_channels_triangle_gen(
             imag_pt = imag_pt * mag/mag_no_norm
             log10_mag = (log10_mag - np.min(log10_mag))/(np.max(log10_mag) - np.min(log10_mag))
         
-        # Populate output data based on enabled_outputs
+        # Populate output data based on enabled_inputs
         j = 0
-        if enabled_outputs[0]:  # mag
+        if enabled_inputs[0]:  # mag
             data[i, j, :] = mag
             j += 1
-        if enabled_outputs[1]:  # real
+        if enabled_inputs[1]:  # real
             data[i, j, :] = real_pt
             j += 1
-        if enabled_outputs[2]:  # imag
+        if enabled_inputs[2]:  # imag
             data[i, j, :] = imag_pt
             j += 1
-        if enabled_outputs[3]:  # phase
+        if enabled_inputs[3]:  # phase
             data[i, j, :] = phase
             j += 1
-        if enabled_outputs[4]:  # log_mag
+        if enabled_inputs[4]:  # log_mag
             data[i, j, :] = log10_mag
             j += 1
 
@@ -454,7 +454,7 @@ def n_channels_triangle_gen(
 def n_channels_gen(
     num_samples: int,
     signal_length: int,
-    enabled_outputs: np.ndarray,
+    enabled_inputs: np.ndarray,
     noise: bool = True,
     sigma_min: float = 0.01,
     sigma_max: float = 0.1,
@@ -468,7 +468,7 @@ def n_channels_gen(
     params_out: bool = True,
     ):
     
-    num_outs = np.sum(enabled_outputs)
+    num_outs = np.sum(enabled_inputs)
 
     data = np.empty((num_samples, num_outs, signal_length),dtype=np.float64)
     labels = np.empty((num_samples,signal_length),dtype=np.int32)
@@ -559,21 +559,21 @@ def n_channels_gen(
             imag_pt = imag_pt * mag/mag_no_norm
             log10_mag = (log10_mag - np.min(log10_mag))/(np.max(log10_mag) - np.min(log10_mag))
         
-        # Populate output data based on enabled_outputs
+        # Populate output data based on enabled_inputs
         j = 0
-        if enabled_outputs[0]:  # mag
+        if enabled_inputs[0]:  # mag
             data[i, j, :] = mag
             j += 1
-        if enabled_outputs[1]:  # real
+        if enabled_inputs[1]:  # real
             data[i, j, :] = real_pt
             j += 1
-        if enabled_outputs[2]:  # imag
+        if enabled_inputs[2]:  # imag
             data[i, j, :] = imag_pt
             j += 1
-        if enabled_outputs[3]:  # phase
+        if enabled_inputs[3]:  # phase
             data[i, j, :] = phase
             j += 1
-        if enabled_outputs[4]:  # log_mag
+        if enabled_inputs[4]:  # log_mag
             data[i, j, :] = log10_mag
             j += 1
 
@@ -588,7 +588,7 @@ def n_channels_gen(
 def n_channels_stepped_gen(
     num_samples: int,
     signal_length: int,
-    enabled_outputs: np.ndarray,
+    enabled_inputs: np.ndarray,
     noise: bool = True,
     sigma_min: float = 0.01,
     sigma_max: float = 0.1,
@@ -599,7 +599,7 @@ def n_channels_stepped_gen(
     params_out: bool = True,
     ):
     
-    num_outs = np.sum(enabled_outputs)
+    num_outs = np.sum(enabled_inputs)
 
     data = np.empty((num_samples, num_outs, signal_length),dtype=np.float64)
     labels = np.empty((num_samples,signal_length),dtype=np.int32)
@@ -676,21 +676,21 @@ def n_channels_stepped_gen(
             imag_pt = imag_pt * mag/mag_no_norm
             log10_mag = (log10_mag - np.min(log10_mag))/(np.max(log10_mag) - np.min(log10_mag))
         
-        # Populate output data based on enabled_outputs
+        # Populate output data based on enabled_inputs
         j = 0
-        if enabled_outputs[0]:  # mag
+        if enabled_inputs[0]:  # mag
             data[i, j, :] = mag
             j += 1
-        if enabled_outputs[1]:  # real
+        if enabled_inputs[1]:  # real
             data[i, j, :] = real_pt
             j += 1
-        if enabled_outputs[2]:  # imag
+        if enabled_inputs[2]:  # imag
             data[i, j, :] = imag_pt
             j += 1
-        if enabled_outputs[3]:  # phase
+        if enabled_inputs[3]:  # phase
             data[i, j, :] = phase
             j += 1
-        if enabled_outputs[4]:  # log_mag
+        if enabled_inputs[4]:  # log_mag
             data[i, j, :] = log10_mag
             j += 1
 
