@@ -815,7 +815,8 @@ def est_nat_freq_triangle_rise(curve, up_inc=0.4):
             prev_peak_idx = peak_idx
     
     freq_estimates = x[max_dy_indices]
-    return np.array(freq_estimates)
+    freq_est_idxs = max_dy_indices
+    return np.array(freq_estimates), freq_est_idxs
 
 
 def calculate_frequency_error(predicted_frequencies, true_frequencies, max_error=1.0):
@@ -868,7 +869,7 @@ def calculate_mean_frequency_error(model, dataloader, acceptance=0.5, method='mi
             for i in range(batch_size):
                 probabilities = model(data).squeeze()
                 probabilities = probabilities[i].cpu().numpy()
-                predicted_frequencies = est_nat_freq_binary(probabilities, 
+                predicted_frequencies,_ = est_nat_freq_binary(probabilities, 
                                                             acceptance, 
                                                             method,
                                                             bandwidth,
@@ -902,7 +903,7 @@ def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_in
                     fitted_curve = model_output[i].cpu().numpy()
                 b,a = scipy.signal.butter(N,Wn)
                 smoothed_curve = scipy.signal.filtfilt(b,a,fitted_curve)
-                predicted_frequencies = est_nat_freq_triangle_rise(smoothed_curve, up_inc=up_inc)
+                predicted_frequencies,_ = est_nat_freq_triangle_rise(smoothed_curve, up_inc=up_inc)
                 true_frequencies = params[i, :, 0].cpu().numpy()
                 true_frequencies = true_frequencies[~np.isnan(true_frequencies)]  # Remove NaN values
                 error = calculate_frequency_error(predicted_frequencies, true_frequencies, max_error=max_error)
@@ -912,23 +913,35 @@ def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_in
     return mean_error
 
 
-def estimate_modal_parameters(model, dataloader, true_freqs, predicted_freqs, variance_region = 'predicted', label_halfwidth = 0.02, window_scale = 1.0):
-    assert variance_region in ['predicted', 'true'], "Variance region must be 'predicted' or 'true'"
-    # for each predicted mode frequency:
-    # for parameters alpha (mag and phase) and log10_zeta:
-    # Read off value at the predicted mode frequency
-    # Calculate mean within a window around the predicted mode frequency
-    # Calculate variance within a window around either the predicted or true mode frequency
+
+def estimate_parameter(output, predicted_freq_idxs, label_halfwidth=0.02, window_scale=0.9):
+    # Convert window_halfwidth to index space
+    window_halfwidth_idx = int(label_halfwidth * window_scale * len(output))
     
-    # Returns: dictionary with parameter name as key and values as lists of [point_estimate, mean, variance]
+    # Extract point estimates
+    point_estimates = output[predicted_freq_idxs]
     
-    window_halfwidth = label_halfwidth * window_scale
+    # Initialize lists for means and variances
+    means = []
+    variances = []
     
+    # Calculate means and variances using index windows
+    for freq_idx in predicted_freq_idxs:
+        start_idx = max(0, freq_idx - window_halfwidth_idx)
+        end_idx = min(len(output), freq_idx + window_halfwidth_idx + 1)
+        window = output[start_idx:end_idx]
+        
+        means.append(np.mean(window))
+        variances.append(np.var(window))
+    
+    return np.array([np.array(point_estimates), np.array(means), np.array(variances)])
 
 
 
-def compare_FRF():
-    pass
+
+def compare_FRF(input_signal, all_outputs, label_halfwidth=0.02, window_scale=0.9):
+    # Assumes 
+    
 
 
 
