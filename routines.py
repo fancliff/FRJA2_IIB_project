@@ -882,6 +882,7 @@ def calculate_mean_frequency_error(model, dataloader, acceptance=0.5, method='mi
     mean_error = total_error / total_samples
     return mean_error
 
+
 # @jit(nopython=True)
 def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_inc=0.4, N=2, Wn=0.2, max_error=1.0):
     total_error = 0.0
@@ -909,6 +910,31 @@ def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_in
                 total_samples += 1
     mean_error = total_error / total_samples
     return mean_error
+
+
+def estimate_modal_parameters(model, dataloader, true_freqs, predicted_freqs, variance_region = 'predicted', label_halfwidth = 0.02, window_scale = 1.0):
+    assert variance_region in ['predicted', 'true'], "Variance region must be 'predicted' or 'true'"
+    # for each predicted mode frequency:
+    # for parameters alpha (mag and phase) and log10_zeta:
+    # Read off value at the predicted mode frequency
+    # Calculate mean within a window around the predicted mode frequency
+    # Calculate variance within a window around either the predicted or true mode frequency
+    
+    # Returns: dictionary with parameter name as key and values as lists of [point_estimate, mean, variance]
+    
+    window_halfwidth = label_halfwidth * window_scale
+    
+
+
+
+def compare_FRF():
+    pass
+
+
+
+def calculate_mean_FRF_error(model, dataloader):
+    pass
+
 
 
 def load_model(save_name):
