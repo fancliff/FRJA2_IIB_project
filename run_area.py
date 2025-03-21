@@ -19,35 +19,35 @@ from typing import List
 import h5py
 
 #                    real, imag, phase, mag, log_mag
-inputs1 = np.array([ True, True, True, False, False])
+inputs1 = np.array([True, True, False, False, True])
 
 #                 modes, a mag, a phase, zeta 
 labels1 = np.array([True, True, True, True])
 
 
-data, labels, params = n_channels_multi_labels_gen(
-    num_samples=100000, 
-    signal_length=1024, 
-    sigma_min=0.01, 
-    sigma_max=0.1, 
-    zeta_max=0.1,
-    zeta_min=0.01,
-    alpha_phase_std_dev=np.pi/6,
-    min_max=True, 
-    enabled_inputs=inputs1,
-    label_outputs=labels1,
-    params_out=True,
-    pulse_width=0.05,
-    )
-
 project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/datasets/'
-data_name = 'data_all_labels_alpha_phase_w_phase.h5'
+data_name = 'data_all_labels_0_alpha_phase.h5'
 data_file = project_path + data_name
 
-with h5py.File(data_file, 'w') as f:
-    f.create_dataset('data', data=data)
-    f.create_dataset('labels', data=labels)
-    f.create_dataset('params', data=params)
+# data, labels, params = n_channels_multi_labels_gen(
+#     num_samples=100000, 
+#     signal_length=1024, 
+#     sigma_min=0.01, 
+#     sigma_max=0.1, 
+#     zeta_max=0.1,
+#     zeta_min=0.01,
+#     alpha_phase_std_dev=np.pi/6,
+#     min_max=True, 
+#     enabled_inputs=inputs1,
+#     label_outputs=labels1,
+#     params_out=True,
+#     pulse_width=0.05,
+#     )
+
+# with h5py.File(data_file, 'w') as f:
+#     f.create_dataset('data', data=data)
+#     f.create_dataset('labels', data=labels)
+#     f.create_dataset('params', data=params)
 
 with h5py.File(data_file, 'r') as f:
     val_data = f['data'][:5000]
@@ -75,12 +75,12 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 # print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
 # print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
 
-model1 = md.ResNet1(data_channels=np.sum(inputs1), 
-                    out_channels=[4,4,8,8,6,6,4],
-                    kernel_size=[13]
-                    )
-print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
-print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
+# model1 = md.ResNet1(data_channels=np.sum(inputs1), 
+#                     out_channels=[4,4,8,8,6,6,4],
+#                     kernel_size=[13]
+#                     )
+# print(f'Model 1 trainable parameters: {rt.count_parameters(model1)}')
+# print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
 
 # model2 = md.ResNet1(data_channels=np.sum(inputs1), 
 #                     out_channels=[4,6,6,8,8,12,8,8,6,6,4],
@@ -100,30 +100,30 @@ print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
 # print(f'Model 1 receptive field: {rt.calculate_total_receptive_field(model1)}')
 
 
-results = []
+# results = []
 
-plot_during = False
+# plot_during = False
 
 # Save names for ResNet
-save1 = '_' + '_'.join([''.join(map(str, model1.out_channels)), ''.join(map(str, model1.kernel_size)), str(model1.__class__.__name__)])
+# save1 = '_' + '_'.join([''.join(map(str, model1.out_channels)), ''.join(map(str, model1.kernel_size)), str(model1.__class__.__name__)])
 # save2 = '_' + '_'.join([''.join(map(str, model2.out_channels)), ''.join(map(str, model2.kernel_size)), str(model2.__class__.__name__)])
 
 # Save names for DenseNet
 # save1 = '_' + '_'.join([str(model1.out_channels), str(model1.kernel_size), '.'.join(map(str, model1.block_config)), str(model1.growth_rate), str(model1.transition_channels), str(model1.__class__.__name__)])
 
 
-start1 = time.time()
-result_dict1,_ = rt.train_model_regression(
-                model1, 
-                train_dataloader_1, 
-                val_dataloader_1,
-                save_suffix = save1 + '_a_phase_w_phase',
-                num_epochs = 200, 
-                plotting=plot_during,
-                patience = 20,
-                )
-results.append(result_dict1)
-end1 = time.time()
+# start1 = time.time()
+# result_dict1,_ = rt.train_model_regression(
+#                 model1, 
+#                 train_dataloader_1, 
+#                 val_dataloader_1,
+#                 save_suffix = save1 + '_a_phase_w_phase',
+#                 num_epochs = 200, 
+#                 plotting=plot_during,
+#                 patience = 20,
+#                 )
+# results.append(result_dict1)
+# end1 = time.time()
 
 # start2 = time.time()
 # result_dict2,_ = rt.train_model_regression(
@@ -138,14 +138,14 @@ end1 = time.time()
 # results.append(result_dict2)
 # end2 = time.time()
 
-print('Time taken for model 1 training: ', end1-start1)
+# print('Time taken for model 1 training: ', end1-start1)
 # print('Time taken for model 2 training: ', end2-start2)
 
 
 
 # models from save files or train above
-# model2 = rt.load_model('03_12_14_37_4488664_13_ResNet1_a_phase.pth')
-# model2 = rt.load_model('03_12_19_10_4488664_13_ResNet1_0_a_phase.pth')
+# model1 = rt.load_model('03_21_10_17_4488664_13_ResNet1_a_phase_w_phase.pth')
+model2 = rt.load_model('03_12_19_10_4488664_13_ResNet1_0_a_phase.pth')
 
 
 
@@ -155,3 +155,6 @@ print('Time taken for model 1 training: ', end1-start1)
 # rt.compare_models_regression([model1, model2], val_dataloader_1)
 
 # rt.plot_predictions_all_labels([model1, model2], val_dataloader_1, 5, labels1)
+
+rt.plot_FRF_comparison(model2, val_dataloader_1, num_samples=5, FRF_type=0)
+rt.plot_FRF_comparison(model2, val_dataloader_1, num_samples=5, FRF_type=1)
