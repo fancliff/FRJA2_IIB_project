@@ -77,8 +77,8 @@ def n_channels_multi_labels_gen(
         if params_out:
             params[i, :num_modes, 0] = omegas
             params[i, :num_modes, 1] = alphas
-            params[i, :num_modes, 2] = zetas
-            params[i, :num_modes, 3] = alphas_phase
+            params[i, :num_modes, 2] = alphas_phase
+            params[i, :num_modes, 3] = zetas
         
         if noise:
             # noise for each sample is different and random
@@ -159,17 +159,17 @@ def n_channels_multi_labels_gen(
         
         # Populate output data based on enabled_inputs
         j = 0
-        if enabled_inputs[0]:  # mag
-            data[i, j, :] = mag
-            j += 1
-        if enabled_inputs[1]:  # real
+        if enabled_inputs[0]:  # real
             data[i, j, :] = real_pt
             j += 1
-        if enabled_inputs[2]:  # imag
+        if enabled_inputs[1]:  # imag
             data[i, j, :] = imag_pt
             j += 1
-        if enabled_inputs[3]:  # phase
+        if enabled_inputs[2]:  # phase
             data[i, j, :] = phase
+            j += 1
+        if enabled_inputs[3]:  # mag
+            data[i, j, :] = mag
             j += 1
         if enabled_inputs[4]:  # log_mag
             data[i, j, :] = log10_mag
