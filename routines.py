@@ -1005,6 +1005,7 @@ def calculate_mean_FRF_error(model, dataloader, FRF_type=0):
     return mean_error
 
 
+
 def plot_FRF_comparison(model, dataloader, num_samples, FRF_type=0):
     samples_plotted = 0
     with torch.no_grad():
@@ -1024,6 +1025,7 @@ def plot_FRF_comparison(model, dataloader, num_samples, FRF_type=0):
                     ax.plot(H_v, label='Predicted FRF', color='orange')
                     ax.plot(input_signal, label='True FRF', color='blue')
                     ax.set_title('Magnitude Comparison')
+                    fig.suptitle('Magnitude FRF Comparison: MSE = {:.4f}'.format(error))
                     ax.legend()
                 else:
                     fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
@@ -1033,6 +1035,7 @@ def plot_FRF_comparison(model, dataloader, num_samples, FRF_type=0):
                     ax[1].plot(input_signal[1], label='True FRF (Imag)', color='blue')
                     ax[0].set_title('Real Part Comparison')
                     ax[1].set_title('Imaginary Part Comparison')
+                    fig.suptitle('Complex FRF Comparison: MSE = {:.4f}'.format(error))
                     ax[0].legend()
                     ax[1].legend()
                 
@@ -1042,6 +1045,7 @@ def plot_FRF_comparison(model, dataloader, num_samples, FRF_type=0):
                 samples_plotted += 1
                 if samples_plotted >= num_samples:
                     return
+
 
 
 def load_model(save_name):
