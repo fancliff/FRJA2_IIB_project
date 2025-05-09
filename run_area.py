@@ -19,7 +19,7 @@ from typing import List
 import h5py
 
 #                    real, imag, phase, mag, log_mag
-inputs1 = np.array([True, True, False, False, True])
+inputs1 = np.array([True, True, False, False, False])
 
 #                 modes, a mag, a phase, zeta 
 labels1 = np.array([True, True, True, True])
@@ -29,25 +29,25 @@ project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_II
 data_name = 'data_all_labels_0_alpha_phase.h5'
 data_file = project_path + data_name
 
-# data, labels, params = n_channels_multi_labels_gen(
-#     num_samples=100000, 
-#     signal_length=1024, 
-#     sigma_min=0.01, 
-#     sigma_max=0.1, 
-#     zeta_max=0.1,
-#     zeta_min=0.01,
-#     alpha_phase_std_dev=np.pi/6,
-#     min_max=True, 
-#     enabled_inputs=inputs1,
-#     label_outputs=labels1,
-#     params_out=True,
-#     pulse_width=0.05,
-#     )
+data, labels, params = n_channels_multi_labels_gen(
+    num_samples=100000, 
+    signal_length=1024, 
+    sigma_min=0.01, 
+    sigma_max=0.1, 
+    zeta_max=0.1,
+    zeta_min=0.01,
+    alpha_phase_std_dev=0,
+    min_max=True, 
+    enabled_inputs=inputs1,
+    label_outputs=labels1,
+    params_out=True,
+    pulse_width=0.05,
+    )
 
-# with h5py.File(data_file, 'w') as f:
-#     f.create_dataset('data', data=data)
-#     f.create_dataset('labels', data=labels)
-#     f.create_dataset('params', data=params)
+with h5py.File(data_file, 'w') as f:
+    f.create_dataset('data', data=data)
+    f.create_dataset('labels', data=labels)
+    f.create_dataset('params', data=params)
 
 with h5py.File(data_file, 'r') as f:
     val_data = f['data'][:5000]
