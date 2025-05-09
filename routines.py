@@ -954,23 +954,7 @@ def compare_FRF(input_signal, all_outputs, FRF_type = 0, signal_length = 1024):
     log10_zeta = estimate_parameter(all_outputs[3], predicted_freq_idxs)[0]
     
     # Reconstruct FRF
-    H_v = np.zeros(signal_length, dtype=np.complex128)
-    frequencies = np.linspace(0, 1, signal_length)
-    for n in range(len(predicted_freqs)):
-        alpha_n = a_mag[n]
-        zeta_n = 10**log10_zeta[n]
-        omega_n = predicted_freqs[n]
-        alpha_phase_n = a_phase[n]
-        
-        for j, w in enumerate(frequencies):
-            H_f = 0.0j
-            
-            denominator = omega_n**2 - w**2 + 2j * zeta_n * w
-            numerator = 1j*w*alpha_n*np.exp(1j*alpha_phase_n)
-            
-            H_f += numerator/denominator
-            
-            H_v[j] += H_f
+    H_v = construct_FRF(predicted_freqs, a_mag, a_phase, 10**log10_zeta, signal_length)
 
     # Compare the FRFs
     if FRF_type == 0:
@@ -984,6 +968,28 @@ def compare_FRF(input_signal, all_outputs, FRF_type = 0, signal_length = 1024):
         return (MSE_real+MSE_imag)/2, np.array([H_v_real, H_v_imag])
 
 
+# @jit(nopython=True)
+def construct_FRF(omegas, alpha_mags, alpha_phases, zetas, signal_length):
+    H_v = np.zeros(signal_length, dtype=np.complex128)
+    frequencies = np.linspace(0, 1, signal_length)
+    for n in range(len(omegas)):
+        alpha_n = alpha_mags[n]
+        zeta_n = zetas[n]
+        omega_n = omegas[n]
+        alpha_phase_n = alpha_phases[n]
+        
+        for j, w in enumerate(frequencies):
+            H_f = 0.0j
+            
+            denominator = omega_n**2 - w**2 + 2j * zeta_n * w
+            numerator = 1j*w*alpha_n*np.exp(1j*alpha_phase_n)
+            
+            H_f += numerator/denominator
+            
+            H_v[j] += H_f
+    return H_v
+
+
 
 def calculate_mean_FRF_error(model, dataloader, FRF_type=0):
     total_error = 0.0
@@ -993,7 +999,12 @@ def calculate_mean_FRF_error(model, dataloader, FRF_type=0):
             batch_size = len(data)
             for i in range(batch_size):
                 output = model(data).squeeze()
-                input_signal = data[i].cpu().numpy()
+                # input_signal = data[i].cpu().numpy()
+                input_signal = construct_FRF(params[i, :, 0].cpu().numpy(), 
+                                            params[i, :, 1].cpu().numpy(), 
+                                            params[i, :, 2].cpu().numpy(), 
+                                            10**params[i, :, 3].cpu().numpy(), 
+                                            1024)
                 if FRF_type == 0:
                     input_signal = np.abs(input_signal[0]+1j*input_signal[1])
                 else:
@@ -1006,33 +1017,42 @@ def calculate_mean_FRF_error(model, dataloader, FRF_type=0):
 
 
 
-def plot_FRF_comparison(model, dataloader, num_samples, FRF_type=0):
+def plot_FRF_comparison(model, dataloader, num_samples, FRF_type=0, signal_length=1024):
     samples_plotted = 0
     with torch.no_grad():
         for data, labels, params in dataloader:
             batch_size = len(data)
             for i in range(min(num_samples,batch_size)):
                 output = model(data).squeeze()
-                input_signal = data[i].cpu().numpy()
-                if FRF_type == 0:
-                    input_signal = np.abs(input_signal[0]+1j*input_signal[1])
-                else:
-                    input_signal = np.array([input_signal[0], input_signal[1]])
-                error, H_v = compare_FRF(input_signal, output[i].cpu().numpy(), FRF_type)
+                # input_signal = data[i].cpu().numpy()
+                true_omegas = params[i, :, 0].cpu().numpy()
+                mask = ~np.isnan(true_omegas)
+                true_omegas = true_omegas[mask]
+                true_alpha_mags = params[i, :, 1].cpu().numpy()[mask]
+                true_alpha_phases = params[i, :, 2].cpu().numpy()[mask]
+                true_zetas = params[i, :, 3].cpu().numpy()[mask]
                 
+                reconstructed_input = construct_FRF(true_omegas, true_alpha_mags, true_alpha_phases, true_zetas, signal_length)
+                if FRF_type == 0:
+                    reconstructed_input = np.abs(reconstructed_input)
+                else:
+                    reconstructed_input = np.array([np.real(reconstructed_input), np.imag(reconstructed_input)])
+                error, H_v = compare_FRF(reconstructed_input, output[i].cpu().numpy(), FRF_type)
+                
+                frequencies = np.linspace(0, 1, signal_length)
                 if FRF_type == 0:
                     fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-                    ax.plot(H_v, label='Predicted FRF', color='orange')
-                    ax.plot(input_signal, label='True FRF', color='blue')
+                    ax.plot(frequencies, H_v, label='Predicted FRF', color='orange')
+                    ax.plot(frequencies, reconstructed_input, label='True FRF', color='blue')
                     ax.set_title('Magnitude Comparison')
                     fig.suptitle('Magnitude FRF Comparison: MSE = {:.4f}'.format(error))
                     ax.legend()
                 else:
                     fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
-                    ax[0].plot(H_v[0], label='Predicted FRF (Real)', color='orange')
-                    ax[0].plot(input_signal[0], label='True FRF (Real)', color='blue')
-                    ax[1].plot(H_v[1], label='Predicted FRF (Imag)', color='orange')
-                    ax[1].plot(input_signal[1], label='True FRF (Imag)', color='blue')
+                    ax[0].plot(frequencies, H_v[0], label='Predicted FRF (Real)', color='orange')
+                    ax[0].plot(frequencies, reconstructed_input[0], label='True FRF (Real)', color='blue')
+                    ax[1].plot(frequencies, H_v[1], label='Predicted FRF (Imag)', color='orange')
+                    ax[1].plot(frequencies, reconstructed_input[1], label='True FRF (Imag)', color='blue')
                     ax[0].set_title('Real Part Comparison')
                     ax[1].set_title('Imaginary Part Comparison')
                     fig.suptitle('Complex FRF Comparison: MSE = {:.4f}'.format(error))
