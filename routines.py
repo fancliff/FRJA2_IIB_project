@@ -433,8 +433,59 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
                 if samples_plotted >= num_samples:
                     return # Exit if enough samples are plotted
 
+# New for final report plotting
+def plot_samples(dataloader, num_samples):
+    samples_plotted = 0
+    for data, labels, params in dataloader:
+        for i in range(min(num_samples, len(data))):
+            num_channels = data[i].shape[0]
+            fig, axes = plt.subplots(num_channels, 1, figsize=(12, 6), sharex=True)
+            if num_channels == 1:
+                axes = [axes] # Convert single axis to list for iteration
+            
+            x = np.linspace(0,1,len(data[i][0]))
+            omegas = params[i, :, 0].cpu().numpy() if params is not None else []
+            omegas = omegas[~np.isnan(omegas)] # Remove NaN values
+            
+            for j in range(num_channels):
+                labels_arr = labels[i].cpu().numpy()
+                axes[j].plot(x,data[i][j].cpu().numpy(), label="Signal", color="blue")
+                # axes[j].plot(x,labels_arr, label="Actual Labels", linestyle="--", color="green")
+                # axes[j].set_ylabel('Amplitude / Label')
+                
+                # Plot the actual labels as a semi-transparent mask
+                mask = np.zeros_like(labels_arr)
+                mask[labels_arr == 1] = 1
+                axes[j].imshow(
+                    mask.reshape(1, -1),
+                    cmap='Greys',
+                    extent=(0, 1, axes[j].get_ylim()[0], axes[j].get_ylim()[1]),
+                    aspect='auto',
+                    alpha=0.15,
+                )
+                
+                mask_patch = [mpatches.Patch(color='grey', alpha=0.15, label = 'Mode labels')]
+                
+                #Plot the omegas as vertical dashed lines
+                for k, omega in enumerate(omegas):
+                    axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
+                
+                #axes[j].set_title(f'Channel {j+1}')
+                #axes[j].set_ylabel('Signal Amplitude')
+                axes[j].legend(handles=axes[j].get_legend_handles_labels()[0] + mask_patch)
 
-def plot_samples(dataloader, num_samples, binary_labels=True):
+            #plt.suptitle(f'Sample {i+1}')
+            #plt.xlabel('Frequency (Normalized)')
+            plt.tight_layout()
+            #plt.subplots_adjust(top=0.9) # Adjust suptitle position
+            plt.show()
+            
+            samples_plotted += 1
+            if samples_plotted >= num_samples:
+                return  # Exit after plotting specified number of samples
+
+
+def plot_samples_old(dataloader, num_samples, binary_labels=True):
     samples_plotted = 0
     for data, labels, params in dataloader:
         for i in range(min(num_samples, len(data))):
