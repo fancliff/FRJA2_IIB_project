@@ -434,12 +434,12 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
                     return # Exit if enough samples are plotted
 
 # New for final report plotting
-def plot_samples(dataloader, num_samples):
+def plot_samples_report(dataloader, num_samples):
     samples_plotted = 0
     for data, labels, params in dataloader:
         for i in range(min(num_samples, len(data))):
             num_channels = data[i].shape[0]
-            fig, axes = plt.subplots(num_channels, 1, figsize=(12, 6), sharex=True)
+            fig, axes = plt.subplots(num_channels, 1, figsize=(8, 4), sharex=True)
             if num_channels == 1:
                 axes = [axes] # Convert single axis to list for iteration
             
@@ -464,7 +464,7 @@ def plot_samples(dataloader, num_samples):
                     alpha=0.15,
                 )
                 
-                mask_patch = [mpatches.Patch(color='grey', alpha=0.15, label = 'Mode labels')]
+                mask_patch = [mpatches.Patch(color='grey', alpha=0.5, label = 'Mode labels')]
                 
                 #Plot the omegas as vertical dashed lines
                 for k, omega in enumerate(omegas):
@@ -472,7 +472,17 @@ def plot_samples(dataloader, num_samples):
                 
                 #axes[j].set_title(f'Channel {j+1}')
                 #axes[j].set_ylabel('Signal Amplitude')
-                axes[j].legend(handles=axes[j].get_legend_handles_labels()[0] + mask_patch)
+                if j == 0:
+                    axes[j].legend(
+                        handles=axes[j].get_legend_handles_labels()[0] + mask_patch,
+                        loc = 'upper center',
+                        bbox_to_anchor=(0.5, 1.3),
+                        ncol = 3
+                    )
+                    
+            
+            axes[0].set_ylabel('Real Part')
+            axes[1].set_ylabel('Imaginary Part')
 
             #plt.suptitle(f'Sample {i+1}')
             #plt.xlabel('Frequency (Normalized)')
