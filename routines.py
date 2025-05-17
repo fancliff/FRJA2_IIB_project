@@ -679,7 +679,7 @@ def plot_triangle_predictions(models, dataloader, num_samples, N=2, Wn=0.2):
                     return # Exit if enough samples are plotted
 
 
-def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, N=2, Wn=0.2):
+def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, scale_factors = None, N=2, Wn=0.2):
     samples_plotted = 0
     with torch.no_grad():
         for data, labels, params in dataloader:
@@ -728,8 +728,14 @@ def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, N=2
                         for idx, label_name in zip(label_keys, label_names):
                             if label_defs[idx]:
                                 ax = axes[num_data_channels + j]
+                                if scale_factors is None or idx == 0: # no scaling for mode labels
+                                    # ax.set_ylabel(f"{label_name}: Target")
+                                    ax.set_ylabel(f"{label_name}")
+                                else:
+                                    scale = scale_factors[j-1]
+                                    # ax.set_ylabel(f"{label_name} / {scale:.2f} : Target")
+                                    ax.set_ylabel(f"{label_name} / {scale:.2f}")
                                 h, l = subplot_labels(ax, x, model_output[i][j], labels[i][j], label_name, N, Wn)
-                                ax.set_ylabel(f"{label_name}: Target")
                                 legend_handles.extend(h)
                                 legend_labels.extend(l)
                                 j += 1
