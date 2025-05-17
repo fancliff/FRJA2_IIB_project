@@ -684,115 +684,221 @@ def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, N=2
     with torch.no_grad():
         for data, labels, params in dataloader:
             batch_size = len(data)
-            for i in range(min(num_samples,batch_size)):
+            for i in range(min(num_samples, batch_size)):
                 x = np.linspace(0, 1, len(data[i][0]))
                 omegas = params[i, :, 0].cpu().numpy() if params is not None else []
-                omegas = omegas[~np.isnan(omegas)] # Remove NaN values
-                
-                if models is None: # Plot just sample and labels
-                    num_data_channels = data[i].shape[0] 
-                    num_label_channels = labels[i].shape[0] # Add subfigure for each label
-                    num_channels = num_data_channels + num_label_channels
-                    fig, axes = plt.subplots(num_channels, 1, figsize=(8, 4), sharex=True)
+                omegas = omegas[~np.isnan(omegas)]
 
-                    for j in range(num_data_channels):
-                        signal_arr = data[i][j].cpu().numpy()
-                        axes[j].plot(x, signal_arr, label="Signal", color="blue")
-                        
-                        # Plot the true omegas as vertical dashed lines
-                        for k, omega in enumerate(omegas):
-                            axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
-                        
-                        axes[j].legend()
-                    
-                    j = 0 # Reset channel index for labels
-                    if label_defs[0]: # Mode triangle labelling
-                        subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "modes", N, Wn)
-                        j += 1
-                    if label_defs[1]: # Amplitude magnitude
-                        subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "amplitude magnitude", N, Wn)
-                        j += 1
-                    if label_defs[2]: # Amplitude phase
-                        subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "amplitude phase", N, Wn)
-                        j += 1
-                    if label_defs[3]: # Log10_zeta
-                        subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "log10_zeta", N, Wn)
-                        j += 1
-                    
-                    plt.legend()
-                    
-                    plt.tight_layout()
-                    plt.show()
-                
+                if models is None:
+                    continue  # Only supporting model output plotting for now
                 else:
-                    for model_idx, model in enumerate(models): # Plot predictions
+                    for model in models:
                         model.eval()
                         model_output = model(data)
-                        num_data_channels = data[i].shape[0] 
-                        num_label_channels = labels[i].shape[0] # Add subfigure for each label
+                        num_data_channels = data[i].shape[0]
+                        num_label_channels = labels[i].shape[0]
                         num_channels = num_data_channels + num_label_channels
-                        fig, axes = plt.subplots(num_channels, 1, figsize=(8, 4), sharex=True)
+                        fig, axes = plt.subplots(num_channels, 1, figsize=(10, 2 * num_channels), sharex=True)
 
+                        # Ensure axes is always iterable
+                        if num_channels == 1:
+                            axes = [axes]
+
+                        legend_handles = []
+                        legend_labels = []
+
+                        # Plot signal
                         for j in range(num_data_channels):
                             signal_arr = data[i][j].cpu().numpy()
-                            axes[j].plot(x, signal_arr, label="Signal", color="blue")
-                            
-                            # Plot the true omegas as vertical dashed lines
+                            h_signal, = axes[j].plot(x, signal_arr, color="blue", label="Signal")
                             for k, omega in enumerate(omegas):
-                                axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
-                            
-                            axes[j].legend()
-                        
-                        j = 0 # Reset channel index for labels
-                        if label_defs[0]: # Mode triangle labelling
-                            subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "modes", N, Wn)
-                            j += 1
-                        if label_defs[1]: # Amplitude magnitude
-                            subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "amplitude magnitude", N, Wn)
-                            j += 1
-                        if label_defs[2]: # Amplitude phase
-                            subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "amplitude phase", N, Wn)
-                            j += 1
-                        if label_defs[3]: # Log10 zeta
-                            subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "log10_zeta", N, Wn)
-                            j += 1
-                        
-                        plt.legend()
-                        
-                        plt.tight_layout()
+                                h_true = axes[j].axvline(x=omega, color='black', linestyle='--',
+                                                        label=r'True $\omega_n$' if k == 0 else '')
+                                if k == 0:
+                                    legend_handles.append(h_true)
+                                    legend_labels.append(r'True $\omega_n$')
+                            axes[j].set_ylabel("Real part" if j == 0 else "Imaginary part")
+                            legend_handles.append(h_signal)
+                            legend_labels.append("Signal")
+
+                        j = 0
+                        label_names = ["Modes", r"$|\alpha_n|$", r"$\angle \alpha_n$", r"$\log_{10}(\zeta_n)$"]
+                        label_keys = [0, 1, 2, 3]
+
+                        for idx, label_name in zip(label_keys, label_names):
+                            if label_defs[idx]:
+                                ax = axes[num_data_channels + j]
+                                h, l = subplot_labels(ax, x, model_output[i][j], labels[i][j], label_name, N, Wn)
+                                ax.set_ylabel(f"{label_name}: Target")
+                                legend_handles.extend(h)
+                                legend_labels.extend(l)
+                                j += 1
+
+                        axes[-1].set_xlabel("Normalised Frequency")
+                        # Remove duplicate labels
+                        unique_legend = dict(zip(legend_labels, legend_handles))
+                        fig.legend(unique_legend.values(), unique_legend.keys(),
+                                loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.0))
+                        plt.tight_layout(rect=[0, 0, 1, 0.92])
                         plt.show()
-                
+
                 samples_plotted += 1
                 if samples_plotted >= num_samples:
-                    return # Exit if enough samples are plotted
+                    return
 
 
 def subplot_labels(axes_j, x, model_output_i_j, labels_arr_i_j, name, N, Wn):
-    handles, labels = axes_j.get_legend_handles_labels() # Get existing legend handles and labels
+    handles, labels = axes_j.get_legend_handles_labels()
 
     if model_output_i_j is not None:
         fitted_curve = model_output_i_j.cpu().numpy()
-        b,a = scipy.signal.butter(N,Wn)
-        smoothed_curve = scipy.signal.filtfilt(b,a,fitted_curve)
-        
-        h1, = axes_j.plot(x, fitted_curve, label=f"Predicted {name}", color="orange")
-        h2, = axes_j.plot(x, smoothed_curve, label=f"Smoothed {name}", color="red")
+        b, a = scipy.signal.butter(N, Wn)
+        smoothed_curve = scipy.signal.filtfilt(b, a, fitted_curve)
+
+        h1, = axes_j.plot(x, fitted_curve, color="orange", label="Output")
+        h2, = axes_j.plot(x, smoothed_curve, color="red", label="Smoothed output")
         handles.extend([h1, h2])
-        labels.extend([f"Predicted {name}", f"Smoothed {name}"])
-        
-        if name == 'modes':
-            predicted_omegas,_ = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.5)
+        labels.extend(["Output", "Smoothed output"])
+
+        if "Modes" in name:
+            predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.5)
             for k, omega in enumerate(predicted_omegas):
-                h3 = axes_j.axvline(x=omega, color='cyan', linestyle=':', label='Predicted Mode Frequency' if k == 0 else '')
-                if k == 0:  # Only add one label to avoid duplicates
+                h3 = axes_j.axvline(x=omega, color='cyan', linestyle=':', label=r'Predicted $\omega_n$' if k == 0 else '')
+                if k == 0:
                     handles.append(h3)
-                    labels.append('Predicted Mode Frequency')
+                    labels.append(r'Predicted $\omega_n$')
 
-    h4, = axes_j.plot(x, labels_arr_i_j, label=f"Actual {name} Labels", linestyle="--", color="green")
+    h4, = axes_j.plot(x, labels_arr_i_j, linestyle="--", color="green", label="Target")
     handles.append(h4)
-    labels.append(f"Actual {name} Labels")
+    labels.append("Target")
 
-    axes_j.legend(handles, labels) # Update the legend
+    return handles, labels
+
+
+
+# def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, N=2, Wn=0.2):
+#     samples_plotted = 0
+#     with torch.no_grad():
+#         for data, labels, params in dataloader:
+#             batch_size = len(data)
+#             for i in range(min(num_samples,batch_size)):
+#                 x = np.linspace(0, 1, len(data[i][0]))
+#                 omegas = params[i, :, 0].cpu().numpy() if params is not None else []
+#                 omegas = omegas[~np.isnan(omegas)] # Remove NaN values
+                
+#                 if models is None: # Plot just sample and labels
+#                     num_data_channels = data[i].shape[0] 
+#                     num_label_channels = labels[i].shape[0] # Add subfigure for each label
+#                     num_channels = num_data_channels + num_label_channels
+#                     fig, axes = plt.subplots(num_channels, 1, figsize=(8, 4), sharex=True)
+
+#                     for j in range(num_data_channels):
+#                         signal_arr = data[i][j].cpu().numpy()
+#                         axes[j].plot(x, signal_arr, label="Signal", color="blue")
+                        
+#                         # Plot the true omegas as vertical dashed lines
+#                         for k, omega in enumerate(omegas):
+#                             axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
+                        
+#                         axes[j].legend()
+                    
+#                     j = 0 # Reset channel index for labels
+#                     if label_defs[0]: # Mode triangle labelling
+#                         subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "modes", N, Wn)
+#                         j += 1
+#                     if label_defs[1]: # Amplitude magnitude
+#                         subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "amplitude magnitude", N, Wn)
+#                         j += 1
+#                     if label_defs[2]: # Amplitude phase
+#                         subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "amplitude phase", N, Wn)
+#                         j += 1
+#                     if label_defs[3]: # Log10_zeta
+#                         subplot_labels(axes[j+num_data_channels], x, None, labels[i][j], "log10_zeta", N, Wn)
+#                         j += 1
+                    
+#                     plt.legend()
+                    
+#                     plt.tight_layout()
+#                     plt.show()
+                
+#                 else:
+#                     for model_idx, model in enumerate(models): # Plot predictions
+#                         model.eval()
+#                         model_output = model(data)
+#                         num_data_channels = data[i].shape[0] 
+#                         num_label_channels = labels[i].shape[0] # Add subfigure for each label
+#                         num_channels = num_data_channels + num_label_channels
+#                         fig, axes = plt.subplots(num_channels, 1, figsize=(8, 4), sharex=True)
+
+#                         for j in range(num_data_channels):
+#                             signal_arr = data[i][j].cpu().numpy()
+#                             axes[j].plot(x, signal_arr, label="Signal", color="blue")
+                            
+#                             # Plot the true omegas as vertical dashed lines
+#                             for k, omega in enumerate(omegas):
+#                                 axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
+#                             if j ==0:
+                                
+#                                 axes[j].legend(                       
+#                                     loc = 'upper center',
+#                                     bbox_to_anchor=(0.5, 1.7),
+#                                     ncol = 2
+#                                     )
+                        
+#                         j = 0 # Reset channel index for labels
+#                         if label_defs[0]: # Mode triangle labelling
+#                             subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "Modes", N, Wn)
+#                             j += 1
+#                         if label_defs[1]: # Amplitude magnitude
+#                             subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "Amplitude magnitude", N, Wn)
+#                             j += 1
+#                         if label_defs[2]: # Amplitude phase
+#                             subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "Amplitude phase", N, Wn)
+#                             j += 1
+#                         if label_defs[3]: # Log10 zeta
+#                             subplot_labels(axes[j+num_data_channels], x, model_output[i][j], labels[i][j], "log10_zeta", N, Wn)
+#                             j += 1
+                        
+#                         plt.legend(
+#                             loc = 'upper center',
+#                             bbox_to_anchor=(0.5,1.7),
+#                             ncol = 4
+#                         )
+                        
+#                         plt.tight_layout()
+#                         plt.show()
+                
+#                 samples_plotted += 1
+#                 if samples_plotted >= num_samples:
+#                     return # Exit if enough samples are plotted
+
+
+# def subplot_labels(axes_j, x, model_output_i_j, labels_arr_i_j, name, N, Wn):
+#     handles, labels = axes_j.get_legend_handles_labels() # Get existing legend handles and labels
+
+#     if model_output_i_j is not None:
+#         fitted_curve = model_output_i_j.cpu().numpy()
+#         b,a = scipy.signal.butter(N,Wn)
+#         smoothed_curve = scipy.signal.filtfilt(b,a,fitted_curve)
+        
+#         h1, = axes_j.plot(x, fitted_curve, label=f"Output", color="orange")
+#         h2, = axes_j.plot(x, smoothed_curve, label=f"Smoothed output", color="red")
+#         handles.extend([h1, h2])
+#         labels.extend([f"Output", f"Smoothed output"])
+        
+#         if name == 'modes':
+#             predicted_omegas,_ = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.5)
+#             for k, omega in enumerate(predicted_omegas):
+#                 h3 = axes_j.axvline(x=omega, color='cyan', linestyle=':', label=r'Predicted $\omega_n$' if k == 0 else '')
+#                 if k == 0:  # Only add one label to avoid duplicates
+#                     handles.append(h3)
+#                     labels.append(r'Predicted $\omega_n$')
+
+#     h4, = axes_j.plot(x, labels_arr_i_j, label=f"{name} target output", linestyle="--", color="green")
+#     handles.append(h4)
+#     labels.append(f"{name} target output")
+
+#     # axes_j.legend(handles, labels) # Update the legend
 
 
 def est_nat_freq_binary(prob_arr, acceptance=0.5, method='midpoint', bandwidth=None, overlap_threshold=0.5):
