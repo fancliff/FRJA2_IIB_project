@@ -383,7 +383,6 @@ class RegressionModel1(nn.Module):
         
         x = self.convs[-1](x)  # Final conv layer without BN or ReLU
         # No sigmoid activation for regression
-
         return x
 
 
