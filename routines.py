@@ -254,7 +254,7 @@ def training_step_regression(model, dataloader, criterion, optimiser):
     
     for data, labels, _ in dataloader:
         optimiser.zero_grad()
-        outputs = model(data).squeeze()
+        outputs = model(data)
         loss = criterion(outputs, labels.float())
         loss.backward()
         optimiser.step()
@@ -282,7 +282,7 @@ def validation_loss_regression(model, dataloader, criterion):
     
     with torch.no_grad():
         for data, labels, _ in dataloader:
-            outputs = model(data).squeeze()
+            outputs = model(data)
             loss = criterion(outputs, labels.float())
             mse, mae, r2 = calculate_regression_metrics(outputs, labels)
             total_loss += loss.item() * len(data)
@@ -301,6 +301,8 @@ def validation_loss_regression(model, dataloader, criterion):
 def calculate_regression_metrics(outputs, labels):
     outputs = outputs.float()
     labels = labels.float()
+    # print("Output shape:", outputs.shape)
+    # print("Label shape:", labels.shape)
     
     mse = F.mse_loss(outputs, labels).item()
     mae = F.l1_loss(outputs, labels).item()
@@ -390,14 +392,14 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
                         predictions_arr = predicted_labels[i].cpu().numpy()
 
                         axes[j].plot(x, signal_arr, label="Signal", color="blue")
-                        axes[j].plot(x, prob_arr, label="Prediction Probability", color="orange")
+                        # axes[j].plot(x, prob_arr, label="Output", color="orange")
 
                         # Masked signal line for predicted labels
                         masked_labels = np.where(predictions_arr == 1, signal_arr, np.nan)
                         axes[j].plot(
                             x, masked_labels,
                             color='red',
-                            label='Predicted Labels',
+                            label='Model Predictions',
                             alpha=0.5,
                             linewidth=5,
                         )
@@ -415,7 +417,7 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
                         
                         # Plot the true omegas as vertical dashed lines
                         for k, omega in enumerate(omegas):
-                            axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
+                            axes[j].axvline(x=omega, color='black', linestyle='--', label=r'True $\omega_n$' if k==0 else '')
                         
                         # Plot predicted omegas as vertical dotted lines
                         predicted_omegas = est_nat_freq_binary(prob_arr, 
@@ -424,7 +426,18 @@ def plot_predictions(models, dataloader, num_samples, acceptance):
                                                             bandwidth=0.04,
                                                             overlap_threshold=0.5)
                         for k, omega in enumerate(predicted_omegas):
-                            axes[j].axvline(x=omega, color='cyan', linestyle=':', label='Predicted Mode Frequency' if k==0 else '')
+                            axes[j].axvline(x=omega, color='cyan', linestyle=':', label=r'Predicted $\omega_n$' if k==0 else '')
+                        mask_patch = [mpatches.Patch(color='grey', alpha=0.5, label = 'Mode labels')]
+                        if j == 0:
+                            axes[j].legend(
+                                handles=axes[j].get_legend_handles_labels()[0] + mask_patch,
+                                loc = 'upper center',
+                                bbox_to_anchor=(0.5, 1.3),
+                                ncol = 5
+                            )
+                    axes[0].set_ylabel('Real Part')
+                    axes[1].set_ylabel('Imaginary Part')
+                    axes[1].set_xlabel('Normalised Frequency')
                     
                     plt.tight_layout()
                     plt.show()
@@ -483,6 +496,7 @@ def plot_samples_report(dataloader, num_samples):
             
             axes[0].set_ylabel('Real Part')
             axes[1].set_ylabel('Imaginary Part')
+            axes[1].set_xlabel('Normalised Frequency')
 
             #plt.suptitle(f'Sample {i+1}')
             #plt.xlabel('Frequency (Normalized)')
@@ -669,7 +683,6 @@ def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, N=2
     samples_plotted = 0
     with torch.no_grad():
         for data, labels, params in dataloader:
-            assert len(label_defs) == len(labels[0]), "Number of label definitions must match number of labels"
             batch_size = len(data)
             for i in range(min(num_samples,batch_size)):
                 x = np.linspace(0, 1, len(data[i][0]))
@@ -714,7 +727,7 @@ def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, N=2
                 else:
                     for model_idx, model in enumerate(models): # Plot predictions
                         model.eval()
-                        model_output = model(data).squeeze()
+                        model_output = model(data)
                         num_data_channels = data[i].shape[0] 
                         num_label_channels = labels[i].shape[0] # Add subfigure for each label
                         num_channels = num_data_channels + num_label_channels
@@ -930,7 +943,7 @@ def calculate_mean_frequency_error(model, dataloader, acceptance=0.5, method='mi
             for i in range(batch_size):
                 probabilities = model(data).squeeze()
                 probabilities = probabilities[i].cpu().numpy()
-                predicted_frequencies,_ = est_nat_freq_binary(probabilities, 
+                predicted_frequencies = est_nat_freq_binary(probabilities, 
                                                             acceptance, 
                                                             method,
                                                             bandwidth,
@@ -957,7 +970,7 @@ def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_in
             batch_size = len(data)
             for i in range(batch_size):
                 model.eval()
-                model_output = model(data).squeeze()
+                model_output = model(data)
                 if model_output.shape[0] > 1: # If more than one label channel just extract mode triangle labels
                     fitted_curve = model_output[i][0].cpu().numpy()
                 else:
