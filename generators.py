@@ -5,6 +5,181 @@ from numba import jit
 
 
 @jit(nopython=True)
+def n_channels_multi_labels_gen_scaled(
+    num_samples: int,
+    signal_length: int,
+    enabled_inputs: np.ndarray,
+    label_outputs: np.ndarray,
+    noise: bool = True,
+    alpha_min: float = 1,
+    alpha_max: float = 2,
+    sigma_min: float = 0.01,
+    sigma_max: float = 0.1,
+    zeta_min: float = 0.01,
+    zeta_max: float = 0.1,
+    alpha_phase_std_dev: float = np.pi/6,
+    max_modes: int = 5,
+    min_max: bool = True,
+    params_out: bool = True,
+    triangle_width: float = 0.05,
+    square_width: float = 0.04,
+    ):
+    
+    num_outs = np.sum(enabled_inputs)
+    num_labels = np.sum(label_outputs)
+
+    data = np.empty((num_samples, num_outs, signal_length),dtype=np.float64)
+    labels = np.empty((num_samples, num_labels, signal_length),dtype=np.float64)
+    if params_out:
+        params = np.full((num_samples, max_modes, 4), np.nan, dtype=np.float64)
+    scale_factors = np.empty(np.sum(label_outputs[1:]),dtype=np.float64) # mode labelling is not scaled
+    target_A = triangle_width/3
+    a,b = alpha_min, alpha_max # uniform distribution of alpha
+    scale_alpha_mag = np.sqrt((a**2 + a*b + b**2)*square_width/(3*target_A))
+    a,b = np.log10(zeta_max), np.log10(zeta_min) # unfiform distribution of log10(zeta)
+    scale_log10_zeta = np.sqrt((a**2 + a*b + b**2)*square_width/(3*target_A))
+    scale_alpha_phase = np.sqrt(square_width/target_A)*alpha_phase_std_dev
+    c = 0
+    if label_outputs[1]: # alpha mag
+        scale_factors[c] = scale_alpha_mag
+        c+=1
+    if label_outputs[2]: #alpha phase
+        scale_factors[c] = scale_alpha_phase
+        c+=1
+    if label_outputs[3]: #log10zeta
+        scale_factors[c] = scale_log10_zeta
+        c+=1
+
+    frequencies = np.linspace(0,1,signal_length)
+    
+    for i in range(num_samples):
+        
+        H_v = np.zeros(signal_length, dtype=np.complex128)
+        
+        if label_outputs[0]: # mode triangles
+            triangle_label = np.zeros(signal_length, dtype=np.float64)
+        
+        num_modes = np.random.randint(0,max_modes+1)
+        
+        alphas = np.random.choice(np.array([-1,1]),size=num_modes)*np.random.uniform(alpha_min, alpha_max, size=num_modes)
+        
+        alphas_phase = np.random.normal(0, alpha_phase_std_dev, size=num_modes)
+        alphas_phase = np.clip(alphas_phase, -np.pi/2, np.pi/2)
+        # restrict phase to be between -pi/2 and pi/2 so that sign of alpha does not flip
+        
+        zetas = 10**(np.random.uniform(np.log10(zeta_min), np.log10(zeta_max), size=num_modes))
+        # no modes at very edge of frequency range
+        omegas = np.random.uniform(0.001, 0.999, size=num_modes)
+        
+        if params_out:
+            params[i, :num_modes, 0] = omegas
+            params[i, :num_modes, 1] = alphas
+            params[i, :num_modes, 2] = alphas_phase
+            params[i, :num_modes, 3] = zetas
+        
+        if noise:
+            # noise for each sample is different and random
+            # should sigma be log uniform like zetas?
+            sigma = np.random.uniform(sigma_min, sigma_max)
+            
+            # add noise to real and imaginary parts
+            noise_arr = np.random.normal(0, np.exp(sigma), signal_length) + 1j*np.random.normal(0, np.exp(sigma), signal_length)
+            H_v += noise_arr
+        
+        for n in range(num_modes):
+            # to improve model add a random sign to alpha_j 
+            alpha_n = alphas[n]
+            zeta_n = zetas[n]
+            omega_n = omegas[n]
+            alpha_phase_n = alphas_phase[n]
+            
+            for j, w in enumerate(frequencies):
+                H_f = 0.0j
+                
+                denominator = omega_n**2 - w**2 + 2j * zeta_n * w
+                numerator = 1j*w*alpha_n*np.exp(1j*alpha_phase_n)
+                
+                H_f += numerator/denominator
+                
+                H_v[j] += H_f
+            
+            if label_outputs[0]: # mode triangles
+                pulse = np.zeros(signal_length, dtype=np.float64)
+                idx = np.argmin(np.abs(frequencies - omega_n))
+                pulse[idx] = 1.0
+            
+                for j in range(idx + 1, signal_length):
+                    if frequencies[j] > omega_n + triangle_width:
+                        break
+                    pulse[j] = 1.0 - (frequencies[j] - omega_n)/triangle_width
+            
+                triangle_label += pulse
+        
+        k = 0
+        if label_outputs[0]: # mode triangles
+            labels[i, k, :] = triangle_label
+            k += 1
+        
+        if label_outputs[1]: # amplitude magnitude step function
+            labels[i, k, :] = make_step_func_labels(omegas, alphas/scale_alpha_mag, frequencies, signal_length)
+            k += 1
+        
+        if label_outputs[2]: # amplitude phase step function
+            labels[i, k, :] = make_step_func_labels(omegas, alphas_phase/scale_alpha_phase, frequencies, signal_length)
+            k += 1
+        
+        if label_outputs[3]: # damping ratio step function (log 10 scale)
+            labels[i, k, :] = make_step_func_labels(omegas, np.log10(zetas)/scale_log10_zeta, frequencies, signal_length)
+            k += 1
+
+
+        mag_no_norm = np.abs(H_v)
+        mag = mag_no_norm
+        
+        real_pt = np.real(H_v)
+        imag_pt = np.imag(H_v)
+        
+        phase = np.angle(H_v) 
+        #phase is by definition normalised between -pi and pi
+        
+        log10_mag = np.log10(mag_no_norm)
+        #separate normalisation. Still min max normalisation
+        
+        if min_max:
+            #aim is to maintain the phase of out if using real and imaginary parts
+            max_mag = np.max(mag_no_norm)
+            min_mag = np.min(mag_no_norm)
+            mag = (mag_no_norm - min_mag)/(max_mag - min_mag)
+            real_pt = real_pt * mag/mag_no_norm
+            imag_pt = imag_pt * mag/mag_no_norm
+            # log10_mag = (log10_mag - np.min(log10_mag))/(np.max(log10_mag) - np.min(log10_mag))
+        
+        # Populate output data based on enabled_inputs
+        j = 0
+        if enabled_inputs[0]:  # real
+            data[i, j, :] = real_pt
+            j += 1
+        if enabled_inputs[1]:  # imag
+            data[i, j, :] = imag_pt
+            j += 1
+        if enabled_inputs[2]:  # phase
+            data[i, j, :] = phase
+            j += 1
+        if enabled_inputs[3]:  # mag
+            data[i, j, :] = mag
+            j += 1
+        if enabled_inputs[4]:  # log_mag
+            data[i, j, :] = log10_mag
+            j += 1
+
+    return data, labels, params if params_out else None, scale_factors
+
+
+
+
+
+
+@jit(nopython=True)
 def make_step_func_labels(
     natural_frequencies: np.ndarray,
     values: np.ndarray,
