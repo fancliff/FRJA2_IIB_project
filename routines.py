@@ -631,7 +631,7 @@ def plot_step_predictions(models, dataloader, num_samples, threshold=0.5):
                     return # Exit if enough samples are plotted
 
 
-def plot_triangle_predictions(models, dataloader, num_samples, N=2, Wn=0.2):
+def plot_triangle_predictions(models, dataloader, num_samples, N=2, Wn=0.1):
     samples_plotted = 0
     with torch.no_grad():
         for data, labels, params in dataloader:
@@ -665,7 +665,7 @@ def plot_triangle_predictions(models, dataloader, num_samples, N=2, Wn=0.2):
                         for k, omega in enumerate(omegas):
                             axes[j].axvline(x=omega, color='black', linestyle='--', label='Mode Frequency' if k==0 else '')
                         
-                        predicted_omegas,_ = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.5)
+                        predicted_omegas,_ = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.35)
                         for k, omega in enumerate(predicted_omegas):
                             axes[j].axvline(x=omega, color='cyan', linestyle=':', label='Predicted Mode Frequency' if k==0 else '')
                         
@@ -679,7 +679,7 @@ def plot_triangle_predictions(models, dataloader, num_samples, N=2, Wn=0.2):
                     return # Exit if enough samples are plotted
 
 
-def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, scale_factors = None, N=2, Wn=0.2):
+def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, scale_factors = None, N=2, Wn=0.1):
     samples_plotted = 0
     with torch.no_grad():
         for data, labels, params in dataloader:
@@ -728,7 +728,7 @@ def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, sca
                         modes_curve = model_output[i][0].cpu().numpy()
                         b, a = scipy.signal.butter(N, Wn)
                         smoothed_modes = scipy.signal.filtfilt(b, a, modes_curve)
-                        predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes, up_inc=0.5)
+                        predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes, up_inc=0.35)
 
                         for idx, label_name in zip(label_keys, label_names):
                             if label_defs[idx]:
@@ -786,7 +786,7 @@ def subplot_labels(axes_j, x, model_output_i_j, labels_arr_i_j, name, N, Wn, pre
 
 
 
-# def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, N=2, Wn=0.2):
+# def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, N=2, Wn=0.1):
 #     samples_plotted = 0
 #     with torch.no_grad():
 #         for data, labels, params in dataloader:
@@ -897,7 +897,7 @@ def subplot_labels(axes_j, x, model_output_i_j, labels_arr_i_j, name, N, Wn, pre
 #         labels.extend([f"Output", f"Smoothed output"])
         
 #         if name == 'modes':
-#             predicted_omegas,_ = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.5)
+#             predicted_omegas,_ = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.35)
 #             for k, omega in enumerate(predicted_omegas):
 #                 h3 = axes_j.axvline(x=omega, color='cyan', linestyle=':', label=r'Predicted $\omega_n$' if k == 0 else '')
 #                 if k == 0:  # Only add one label to avoid duplicates
@@ -1152,7 +1152,7 @@ def calculate_mean_frequency_error(model, dataloader, acceptance=0.5, method='mi
 
 
 # @jit(nopython=True)
-def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_inc=0.20, N=2, Wn=0.2, max_error=1.0):
+def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_inc=0.35, N=2, Wn=0.1, max_error=1.0):
     total_error = 0.0
     total_samples = 0
     if not label_defs[0]: # Mode triangle labelling
@@ -1181,7 +1181,7 @@ def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_in
 
 
 
-def estimate_parameter(output, predicted_freq_idxs, label_halfwidth=0.02, window_scale=0.6, N=2, Wn=0.2):
+def estimate_parameter(output, predicted_freq_idxs, label_halfwidth=0.02, window_scale=0.6, N=2, Wn=0.1):
     # Smooth output signal
     b,a = scipy.signal.butter(N,Wn)
     output = scipy.signal.filtfilt(b,a,output)
@@ -1344,7 +1344,7 @@ def plot_FRF_comparison(model, dataloader, num_samples, scale_factors, FRF_type=
                 modes_output = output[i][0].cpu().numpy()
                 b, a = scipy.signal.butter(2,0.2)
                 smoothed_modes = scipy.signal.filtfilt(b,a,modes_output)
-                predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes, up_inc=0.5)
+                predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes, up_inc=0.35)
                 
                 frequencies = np.linspace(0, 1, signal_length)
                 if FRF_type == 0:
@@ -1404,7 +1404,7 @@ def plot_FRF_comparison(model, dataloader, num_samples, scale_factors, FRF_type=
 
 
 
-def plot_model_predictions_single_sample(model, data, labels, params, label_defs, scale_factors=None, N=2, Wn=0.2):
+def plot_model_predictions_single_sample(model, data, labels, params, label_defs, scale_factors=None, N=2, Wn=0.1):
     x = np.linspace(0, 1, len(data[0]))
     omegas = params[:, 0].cpu().numpy()
     omegas = omegas[~np.isnan(omegas)]
@@ -1442,7 +1442,7 @@ def plot_model_predictions_single_sample(model, data, labels, params, label_defs
     modes_curve = model_output[0][0].cpu().numpy() # shape has batch size
     b, a = scipy.signal.butter(N, Wn)
     smoothed_modes = scipy.signal.filtfilt(b, a, modes_curve)
-    predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes, up_inc=0.5)
+    predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes, up_inc=0.35)
 
     for idx, label_name in zip(label_keys, label_names):
         if label_defs[idx]:
