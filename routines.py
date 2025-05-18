@@ -977,8 +977,8 @@ def est_nat_freq_binary(prob_arr, acceptance=0.5, method='midpoint', bandwidth=N
     return np.array(freq_estimates)
 
 
-# @jit(nopython=True)
-def est_nat_freq_triangle_rise(curve, up_inc=0.4):
+# incompatible with jit so replaced for 25% speed increase
+def est_nat_freq_triangle_rise_old(curve, up_inc):
     length = len(curve)
     x = np.linspace(0, 1, length)
     dY = np.gradient(curve, x)
@@ -1007,6 +1007,83 @@ def est_nat_freq_triangle_rise(curve, up_inc=0.4):
     freq_estimates = x[max_dy_indices]
     freq_est_idxs = max_dy_indices
     return np.array(freq_estimates), freq_est_idxs
+
+@jit(nopython=True)
+def est_nat_freq_triangle_rise(curve, up_inc):
+    length = len(curve)
+    x = np.linspace(0, 1, length)
+
+    # Finite difference approximation of gradient
+    dY = np.zeros(length)
+    d2Y = np.zeros(length)
+    for i in range(1, length-1):
+        dY[i] = (curve[i+1] - curve[i-1]) / (x[i+1] - x[i-1])
+    dY[0] = dY[1]
+    dY[-1] = dY[-2]
+
+    for i in range(1, length-1):
+        d2Y[i] = (dY[i+1] - dY[i-1]) / (x[i+1] - x[i-1])
+    d2Y[0] = d2Y[1]
+    d2Y[-1] = d2Y[-2]
+
+    # Find zero crossings in dY
+    zero_crossings = []
+    for i in range(1, length):
+        if dY[i-1] * dY[i] < 0:
+            zero_crossings.append(i-1)
+
+    # Peaks and troughs
+    peak_indices = []
+    trough_indices = []
+    for i in zero_crossings:
+        if d2Y[i] < 0:
+            peak_indices.append(i)
+        elif d2Y[i] > 0:
+            trough_indices.append(i)
+
+    # Always include last index
+    peak_indices.append(length - 1)
+
+    # Filter out small peaks
+    filtered_peak_indices = []
+    for i in peak_indices:
+        if curve[i] >= up_inc * 0.95:
+            filtered_peak_indices.append(i)
+    peak_indices = filtered_peak_indices
+
+    # Extract mode frequency estimates
+    max_dy_indices = []
+    prev_peak_idx = 0
+    for peak_idx in peak_indices:
+        # Min value to the left of this peak
+        min_left_value = curve[prev_peak_idx]
+        for i in range(prev_peak_idx, peak_idx):
+            if curve[i] < min_left_value:
+                min_left_value = curve[i]
+
+        if curve[peak_idx] - min_left_value > up_inc:
+            # Find nearest left trough
+            nearest_left_trough_idx = 0
+            for idx in trough_indices:
+                if idx < peak_idx and idx > nearest_left_trough_idx:
+                    nearest_left_trough_idx = idx
+
+            # Find index of max dY in region
+            max_dy = dY[nearest_left_trough_idx]
+            max_idx = nearest_left_trough_idx
+            for i in range(nearest_left_trough_idx, peak_idx):
+                if dY[i] > max_dy:
+                    max_dy = dY[i]
+                    max_idx = i
+
+            max_dy_indices.append(max_idx)
+            prev_peak_idx = peak_idx
+
+    freq_estimates = np.zeros(len(max_dy_indices))
+    for i in range(len(max_dy_indices)):
+        freq_estimates[i] = x[max_dy_indices[i]]
+
+    return freq_estimates, np.array(max_dy_indices)
 
 
 def calculate_frequency_error(predicted_frequencies, true_frequencies, max_error=1.0):
@@ -1075,7 +1152,7 @@ def calculate_mean_frequency_error(model, dataloader, acceptance=0.5, method='mi
 
 
 # @jit(nopython=True)
-def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_inc=0.4, N=2, Wn=0.2, max_error=1.0):
+def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_inc=0.20, N=2, Wn=0.2, max_error=1.0):
     total_error = 0.0
     total_samples = 0
     if not label_defs[0]: # Mode triangle labelling
@@ -1138,7 +1215,7 @@ def compare_FRF(input_signal, all_outputs, scale_factors, FRF_type = 0, signal_l
     
     # Extract the predicted frequencies
     mode_channel = all_outputs[0]
-    predicted_freqs,predicted_freq_idxs = est_nat_freq_triangle_rise(mode_channel)
+    predicted_freqs,predicted_freq_idxs = est_nat_freq_triangle_rise(mode_channel, up_inc=0.35)
     
     # point estimate [0], mean [1], variance [2]
     x = 1
