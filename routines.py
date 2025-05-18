@@ -1145,13 +1145,21 @@ def compare_FRF(input_signal, all_outputs, FRF_type = 0, signal_length = 1024, n
     # Compare the FRFs
     if FRF_type == 0:
         H_v = np.abs(H_v)
-        return np.mean((input_signal - H_v)**2), H_v
+        MSE_mag = quick_ms_diff(input_signal,H_v,signal_length)
+        return MSE_mag, H_v
     else:
         H_v_real = np.real(H_v)
         H_v_imag = np.imag(H_v)
-        MSE_real = np.mean((input_signal[0] - H_v_real)**2)
-        MSE_imag = np.mean((input_signal[1] - H_v_imag)**2)
+        MSE_real = quick_ms_diff(input_signal[0],H_v_real,signal_length)
+        MSE_imag = quick_ms_diff(input_signal[1],H_v_imag,signal_length)
         return (MSE_real+MSE_imag)/2, np.array([H_v_real, H_v_imag])
+
+
+@jit(nopython=True)
+def quick_ms_diff(a, b, signal_length):
+    output = np.zeros(signal_length, dtype = np.float64)
+    output = np.mean((a-b)**2)
+    return output
 
 
 @jit(nopython=True)
@@ -1189,7 +1197,7 @@ def construct_FRF(omegas, alpha_mags, alpha_phases, zetas, signal_length, min_ma
 
 
 
-def calculate_mean_FRF_error(model, dataloader, FRF_type=0, norm = True):
+def calculate_mean_FRF_error(model, dataloader, FRF_type, signal_length, norm):
     total_error = 0.0
     total_samples = 0
     with torch.no_grad():
@@ -1198,17 +1206,19 @@ def calculate_mean_FRF_error(model, dataloader, FRF_type=0, norm = True):
             for i in range(batch_size):
                 output = model(data).squeeze()
                 # input_signal = data[i].cpu().numpy()
-                input_signal = construct_FRF(params[i, :, 0].cpu().numpy(), 
-                                            params[i, :, 1].cpu().numpy(), 
-                                            params[i, :, 2].cpu().numpy(), 
-                                            10**params[i, :, 3].cpu().numpy(), 
-                                            1024,
-                                            norm)
+                true_omegas = params[i, :, 0].cpu().numpy()
+                mask = ~np.isnan(true_omegas)
+                true_omegas = true_omegas[mask]
+                true_alpha_mags = params[i, :, 1].cpu().numpy()[mask]
+                true_alpha_phases = params[i, :, 2].cpu().numpy()[mask]
+                true_zetas = params[i, :, 3].cpu().numpy()[mask]
+                
+                reconstructed_input = construct_FRF(true_omegas, true_alpha_mags, true_alpha_phases, true_zetas, signal_length, min_max=norm)
                 if FRF_type == 0:
-                    input_signal = np.abs(input_signal[0]+1j*input_signal[1])
+                    reconstructed_input = np.abs(reconstructed_input)
                 else:
-                    input_signal = np.array([input_signal[0], input_signal[1]])
-                error, _ = compare_FRF(input_signal, output[i].cpu().numpy(), FRF_type=FRF_type, norm=norm)
+                    reconstructed_input = np.array([np.real(reconstructed_input), np.imag(reconstructed_input)])
+                error, _ = compare_FRF(reconstructed_input, output[i].cpu().numpy(), FRF_type, signal_length, norm)
                 total_error += error
                 total_samples += 1
     mean_error = total_error / total_samples
