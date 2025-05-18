@@ -724,6 +724,11 @@ def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, sca
                         j = 0
                         label_names = ["Modes", r"$|\alpha_n|$", r"$\angle \alpha_n$", r"$\log_{10}(\zeta_n)$"]
                         label_keys = [0, 1, 2, 3]
+                        
+                        modes_curve = model_output[i][0].cpu().numpy()
+                        b, a = scipy.signal.butter(N, Wn)
+                        smoothed_modes = scipy.signal.filtfilt(b, a, modes_curve)
+                        predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes, up_inc=0.5)
 
                         for idx, label_name in zip(label_keys, label_names):
                             if label_defs[idx]:
@@ -735,7 +740,7 @@ def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, sca
                                     scale = scale_factors[j-1]
                                     # ax.set_ylabel(f"{label_name} / {scale:.2f} : Target")
                                     ax.set_ylabel(f"{label_name} / {scale:.2f}")
-                                h, l = subplot_labels(ax, x, model_output[i][j], labels[i][j], label_name, N, Wn)
+                                h, l = subplot_labels(ax, x, model_output[i][j], labels[i][j], label_name, N, Wn, predicted_omegas)
                                 legend_handles.extend(h)
                                 legend_labels.extend(l)
                                 j += 1
@@ -753,7 +758,7 @@ def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, sca
                     return
 
 
-def subplot_labels(axes_j, x, model_output_i_j, labels_arr_i_j, name, N, Wn):
+def subplot_labels(axes_j, x, model_output_i_j, labels_arr_i_j, name, N, Wn, predicted_omegas):
     handles, labels = axes_j.get_legend_handles_labels()
 
     if model_output_i_j is not None:
@@ -765,12 +770,11 @@ def subplot_labels(axes_j, x, model_output_i_j, labels_arr_i_j, name, N, Wn):
         h2, = axes_j.plot(x, smoothed_curve, color="red", label="Smoothed output")
         handles.extend([h1, h2])
         labels.extend(["Output", "Smoothed output"])
-
-        if "Modes" in name:
-            predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.5)
-            for k, omega in enumerate(predicted_omegas):
-                h3 = axes_j.axvline(x=omega, color='cyan', linestyle=':', label=r'Predicted $\omega_n$' if k == 0 else '')
-                if k == 0:
+        
+        for k, omega in enumerate(predicted_omegas):
+            h3 = axes_j.axvline(x=omega, color='cyan', linestyle=':', label=r'Predicted $\omega_n$' if k == 0 else '')
+            if k == 0:
+                if "Modes" in name:
                     handles.append(h3)
                     labels.append(r'Predicted $\omega_n$')
 
@@ -1194,18 +1198,16 @@ def construct_FRF(omegas, alpha_mags, alpha_phases, zetas, signal_length, min_ma
             H_f += numerator/denominator
             
             H_v[j] += H_f
-        
-        if min_max:
-            mag_no_norm = np.abs(H_v)
-            if np.all(mag_no_norm==0):
-                continue
+    
+    if min_max:
+        mag_no_norm = np.abs(H_v)
+        if not np.all(mag_no_norm==0):
             min_mag = np.min(mag_no_norm)
             max_mag = np.max(mag_no_norm)
             range_mag = max_mag-min_mag
-            if range_mag == 0:
-                continue
-            mag = (mag_no_norm - min_mag)/range_mag
-            H_v = H_v * (mag/np.maximum(mag_no_norm, 1e-12))
+            if range_mag > 0:
+                mag = (mag_no_norm - min_mag)/range_mag
+                H_v = H_v * (mag/np.maximum(mag_no_norm, 1e-12))
     return H_v
 
 
@@ -1307,13 +1309,83 @@ def plot_FRF_comparison(model, dataloader, num_samples, scale_factors, FRF_type=
                     plt.tight_layout(rect=[0, 0, 1, 1.02])
                 
                 
-                plt.show()
+                plt.show(block=False)
+                
+                plot_model_predictions_single_sample(
+                    model, 
+                    data[i], 
+                    labels[i], 
+                    params[i], 
+                    label_defs=[True, True, True, True],
+                    scale_factors=scale_factors
+                )
                 
                 samples_plotted += 1
                 if samples_plotted >= num_samples:
                     return
 
 
+
+def plot_model_predictions_single_sample(model, data, labels, params, label_defs, scale_factors=None, N=2, Wn=0.2):
+    x = np.linspace(0, 1, len(data[0]))
+    omegas = params[:, 0].cpu().numpy()
+    omegas = omegas[~np.isnan(omegas)]
+
+    model.eval()
+    model_output = model(data.unsqueeze(0))  # Add batch dimension
+    num_data_channels = data.shape[0]
+    num_label_channels = labels.shape[0]
+    num_channels = num_data_channels + num_label_channels
+    fig, axes = plt.subplots(num_channels, 1, figsize=(10, 2 * num_channels), sharex=True)
+
+    if num_channels == 1:
+        axes = [axes]
+
+    legend_handles = []
+    legend_labels = []
+
+    for j in range(num_data_channels):
+        signal_arr = data[j].cpu().numpy()
+        h_signal, = axes[j].plot(x, signal_arr, color="blue", label="Signal")
+        for k, omega in enumerate(omegas):
+            h_true = axes[j].axvline(x=omega, color='black', linestyle='--',
+                                        label=r'True $\omega_n$' if k == 0 else '')
+            if k == 0:
+                legend_handles.append(h_true)
+                legend_labels.append(r'True $\omega_n$')
+        axes[j].set_ylabel("Real part" if j == 0 else "Imaginary part")
+        legend_handles.append(h_signal)
+        legend_labels.append("Signal")
+
+    j = 0
+    label_names = ["Modes", r"$|\alpha_n|$", r"$\angle \alpha_n$", r"$\log_{10}(\zeta_n)$"]
+    label_keys = [0, 1, 2, 3]
+    
+    modes_curve = model_output[0][0].cpu().numpy() # shape has batch size
+    b, a = scipy.signal.butter(N, Wn)
+    smoothed_modes = scipy.signal.filtfilt(b, a, modes_curve)
+    predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes, up_inc=0.5)
+    
+    print(predicted_omegas)
+
+    for idx, label_name in zip(label_keys, label_names):
+        if label_defs[idx]:
+            ax = axes[num_data_channels + j]
+            if scale_factors is None or idx == 0:
+                ax.set_ylabel(f"{label_name}")
+            else:
+                scale = scale_factors[j - 1]
+                ax.set_ylabel(f"{label_name} / {scale:.2f}")
+            h, l = subplot_labels(ax, x, model_output[0][j], labels[j], label_name, N, Wn, predicted_omegas)
+            legend_handles.extend(h)
+            legend_labels.extend(l)
+            j += 1
+
+    axes[-1].set_xlabel("Normalised Frequency")
+    unique_legend = dict(zip(legend_labels, legend_handles))
+    fig.legend(unique_legend.values(), unique_legend.keys(), loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.0))
+    plt.tight_layout(rect=[0, 0, 1, 0.92])
+    plt.show()
 
 
 def plot_FRF_cloud():
