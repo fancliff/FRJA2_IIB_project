@@ -1128,7 +1128,7 @@ def estimate_parameter(output, predicted_freq_idxs, label_halfwidth=0.02, window
 
 
 
-def compare_FRF(input_signal, all_outputs, FRF_type = 0, signal_length = 1024):
+def compare_FRF(input_signal, all_outputs, FRF_type = 0, signal_length = 1024, norm = True):
     # Assumes model ouputs are modes, a mag, a phase, log10_zeta
     # FRF type: 0 for just magnitude, 1 for real and imaginary
     
@@ -1140,7 +1140,7 @@ def compare_FRF(input_signal, all_outputs, FRF_type = 0, signal_length = 1024):
     log10_zeta = estimate_parameter(all_outputs[3], predicted_freq_idxs)[0]
     
     # Reconstruct FRF
-    H_v = construct_FRF(predicted_freqs, a_mag, a_phase, 10**log10_zeta, signal_length)
+    H_v = construct_FRF(predicted_freqs, a_mag, a_phase, 10**log10_zeta, signal_length, min_max=norm)
 
     # Compare the FRFs
     if FRF_type == 0:
@@ -1154,8 +1154,8 @@ def compare_FRF(input_signal, all_outputs, FRF_type = 0, signal_length = 1024):
         return (MSE_real+MSE_imag)/2, np.array([H_v_real, H_v_imag])
 
 
-# @jit(nopython=True)
-def construct_FRF(omegas, alpha_mags, alpha_phases, zetas, signal_length):
+@jit(nopython=True)
+def construct_FRF(omegas, alpha_mags, alpha_phases, zetas, signal_length, min_max: bool = True):
     H_v = np.zeros(signal_length, dtype=np.complex128)
     frequencies = np.linspace(0, 1, signal_length)
     for n in range(len(omegas)):
@@ -1173,11 +1173,23 @@ def construct_FRF(omegas, alpha_mags, alpha_phases, zetas, signal_length):
             H_f += numerator/denominator
             
             H_v[j] += H_f
+        
+        if min_max:
+            mag_no_norm = np.abs(H_v)
+            if np.all(mag_no_norm==0):
+                continue
+            min_mag = np.min(mag_no_norm)
+            max_mag = np.max(mag_no_norm)
+            range_mag = max_mag-min_mag
+            if range_mag == 0:
+                continue
+            mag = (mag_no_norm - min_mag)/range_mag
+            H_v = H_v * (mag/np.maximum(mag_no_norm, 1e-12))
     return H_v
 
 
 
-def calculate_mean_FRF_error(model, dataloader, FRF_type=0):
+def calculate_mean_FRF_error(model, dataloader, FRF_type=0, norm = True):
     total_error = 0.0
     total_samples = 0
     with torch.no_grad():
@@ -1190,12 +1202,13 @@ def calculate_mean_FRF_error(model, dataloader, FRF_type=0):
                                             params[i, :, 1].cpu().numpy(), 
                                             params[i, :, 2].cpu().numpy(), 
                                             10**params[i, :, 3].cpu().numpy(), 
-                                            1024)
+                                            1024,
+                                            norm)
                 if FRF_type == 0:
                     input_signal = np.abs(input_signal[0]+1j*input_signal[1])
                 else:
                     input_signal = np.array([input_signal[0], input_signal[1]])
-                error, _ = compare_FRF(input_signal, output[i].cpu().numpy(), FRF_type)
+                error, _ = compare_FRF(input_signal, output[i].cpu().numpy(), FRF_type=FRF_type, norm=norm)
                 total_error += error
                 total_samples += 1
     mean_error = total_error / total_samples
@@ -1203,7 +1216,7 @@ def calculate_mean_FRF_error(model, dataloader, FRF_type=0):
 
 
 
-def plot_FRF_comparison(model, dataloader, num_samples, FRF_type=0, signal_length=1024):
+def plot_FRF_comparison(model, dataloader, num_samples, FRF_type=0, signal_length=1024, norm=True):
     samples_plotted = 0
     with torch.no_grad():
         for data, labels, params in dataloader:
@@ -1218,34 +1231,59 @@ def plot_FRF_comparison(model, dataloader, num_samples, FRF_type=0, signal_lengt
                 true_alpha_phases = params[i, :, 2].cpu().numpy()[mask]
                 true_zetas = params[i, :, 3].cpu().numpy()[mask]
                 
-                reconstructed_input = construct_FRF(true_omegas, true_alpha_mags, true_alpha_phases, true_zetas, signal_length)
+                reconstructed_input = construct_FRF(true_omegas, true_alpha_mags, true_alpha_phases, true_zetas, signal_length, min_max=norm)
                 if FRF_type == 0:
                     reconstructed_input = np.abs(reconstructed_input)
                 else:
                     reconstructed_input = np.array([np.real(reconstructed_input), np.imag(reconstructed_input)])
-                error, H_v = compare_FRF(reconstructed_input, output[i].cpu().numpy(), FRF_type)
+                error, H_v = compare_FRF(reconstructed_input, output[i].cpu().numpy(), FRF_type, signal_length, norm)
+                
+                modes_output = output[i][0].cpu().numpy()
+                b, a = scipy.signal.butter(2,0.2)
+                smoothed_modes = scipy.signal.filtfilt(b,a,modes_output)
+                predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes, up_inc=0.5)
                 
                 frequencies = np.linspace(0, 1, signal_length)
                 if FRF_type == 0:
                     fig, ax = plt.subplots(1, 1, figsize=(8, 4))
                     ax.plot(frequencies, H_v, label='Predicted FRF', color='orange')
                     ax.plot(frequencies, reconstructed_input, label='True FRF', color='blue')
-                    ax.set_title('Magnitude Comparison')
+                    for k, omega in enumerate(true_omegas):
+                        ax.axvline(x=omega, color='black', linestyle='--',
+                                                label=r'True $\omega_n$' if k == 0 else '')
+                    for k, omega in enumerate(predicted_omegas):
+                        ax.axvline(x=omega, color='cyan', linestyle=':', 
+                                        label=r'Predicted $\omega_n$' if k == 0 else '')
                     fig.suptitle('Magnitude FRF Comparison: MSE = {:.4f}'.format(error))
-                    ax.legend()
+                    ax.legend(
+                        loc='upper center',
+                        ncol = 4,
+                        bbox_to_anchor = (0.5,1.15)
+                    )
+                    plt.tight_layout(rect=[0, 0, 1, 1.05])
                 else:
                     fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
-                    ax[0].plot(frequencies, H_v[0], label='Predicted FRF (Real)', color='orange')
-                    ax[0].plot(frequencies, reconstructed_input[0], label='True FRF (Real)', color='blue')
-                    ax[1].plot(frequencies, H_v[1], label='Predicted FRF (Imag)', color='orange')
-                    ax[1].plot(frequencies, reconstructed_input[1], label='True FRF (Imag)', color='blue')
-                    ax[0].set_title('Real Part Comparison')
-                    ax[1].set_title('Imaginary Part Comparison')
+                    ax[0].plot(frequencies, H_v[0], label='Predicted FRF', color='orange')
+                    ax[0].plot(frequencies, reconstructed_input[0], label='True FRF', color='blue')
+                    ax[1].plot(frequencies, H_v[1], label='Predicted FRF', color='orange')
+                    ax[1].plot(frequencies, reconstructed_input[1], label='True FRF', color='blue')
+                    for k, omega in enumerate(true_omegas):
+                        ax[0].axvline(x=omega, color='black', linestyle='--',
+                                                label=r'True $\omega_n$' if k == 0 else '')
+                        ax[1].axvline(x=omega, color='black', linestyle='--')
+                    for k, omega in enumerate(predicted_omegas):
+                        ax[0].axvline(x=omega, color='cyan', linestyle=':', 
+                                            label=r'Predicted $\omega_n$' if k == 0 else '')
+                        ax[1].axvline(x=omega, color='cyan', linestyle=':')
                     fig.suptitle('Complex FRF Comparison: MSE = {:.4f}'.format(error))
-                    ax[0].legend()
-                    ax[1].legend()
+                    ax[0].legend(
+                        loc='upper center',
+                        ncol = 4,
+                        bbox_to_anchor = (0.5,1.15),
+                    )
+                    plt.tight_layout(rect=[0, 0, 1, 1.02])
                 
-                plt.tight_layout()
+                
                 plt.show()
                 
                 samples_plotted += 1
