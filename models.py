@@ -301,6 +301,97 @@ class ResNet1(nn.Module):
         return x
 
 
+
+### Leaky ReLU ###
+class RegressionModel2(nn.Module):
+    def __init__(self, 
+                data_channels: int, 
+                out_channels: List[int], 
+                kernel_size: List[int] = [13], 
+                input_length: int = 1024,
+                batch_norm: bool = True,
+                P_dropout: float = 0.0,
+                max_pool: bool = False # Max pooling after every layer
+                ):
+        """
+        A CNN model with flexible output channels, batch normalization, 
+        and kernel size/padding customization. 
+        
+        Leaky ReLU, negative slope 0.01
+        
+        :param data_channels: The number of input channels.
+        :param input_length: The length of the input sequence.
+        :param out_channels: List of output channel sizes for each Conv1d layer.
+        :param kernel_size: Either an integer kernel size or a list of kernel sizes for each Conv1d layer.
+        """
+        super(RegressionModel2, self).__init__()
+        self.data_channels = data_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size
+        self.input_length = input_length
+        self.batch_norm = batch_norm
+        self.P_dropout = P_dropout
+        self.max_pool= max_pool
+
+        if len(kernel_size) == 1:
+            kernel_size = kernel_size * len(out_channels)
+        else:
+            assert len(kernel_size) == len(out_channels), \
+                "The length of kernel_size list must be 1 or match the length of out_channels list."
+
+        # Default to calculating padding as (kernel_size - 1) / 2 for each layer
+        padding = [(k - 1) // 2 for k in kernel_size]
+
+        # Define Conv1d and BatchNorm1d layers dynamically using the out_channels and kernel_size list
+        self.convs = nn.ModuleList()  # to hold all convolution layers
+        self.regs = nn.ModuleList()   # to hold all BatchNorm or dropout layers (regularisers)
+        self.pools = nn.ModuleList()  # to hold all max pooling layers
+        
+        in_channels = data_channels  # The initial input channel is the number of input channels (data_channels)
+        
+        if max_pool:
+            no_pool_idx = -1 # all layers have pooling if len out_channels is even
+            if len(out_channels) % 2 == 1:
+                no_pool_idx = len(out_channels) // 2 # middle layer no pooling if len out_channels is odd
+        
+        for i, out_channel in enumerate(out_channels):
+            kernel = kernel_size[i]  # Get the kernel size for the current layer
+            pad = padding[i]  # Get the padding value for the current layer
+            
+            if max_pool:
+                if i == no_pool_idx:
+                    self.pools.append(nn.Identity())  # No pooling for this layer
+                else:
+                    if i >= len(out_channels) // 2:
+                        self.pools.append(nn.Upsample(scale_factor=2))  # Add an upsampling layer
+                    else:
+                        self.pools.append(nn.MaxPool1d(kernel_size=2))  # Add a max pooling layer
+            else:
+                self.pools.append(nn.Identity()) # No pooling for all layers
+
+            self.convs.append(nn.Conv1d(in_channels, out_channel, kernel_size=kernel, padding=pad))
+            
+            if batch_norm:
+                self.regs.append(nn.BatchNorm1d(out_channel))
+            elif P_dropout > 0:
+                self.regs.append(nn.Dropout(P_dropout))
+            else:
+                self.regs.append(nn.Identity())  # No regularisation
+            
+            in_channels = out_channel  # Update the input channels for the next convolution layer
+
+    def forward(self, x):
+        for conv, reg, pool in zip(self.convs[:-1], self.regs, self.pools):
+            x = F.leaky_relu(reg(conv(x)),negative_slope=0.01) # Convolution -> Regularisation -> ReLU activation
+            x = pool(x)  # Max pooling & Upsampling if max_pool is True
+        
+        x = self.convs[-1](x)  # Final conv layer without BN or ReLU
+        # No sigmoid activation for regression
+        return x
+
+
+
+
 class RegressionModel1(nn.Module):
     def __init__(self, 
                 data_channels: int, 
