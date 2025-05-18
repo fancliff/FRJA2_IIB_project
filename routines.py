@@ -1128,19 +1128,32 @@ def estimate_parameter(output, predicted_freq_idxs, label_halfwidth=0.02, window
 
 
 
-def compare_FRF(input_signal, all_outputs, FRF_type = 0, signal_length = 1024, norm = True):
+def compare_FRF(input_signal, all_outputs, scale_factors, FRF_type = 0, signal_length = 1024, norm = True):
     # Assumes model ouputs are modes, a mag, a phase, log10_zeta
     # FRF type: 0 for just magnitude, 1 for real and imaginary
     
     # Extract the predicted frequencies
     mode_channel = all_outputs[0]
     predicted_freqs,predicted_freq_idxs = est_nat_freq_triangle_rise(mode_channel)
+    
+    # use point estimate so [0]
     a_mag = estimate_parameter(all_outputs[1], predicted_freq_idxs)[0]
     a_phase = estimate_parameter(all_outputs[2], predicted_freq_idxs)[0]
     log10_zeta = estimate_parameter(all_outputs[3], predicted_freq_idxs)[0]
     
+    a_mag_scale = scale_factors[0]
+    a_phase_scale = scale_factors[1]
+    log10_zeta_scale = scale_factors[2]
+    
     # Reconstruct FRF
-    H_v = construct_FRF(predicted_freqs, a_mag, a_phase, 10**log10_zeta, signal_length, min_max=norm)
+    H_v = construct_FRF(
+        predicted_freqs, 
+        a_mag*a_mag_scale, 
+        a_phase*a_phase_scale,
+        10**(log10_zeta*log10_zeta_scale),
+        signal_length,
+        min_max=norm
+    )
 
     # Compare the FRFs
     if FRF_type == 0:
@@ -1197,7 +1210,7 @@ def construct_FRF(omegas, alpha_mags, alpha_phases, zetas, signal_length, min_ma
 
 
 
-def calculate_mean_FRF_error(model, dataloader, FRF_type, signal_length, norm):
+def calculate_mean_FRF_error(model, dataloader, scale_factors, FRF_type, signal_length, norm):
     total_error = 0.0
     total_samples = 0
     with torch.no_grad():
@@ -1218,7 +1231,7 @@ def calculate_mean_FRF_error(model, dataloader, FRF_type, signal_length, norm):
                     reconstructed_input = np.abs(reconstructed_input)
                 else:
                     reconstructed_input = np.array([np.real(reconstructed_input), np.imag(reconstructed_input)])
-                error, _ = compare_FRF(reconstructed_input, output[i].cpu().numpy(), FRF_type, signal_length, norm)
+                error, _ = compare_FRF(reconstructed_input, output[i].cpu().numpy(), scale_factors, FRF_type, signal_length, norm)
                 total_error += error
                 total_samples += 1
     mean_error = total_error / total_samples
@@ -1226,7 +1239,7 @@ def calculate_mean_FRF_error(model, dataloader, FRF_type, signal_length, norm):
 
 
 
-def plot_FRF_comparison(model, dataloader, num_samples, FRF_type=0, signal_length=1024, norm=True):
+def plot_FRF_comparison(model, dataloader, num_samples, scale_factors, FRF_type=0, signal_length=1024, norm=True):
     samples_plotted = 0
     with torch.no_grad():
         for data, labels, params in dataloader:
@@ -1246,7 +1259,7 @@ def plot_FRF_comparison(model, dataloader, num_samples, FRF_type=0, signal_lengt
                     reconstructed_input = np.abs(reconstructed_input)
                 else:
                     reconstructed_input = np.array([np.real(reconstructed_input), np.imag(reconstructed_input)])
-                error, H_v = compare_FRF(reconstructed_input, output[i].cpu().numpy(), FRF_type, signal_length, norm)
+                error, H_v = compare_FRF(reconstructed_input, output[i].cpu().numpy(), scale_factors,FRF_type, signal_length, norm)
                 
                 modes_output = output[i][0].cpu().numpy()
                 b, a = scipy.signal.butter(2,0.2)
@@ -1300,6 +1313,16 @@ def plot_FRF_comparison(model, dataloader, num_samples, FRF_type=0, signal_lengt
                 if samples_plotted >= num_samples:
                     return
 
+
+
+
+def plot_FRF_cloud():
+    pass
+
+
+# @jit(nopython=True)
+def generate_random_FRFs():
+    pass
 
 
 def load_model(save_name):
