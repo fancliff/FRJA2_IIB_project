@@ -1075,7 +1075,7 @@ def calculate_mean_frequency_error(model, dataloader, acceptance=0.5, method='mi
 
 
 # @jit(nopython=True)
-def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_inc=0.6, N=2, Wn=0.2, max_error=1.0):
+def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_inc=0.4, N=2, Wn=0.2, max_error=1.0):
     total_error = 0.0
     total_samples = 0
     if not label_defs[0]: # Mode triangle labelling
@@ -1104,7 +1104,7 @@ def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_in
 
 
 
-def estimate_parameter(output, predicted_freq_idxs, label_halfwidth=0.02, window_scale=0.4, N=2, Wn=0.2):
+def estimate_parameter(output, predicted_freq_idxs, label_halfwidth=0.02, window_scale=0.6, N=2, Wn=0.2):
     # Smooth output signal
     b,a = scipy.signal.butter(N,Wn)
     output = scipy.signal.filtfilt(b,a,output)
