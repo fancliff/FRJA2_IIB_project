@@ -1365,8 +1365,6 @@ def plot_model_predictions_single_sample(model, data, labels, params, label_defs
     b, a = scipy.signal.butter(N, Wn)
     smoothed_modes = scipy.signal.filtfilt(b, a, modes_curve)
     predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes, up_inc=0.5)
-    
-    print(predicted_omegas)
 
     for idx, label_name in zip(label_keys, label_names):
         if label_defs[idx]:
