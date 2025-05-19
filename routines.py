@@ -8,6 +8,7 @@ import scipy
 import matplotlib.pyplot as plt
 from numba import jit
 from models import EarlyStopping
+from models import ResidualBlock
 import matplotlib.patches as mpatches #for legend using masks
 import matplotlib.colors as mcolors #for custom colormap
 import datetime #for timestamping save files
@@ -1721,6 +1722,32 @@ def compare_activations(model1, model2, dataloader, num_samples):
 
 
 #add compare activations with signal function
+
+def calculate_resnet_receptive_field(model):
+    receptive_field = 1
+    stride = 1
+    dilation = 1
+
+    def conv_rf(kernel_size, dilation=1, stride=1):
+        return (kernel_size - 1) * dilation + 1
+
+    for layer in model.modules():
+        if isinstance(layer, nn.Conv1d):
+            k = layer.kernel_size[0]
+            s = layer.stride[0]
+            d = layer.dilation[0]
+            rf = conv_rf(k, d, s)
+            receptive_field += (rf - 1) * stride
+            stride *= s  # update overall stride
+
+        elif isinstance(layer, nn.MaxPool1d):
+            k = layer.kernel_size
+            s = layer.stride
+            rf = conv_rf(k, 1, s)
+            receptive_field += (rf - 1) * stride
+            stride *= s
+
+    return receptive_field
 
 
 
