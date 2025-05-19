@@ -727,7 +727,7 @@ def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, sca
                         label_keys = [0, 1, 2, 3]
                         
                         modes_curve = model_output[i][0].cpu().numpy()
-                        b, a = scipy.signal.butter(N, Wn)
+                        b, a = scipy.signal.butter(2, 0.3) # only light smoothing for mode curve
                         smoothed_modes = scipy.signal.filtfilt(b, a, modes_curve)
                         predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes, up_inc=0.35)
 
@@ -1153,7 +1153,7 @@ def calculate_mean_frequency_error(model, dataloader, acceptance=0.5, method='mi
 
 
 # @jit(nopython=True)
-def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_inc=0.35, N=2, Wn=0.1, max_error=1.0):
+def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_inc=0.35, N=2, Wn=0.3, max_error=1.0):
     total_error = 0.0
     total_samples = 0
     if not label_defs[0]: # Mode triangle labelling
@@ -1172,6 +1172,7 @@ def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_in
                 b,a = scipy.signal.butter(N,Wn)
                 smoothed_curve = scipy.signal.filtfilt(b,a,fitted_curve)
                 predicted_frequencies,_ = est_nat_freq_triangle_rise(smoothed_curve, up_inc=up_inc)
+                # predicted_frequencies,_ = est_nat_freq_triangle_rise(fitted_curve, up_inc=up_inc)
                 true_frequencies = params[i, :, 0].cpu().numpy()
                 true_frequencies = true_frequencies[~np.isnan(true_frequencies)]  # Remove NaN values
                 error = calculate_frequency_error(predicted_frequencies, true_frequencies, max_error=max_error)
@@ -1216,10 +1217,13 @@ def compare_FRF(input_signal, all_outputs, scale_factors, FRF_type = 0, signal_l
     
     # Extract the predicted frequencies
     mode_channel = all_outputs[0]
+    # only lightly smooth mode channel before passing to predict frequncies
+    b, a = scipy.signal.butter(2,0.3)
+    mode_channel = scipy.signal.filtfilt(b,a,mode_channel)
     predicted_freqs,predicted_freq_idxs = est_nat_freq_triangle_rise(mode_channel, up_inc=0.35)
     
     # point estimate [0], mean [1], variance [2]
-    x = 1
+    x = 0
     a_mag = estimate_parameter(all_outputs[1], predicted_freq_idxs)[x]
     a_phase = estimate_parameter(all_outputs[2], predicted_freq_idxs)[x]
     log10_zeta = estimate_parameter(all_outputs[3], predicted_freq_idxs)[x]
@@ -1343,7 +1347,7 @@ def plot_FRF_comparison(model, dataloader, num_samples, scale_factors, FRF_type=
                 error, H_v = compare_FRF(reconstructed_input, output[i].cpu().numpy(), scale_factors,FRF_type, signal_length, norm)
                 
                 modes_output = output[i][0].cpu().numpy()
-                b, a = scipy.signal.butter(2,0.2)
+                b, a = scipy.signal.butter(2,0.3) # only light smoothing for modes
                 smoothed_modes = scipy.signal.filtfilt(b,a,modes_output)
                 predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes, up_inc=0.35)
                 
@@ -1415,7 +1419,7 @@ def plot_model_predictions_single_sample(model, data, labels, params, label_defs
     num_data_channels = data.shape[0]
     num_label_channels = labels.shape[0]
     num_channels = num_data_channels + num_label_channels
-    fig, axes = plt.subplots(num_channels-1, 1, figsize=(10, 2 * num_channels), sharex=True)
+    fig, axes = plt.subplots(num_channels, 1, figsize=(10, 2 * num_channels), sharex=True)
 
     if num_channels == 1:
         axes = [axes]
@@ -1440,7 +1444,7 @@ def plot_model_predictions_single_sample(model, data, labels, params, label_defs
     label_keys = [0, 1, 2, 3]
     
     modes_curve = model_output[0][0].cpu().numpy() # shape has batch size
-    b, a = scipy.signal.butter(N, Wn)
+    b, a = scipy.signal.butter(2, 0.3) # only light smoothing for modes
     smoothed_modes = scipy.signal.filtfilt(b, a, modes_curve)
     predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes, up_inc=0.35)
 
