@@ -1415,7 +1415,7 @@ def plot_model_predictions_single_sample(model, data, labels, params, label_defs
     num_data_channels = data.shape[0]
     num_label_channels = labels.shape[0]
     num_channels = num_data_channels + num_label_channels
-    fig, axes = plt.subplots(num_channels, 1, figsize=(10, 2 * num_channels), sharex=True)
+    fig, axes = plt.subplots(num_channels-1, 1, figsize=(10, 2 * num_channels), sharex=True)
 
     if num_channels == 1:
         axes = [axes]
@@ -1436,7 +1436,6 @@ def plot_model_predictions_single_sample(model, data, labels, params, label_defs
         legend_handles.append(h_signal)
         legend_labels.append("Signal")
 
-    j = 0
     label_names = ["Modes", r"$|\alpha_n|$", r"$\angle \alpha_n$", r"$\log_{10}(\zeta_n)$"]
     label_keys = [0, 1, 2, 3]
     
@@ -1447,21 +1446,38 @@ def plot_model_predictions_single_sample(model, data, labels, params, label_defs
 
     for idx, label_name in zip(label_keys, label_names):
         if label_defs[idx]:
-            ax = axes[num_data_channels + j]
+            ax = axes[num_data_channels + idx]
             if scale_factors is None or idx == 0:
                 ax.set_ylabel(f"{label_name}")
             else:
-                scale = scale_factors[j - 1]
+                scale = scale_factors[idx - 1]
                 ax.set_ylabel(f"{label_name} / {scale:.2f}")
-            h, l = subplot_labels(ax, x, model_output[0][j], labels[j], label_name, N, Wn, predicted_omegas)
+            h, l = subplot_labels(ax, x, model_output[0][idx], labels[idx], label_name, N, Wn, predicted_omegas)
             legend_handles.extend(h)
             legend_labels.extend(l)
-            j += 1
+
+    # ax = axes[2]
+    # ax.set_ylabel(f"{label_names[0]}")
+    # h,l = subplot_labels(ax,x,model_output[0][0], labels[0], label_names[0], N, Wn, predicted_omegas)
+    # legend_handles.extend(h)
+    # legend_labels.extend(l)
+    
+    # ax = axes[3]
+    # ax.set_ylabel(f"{label_names[1]} / {scale_factors[0]:.2f}")
+    # h,l = subplot_labels(ax,x,model_output[0][1], labels[1], label_names[1], N, Wn, predicted_omegas)
+    # legend_handles.extend(h)
+    # legend_labels.extend(l)
+    
+    # ax = axes[4]
+    # ax.set_ylabel(f"{label_names[3]} / {scale_factors[2]:.2f}")
+    # h,l = subplot_labels(ax,x,model_output[0][3], labels[3], label_names[3], N, Wn, predicted_omegas)
+    # legend_handles.extend(h)
+    # legend_labels.extend(l)
 
     axes[-1].set_xlabel("Normalised Frequency")
     unique_legend = dict(zip(legend_labels, legend_handles))
     fig.legend(unique_legend.values(), unique_legend.keys(), loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.0))
-    plt.tight_layout(rect=[0, 0, 1, 0.92])
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
     plt.show()
 
 
