@@ -38,7 +38,10 @@ def n_channels_multi_labels_gen_scaled(
     scale_alpha_mag = np.sqrt((a**2 + a*b + b**2)*square_width/(3*target_A))
     a,b = np.log10(zeta_max), np.log10(zeta_min) # unfiform distribution of log10(zeta)
     scale_log10_zeta = np.sqrt((a**2 + a*b + b**2)*square_width/(3*target_A))
-    scale_alpha_phase = np.sqrt(square_width/target_A)*alpha_phase_std_dev
+    if alpha_phase_std_dev == 0:
+        scale_alpha_phase = 1
+    else:
+        scale_alpha_phase = np.sqrt(square_width/target_A)*alpha_phase_std_dev
     c = 0
     if label_outputs[1]: # alpha mag
         scale_factors[c] = scale_alpha_mag
