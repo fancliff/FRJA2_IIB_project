@@ -72,7 +72,7 @@ def n_channels_multi_labels_gen_scaled(
         
         zetas = 10**(np.random.uniform(np.log10(zeta_min), np.log10(zeta_max), size=num_modes))
         # no modes at very edge of frequency range
-        omegas = np.random.uniform(0.001, 0.999, size=num_modes)
+        omegas = np.random.uniform(0.01, 0.99, size=num_modes)
         
         if params_out:
             params[i, :num_modes, 0] = omegas
