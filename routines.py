@@ -729,7 +729,7 @@ def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, sca
                         modes_curve = model_output[i][0].cpu().numpy()
                         b, a = scipy.signal.butter(2, 0.3) # only light smoothing for mode curve
                         smoothed_modes = scipy.signal.filtfilt(b, a, modes_curve)
-                        predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes, up_inc=0.35)
+                        predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes)
 
                         for idx, label_name in zip(label_keys, label_names):
                             if label_defs[idx]:
@@ -898,7 +898,7 @@ def subplot_labels(axes_j, x, model_output_i_j, labels_arr_i_j, name, N, Wn, pre
 #         labels.extend([f"Output", f"Smoothed output"])
         
 #         if name == 'modes':
-#             predicted_omegas,_ = est_nat_freq_triangle_rise(smoothed_curve, up_inc=0.35)
+#             predicted_omegas,_ = est_nat_freq_triangle_rise(smoothed_curve)
 #             for k, omega in enumerate(predicted_omegas):
 #                 h3 = axes_j.axvline(x=omega, color='cyan', linestyle=':', label=r'Predicted $\omega_n$' if k == 0 else '')
 #                 if k == 0:  # Only add one label to avoid duplicates
@@ -1010,7 +1010,7 @@ def est_nat_freq_triangle_rise_old(curve, up_inc):
     return np.array(freq_estimates), freq_est_idxs
 
 @jit(nopython=True)
-def est_nat_freq_triangle_rise(curve, up_inc):
+def est_nat_freq_triangle_rise(curve, up_inc=0.3):
     length = len(curve)
     x = np.linspace(0, 1, length)
 
@@ -1153,7 +1153,7 @@ def calculate_mean_frequency_error(model, dataloader, acceptance=0.5, method='mi
 
 
 # @jit(nopython=True)
-def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_inc=0.35, N=2, Wn=0.3, max_error=1.0):
+def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_inc=0.3, N=2, Wn=0.3, max_error=1.0):
     total_error = 0.0
     total_samples = 0
     if not label_defs[0]: # Mode triangle labelling
@@ -1220,10 +1220,10 @@ def compare_FRF(input_signal, all_outputs, scale_factors, FRF_type = 0, signal_l
     # only lightly smooth mode channel before passing to predict frequncies
     b, a = scipy.signal.butter(2,0.3)
     mode_channel = scipy.signal.filtfilt(b,a,mode_channel)
-    predicted_freqs,predicted_freq_idxs = est_nat_freq_triangle_rise(mode_channel, up_inc=0.35)
+    predicted_freqs,predicted_freq_idxs = est_nat_freq_triangle_rise(mode_channel)
     
     # point estimate [0], mean [1], variance [2]
-    x = 0
+    x = 0 # point estimate preferred when many modes which overlap
     a_mag = estimate_parameter(all_outputs[1], predicted_freq_idxs)[x]
     a_phase = estimate_parameter(all_outputs[2], predicted_freq_idxs)[x]
     log10_zeta = estimate_parameter(all_outputs[3], predicted_freq_idxs)[x]
@@ -1233,14 +1233,23 @@ def compare_FRF(input_signal, all_outputs, scale_factors, FRF_type = 0, signal_l
     log10_zeta_scale = scale_factors[2]
     
     # Reconstruct FRF
-    H_v = construct_FRF(
-        predicted_freqs, 
-        a_mag*a_mag_scale, 
-        a_phase*a_phase_scale,
-        10**(log10_zeta*log10_zeta_scale),
-        signal_length,
-        min_max=norm
-    )
+    try:
+        H_v = construct_FRF(
+            predicted_freqs, 
+            a_mag*a_mag_scale, 
+            a_phase*a_phase_scale,
+            10**(log10_zeta*log10_zeta_scale),
+            signal_length,
+            min_max=norm
+        )
+    except Exception as e:
+        print('Exception: ', e)
+        print(
+            predicted_freqs, 
+            a_mag*a_mag_scale, 
+            a_phase*a_phase_scale,
+            10**(log10_zeta*log10_zeta_scale)
+        )
 
     # Compare the FRFs
     if FRF_type == 0:
@@ -1349,7 +1358,7 @@ def plot_FRF_comparison(model, dataloader, num_samples, scale_factors, FRF_type=
                 modes_output = output[i][0].cpu().numpy()
                 b, a = scipy.signal.butter(2,0.3) # only light smoothing for modes
                 smoothed_modes = scipy.signal.filtfilt(b,a,modes_output)
-                predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes, up_inc=0.35)
+                predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes)
                 
                 frequencies = np.linspace(0, 1, signal_length)
                 if FRF_type == 0:
@@ -1446,7 +1455,7 @@ def plot_model_predictions_single_sample(model, data, labels, params, label_defs
     modes_curve = model_output[0][0].cpu().numpy() # shape has batch size
     b, a = scipy.signal.butter(2, 0.3) # only light smoothing for modes
     smoothed_modes = scipy.signal.filtfilt(b, a, modes_curve)
-    predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes, up_inc=0.35)
+    predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes)
 
     for idx, label_name in zip(label_keys, label_names):
         if label_defs[idx]:
