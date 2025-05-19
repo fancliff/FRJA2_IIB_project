@@ -1010,7 +1010,7 @@ def est_nat_freq_triangle_rise_old(curve, up_inc):
     return np.array(freq_estimates), freq_est_idxs
 
 @jit(nopython=True)
-def est_nat_freq_triangle_rise(curve, up_inc=0.3):
+def est_nat_freq_triangle_rise(curve, up_inc=0.35):
     length = len(curve)
     x = np.linspace(0, 1, length)
 
@@ -1077,9 +1077,10 @@ def est_nat_freq_triangle_rise(curve, up_inc=0.3):
                     max_dy = dY[i]
                     max_idx = i
 
-            max_dy_indices.append(max_idx)
-            prev_peak_idx = peak_idx
-
+            if max_idx != 0:
+                max_dy_indices.append(max_idx)
+                prev_peak_idx = peak_idx
+    
     freq_estimates = np.zeros(len(max_dy_indices))
     for i in range(len(max_dy_indices)):
         freq_estimates[i] = x[max_dy_indices[i]]
@@ -1153,7 +1154,7 @@ def calculate_mean_frequency_error(model, dataloader, acceptance=0.5, method='mi
 
 
 # @jit(nopython=True)
-def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_inc=0.3, N=2, Wn=0.3, max_error=1.0):
+def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_inc=0.35, N=2, Wn=0.3, max_error=1.0):
     total_error = 0.0
     total_samples = 0
     if not label_defs[0]: # Mode triangle labelling
