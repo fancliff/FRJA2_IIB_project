@@ -24,6 +24,14 @@ import torch
 
 # Load and process TF data
 data = pydvma.load_data()
+# print(data)
+
+# 3C6 2s - 1 TF
+# 3C6 30s - 1 TF
+# 3C6 impulse - 1 TF
+
+# 4C6 - 12 TFs
+
 tf_data = data.tf_data_list[0]
 tf_arr = np.array(tf_data.tf_data)
 tf_arr = tf_arr.squeeze(-1)
@@ -66,41 +74,67 @@ plt.legend()
 plt.show()
 
 
-# Create magnitude and normalize
+# Create magnitude and normalise
 tf_mag = np.abs(tf_real_resampled + 1j * tf_imag_resampled)
 tf_mag_normed = (tf_mag - np.min(tf_mag)) / (np.max(tf_mag) - np.min(tf_mag))
 
-# Apply magnitude normalization to real/imag components
-tf_real_normalized = tf_real_resampled * (tf_mag_normed / tf_mag)
-tf_imag_normalized = tf_imag_resampled * (tf_mag_normed / tf_mag)
+# Apply magnitude normalisation to real/imag components
+tf_real_normalised = tf_real_resampled * (tf_mag_normed / tf_mag)
+tf_imag_normalised = tf_imag_resampled * (tf_mag_normed / tf_mag)
+tf_phase = np.angle(tf_real_normalised+1j*tf_imag_normalised)
+tf_log_mag = np.log10(tf_mag_normed)
 
 # Combine into final array and convert to tensor
-tf_processed = np.stack([tf_real_normalized, tf_imag_normalized])  # Shape (2, 1024)
+tf_processed = np.stack([
+    tf_real_normalised, 
+    tf_imag_normalised,
+    # tf_phase,
+    # tf_mag_normed,
+    # tf_log_mag,
+    ])  
+# Shape (n, 1024)
 tf_tensor = torch.tensor(tf_processed, dtype=torch.float32)  # Convert to tensor
 
 # Add batch dimension (model expects [batch_size, channels, sequence_length])
-tf_tensor = tf_tensor.unsqueeze(0)  # Now shape (1, 2, 1024)
+tf_tensor = tf_tensor.unsqueeze(0)  # Now shape (1, n, 1024)
 
 # Verify the shape matches model expectations
-print("Final tensor shape:", tf_tensor.shape)  # Should be (1, 2, 1024)
+print("Final tensor shape:", tf_tensor.shape)  # Should be (1, n, 1024)
 
 
-##########
+########## dataset testing #########
 
 # model = rt.load_model('05_19_12_56_4488444_9_RegressionModel1.pth')
 # model = rt.load_model('05_19_17_30_4488444_9_RegressionModel1_001_min_zeta.pth')
 # model = rt.load_model('05_20_11_34_4488444_9_RegressionModel1_pi_12_phase_001_min_zeta_real_imag.pth')
 # model = rt.load_model('05_19_15_22_4488444_9_RegressionModel1_10_modes.pth')
+# model = rt.load_model('05_20_17_18_4488444_9_RegressionModel1_pi_12_phase_001_min_zeta_10_modes_real_imag.pth')
+# model = rt.load_model('05_20_17_37_4488444_9_RegressionModel1_pi_12_phase_0005_min_zeta_10_modes_real_imag.pth')
+
+########### input testing ###########
+
 model = rt.load_model('05_20_17_18_4488444_9_RegressionModel1_pi_12_phase_001_min_zeta_10_modes_real_imag.pth')
-# print(model)
+# model = rt.load_model('05_20_19_41_4488444_9_RegressionModel1_pi_10_phase_001_min_zeta_10_modes_real_imag.pth')
+# model = rt.load_model('05_20_19_53_4488444_9_RegressionModel1_pi_8_phase_001_min_zeta_10_modes_real_imag.pth')
+# model = rt.load_model('05_20_20_40_4488444_9_RegressionModel1_pi_6_phase_001_min_zeta_10_modes_real_imag.pth')
 
 #                 modes, a mag, a phase, zeta 
 labels1 = np.array([True, True, True, True])
 
 project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/datasets/'
-data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_001_min_zeta.h5'
+
+######## dataset testing #########
+# data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_001_min_zeta.h5'
 # data_name = 'real_imag_all_labels_0_alpha_phase_scaled_001_min_zeta.h5'
 # data_name = 'real_imag_all_labels_0_alpha_phase_scaled.h5'
+# data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_0005_min_zeta_10_modes.h5'
+
+########## phase testing ##########
+data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_001_min_zeta_10_modes.h5'
+# data_name = 'real_imag_all_labels_pi_10_alpha_phase_scaled_001_min_zeta_10_modes.h5'
+# data_name = 'real_imag_all_labels_pi_8_alpha_phase_scaled_001_min_zeta_10_modes.h5'
+# data_name = 'real_imag_all_labels_pi_6_alpha_phase_scaled_001_min_zeta_10_modes.h5'
+
 data_file = project_path + data_name
 
 with h5py.File(data_file, 'r') as f:
