@@ -1224,7 +1224,7 @@ def compare_FRF(input_signal, all_outputs, scale_factors, FRF_type = 0, signal_l
     predicted_freqs,predicted_freq_idxs = est_nat_freq_triangle_rise(mode_channel)
     
     # point estimate [0], mean [1], variance [2]
-    x = 0 # point estimate may be better when many modes which overlap
+    x = 1 # point estimate may be better when many modes which overlap
     a_mag = estimate_parameter(all_outputs[1], predicted_freq_idxs)[x]
     a_phase = estimate_parameter(all_outputs[2], predicted_freq_idxs)[x]
     log10_zeta = estimate_parameter(all_outputs[3], predicted_freq_idxs)[x]
