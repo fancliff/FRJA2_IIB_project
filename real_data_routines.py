@@ -51,7 +51,7 @@ def plot_predictions_all_labels(model, data, label_defs, scale_factors = None, N
         label_keys = [0, 1, 2, 3]
         
         modes_curve = model_output[0].cpu().numpy()
-        b, a = scipy.signal.butter(2, 0.3) # only light smoothing for mode curve
+        b, a = scipy.signal.butter(2, 0.25) # only light smoothing for mode curve
         smoothed_modes = scipy.signal.filtfilt(b, a, modes_curve)
         predicted_omegas, _ = rt.est_nat_freq_triangle_rise(smoothed_modes)
 
@@ -93,7 +93,7 @@ def plot_predictions_all_labels(model, data, label_defs, scale_factors = None, N
         # Remove duplicate labels
         unique_legend = dict(zip(legend_labels, legend_handles))
         fig.legend(unique_legend.values(), unique_legend.keys(),
-                loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.0))
+                loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.0))
         plt.tight_layout(rect=[0, 0, 1, 0.92])
         plt.show()
         return
@@ -128,7 +128,7 @@ def compare_FRF(input_signal, all_outputs, scale_factors, FRF_type = 0, norm = T
     # Extract the predicted frequencies
     mode_channel = all_outputs[0]
     # only lightly smooth mode channel before passing to predict frequncies
-    b, a = scipy.signal.butter(2,0.3)
+    b, a = scipy.signal.butter(2,0.25)
     mode_channel = scipy.signal.filtfilt(b,a,mode_channel)
     predicted_freqs,predicted_freq_idxs = rt.est_nat_freq_triangle_rise(mode_channel)
     
@@ -190,7 +190,7 @@ def plot_FRF_comparison(model, data, scale_factors, FRF_type=1, norm=True, plot_
         print('\n', error)
         
         modes_output = output[0].cpu().numpy()
-        b, a = scipy.signal.butter(2,0.3) # only light smoothing for modes
+        b, a = scipy.signal.butter(2,0.25) # only light smoothing for modes
         smoothed_modes = scipy.signal.filtfilt(b,a,modes_output)
         predicted_omegas, _ = rt.est_nat_freq_triangle_rise(smoothed_modes)
         
@@ -205,7 +205,7 @@ def plot_FRF_comparison(model, data, scale_factors, FRF_type=1, norm=True, plot_
             fig.suptitle('Magnitude FRF Comparison: MSE = {:.4f}'.format(error))
             ax.legend(
                 loc='upper center',
-                ncol = 4,
+                ncol = 3,
                 bbox_to_anchor = (0.5,1.15)
             )
             plt.tight_layout(rect=[0, 0, 1, 1.05])
@@ -222,7 +222,7 @@ def plot_FRF_comparison(model, data, scale_factors, FRF_type=1, norm=True, plot_
             fig.suptitle('Complex FRF Comparison: MSE = {:.4f}'.format(error))
             ax[0].legend(
                 loc='upper center',
-                ncol = 4,
+                ncol = 3,
                 bbox_to_anchor = (0.5,1.15),
             )
             plt.tight_layout(rect=[0, 0, 1, 1.02])

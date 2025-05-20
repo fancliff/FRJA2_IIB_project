@@ -90,16 +90,17 @@ print("Final tensor shape:", tf_tensor.shape)  # Should be (1, 2, 1024)
 # model = rt.load_model('05_19_12_56_4488444_9_RegressionModel1.pth')
 # model = rt.load_model('05_19_17_30_4488444_9_RegressionModel1_001_min_zeta.pth')
 # model = rt.load_model('05_20_11_34_4488444_9_RegressionModel1_pi_12_phase_001_min_zeta_real_imag.pth')
-model = rt.load_model('05_19_15_22_4488444_9_RegressionModel1_10_modes.pth')
+# model = rt.load_model('05_19_15_22_4488444_9_RegressionModel1_10_modes.pth')
+model = rt.load_model('05_20_17_18_4488444_9_RegressionModel1_pi_12_phase_001_min_zeta_10_modes_real_imag.pth')
 # print(model)
 
 #                 modes, a mag, a phase, zeta 
 labels1 = np.array([True, True, True, True])
 
 project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/datasets/'
-# data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_001_min_zeta.h5'
+data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_001_min_zeta.h5'
 # data_name = 'real_imag_all_labels_0_alpha_phase_scaled_001_min_zeta.h5'
-data_name = 'real_imag_all_labels_0_alpha_phase_scaled.h5'
+# data_name = 'real_imag_all_labels_0_alpha_phase_scaled.h5'
 data_file = project_path + data_name
 
 with h5py.File(data_file, 'r') as f:
