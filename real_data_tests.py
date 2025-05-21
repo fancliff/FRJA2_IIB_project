@@ -31,20 +31,24 @@ data = pydvma.load_data()
 # 3C6 2s - 1 TF
 # 3C6 30s - 1 TF
 # 3C6 impulse - 1 TF
+
 tf_data = data.tf_data_list[0]
 tf_arr = np.array(tf_data.tf_data) 
 tf_arr = tf_arr.squeeze(-1)
 
 ########### 4C6 ###########
 # 4C6 - 12 TFs
-a = 1 # 1 - 12 for which TF
-tf_data = data.tf_data_list[a-1]
-tf_arr = np.array(tf_data.tf_data)
-tf_arr = tf_arr.squeeze(-1)
-x = np.linspace(0,1,len(tf_arr))
-x = x[1:] # remove 0 frequency
-tf_arr = tf_arr[1:] # remove 0 frequency
-tf_arr = tf_arr / (1j * x) # convert from acceleration to velocity (divide by iw)
+
+# a = 1 # 1 - 12 for which TF
+# tf_data = data.tf_data_list[a-1]
+# tf_arr = np.array(tf_data.tf_data)
+# tf_arr = tf_arr.squeeze(-1)
+# x = np.linspace(0,1,len(tf_arr))
+# x = x[1:] # remove 0 frequency
+# tf_arr = tf_arr[1:] # remove 0 frequency
+# tf_arr = tf_arr / (1j * x) # convert from acceleration to velocity (divide by iw)
+
+###########     ###########
 
 if np.isnan(tf_arr).any():
     print('\nNAN in tf_arr\n')
@@ -123,10 +127,11 @@ print("Final tensor shape:", tf_tensor.shape)  # Should be (1, n, 1024)
 # model = rt.load_model('05_19_15_22_4488444_9_RegressionModel1_10_modes.pth')
 # model = rt.load_model('05_20_17_18_4488444_9_RegressionModel1_pi_12_phase_001_min_zeta_10_modes_real_imag.pth')
 # model = rt.load_model('05_20_17_37_4488444_9_RegressionModel1_pi_12_phase_0005_min_zeta_10_modes_real_imag.pth')
+model = rt.load_model('05_21_11_06_4488444_9_RegressionModel1_pi_12_phase_001_min_zeta_10_modes_10_max_amplitude_real_imag.pth')
 
 ########### input testing ###########
 
-model = rt.load_model('05_20_17_18_4488444_9_RegressionModel1_pi_12_phase_001_min_zeta_10_modes_real_imag.pth')
+# model = rt.load_model('05_20_17_18_4488444_9_RegressionModel1_pi_12_phase_001_min_zeta_10_modes_real_imag.pth')
 # model = rt.load_model('05_20_19_41_4488444_9_RegressionModel1_pi_10_phase_001_min_zeta_10_modes_real_imag.pth')
 # model = rt.load_model('05_20_19_53_4488444_9_RegressionModel1_pi_8_phase_001_min_zeta_10_modes_real_imag.pth')
 # model = rt.load_model('05_20_20_40_4488444_9_RegressionModel1_pi_6_phase_001_min_zeta_10_modes_real_imag.pth')
@@ -141,9 +146,11 @@ project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_II
 # data_name = 'real_imag_all_labels_0_alpha_phase_scaled_001_min_zeta.h5'
 # data_name = 'real_imag_all_labels_0_alpha_phase_scaled.h5'
 # data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_0005_min_zeta_10_modes.h5'
+# data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_001_min_zeta_10_modes_5_max_amplitude.h5'
+data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_001_min_zeta_10_modes_10_max_amplitude.h5'
 
 ########## phase testing ##########
-data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_001_min_zeta_10_modes.h5'
+# data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_001_min_zeta_10_modes.h5'
 # data_name = 'real_imag_all_labels_pi_10_alpha_phase_scaled_001_min_zeta_10_modes.h5'
 # data_name = 'real_imag_all_labels_pi_8_alpha_phase_scaled_001_min_zeta_10_modes.h5'
 # data_name = 'real_imag_all_labels_pi_6_alpha_phase_scaled_001_min_zeta_10_modes.h5'
