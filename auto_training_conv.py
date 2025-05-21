@@ -39,9 +39,9 @@ with h5py.File(data_file, 'r') as f:
     val_data = f['data'][:5000]
     val_labels = f['labels'][:5000]
     val_params = f['params'][:5000]
-    train_data = f['data'][20000:30000]
-    train_labels = f['labels'][20000:30000]
-    train_params = f['params'][20000:30000]
+    train_data = f['data'][20000:26000]
+    train_labels = f['labels'][20000:26000]
+    train_params = f['params'][20000:26000]
     scale_factors = f['scale_factors'][:]
 
 train_dataset_1 = md.n_channel_dataset(train_data, train_labels, train_params)
@@ -50,14 +50,12 @@ val_dataset_1 = md.n_channel_dataset(val_data, val_labels, val_params)
 val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 out_channels_list = [
-    [4,4,8,8,4,4,4], # BSL
     [4,6,4],
     [4,8,4],
-    [4,6,6,4],
     [4,8,8,4],
     [4,6,8,6,4],
     [4,8,12,8,4],
-    [4,6,8,8,6,4],
+    [4,4,8,8,4,4,4], # BSL
     [4,6,8,12,8,6,4],
     [4,6,6,8,8,6,6,4],
     [4,4,8,8,12,12,8,8,4],
@@ -66,13 +64,11 @@ out_channels_list = [
 ]
 
 kernel_size_list = [
-    [3],
     [5],
     [7],
     [9], # BSL
     [11],
     [13],
-    [15],
 ]
 
 ######### AUTOMATIC TRAINING #########
@@ -88,8 +84,9 @@ if not os.path.exists(output_csv):
         writer = csv.writer(file)
         writer.writerow(['Timestamp', 'Model ID', 'Trainable Parameters', 'Receptive Field', 'Mean FRF Error', 'Training Time (s)'])
 
-for ks in kernel_size_list:
-    for oc in out_channels_list:
+
+for oc in out_channels_list:
+    for ks in kernel_size_list:
         try:
             if len(ks) != 1 and len(ks) != len(oc):
                 print(f'Skipping: kernel sizes {ks} incompatible with out_channels {oc}')
