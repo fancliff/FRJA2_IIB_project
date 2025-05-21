@@ -98,8 +98,6 @@ for ks in kernel_size_list:
                 print(f'Skipping: kernel sizes {ks} incompatible with out_channels {oc}')
                 continue
 
-            print(f'Starting: {save_suffix}')
-
             model = md.RegressionModel1(
                 data_channels=int(np.sum(inputs1)),
                 out_channels=oc,
@@ -114,6 +112,8 @@ for ks in kernel_size_list:
                 ''.join(map(str, model.kernel_size)),
                 str(model.__class__.__name__)
             ])
+
+            print(f'Starting: {save_suffix}')
 
             params = rt.count_parameters(model)
             receptive_field = rt.calculate_total_receptive_field(model)
