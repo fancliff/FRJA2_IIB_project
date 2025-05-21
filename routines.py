@@ -157,8 +157,8 @@ def validation_loss_recall_precision(model, dataloader, criterion, acceptance):
     return avg_loss, avg_recall, avg_precision
 
 
-def train_model_regression(model, train_dataloader, val_dataloader, save_suffix, num_epochs, criterion = nn.MSELoss(), plotting=True, patience=4):
-    early_stopping = EarlyStopping(patience=patience, verbose=True)
+def train_model_regression(model, train_dataloader, val_dataloader, save_suffix, num_epochs, criterion = nn.MSELoss(), plotting=True, patience=4, printing = True):
+    early_stopping = EarlyStopping(patience=patience, verbose=printing)
     criterion = criterion
     optimiser = optim.Adam(model.parameters(), lr=0.001)
     if plotting:
@@ -191,10 +191,11 @@ def train_model_regression(model, train_dataloader, val_dataloader, save_suffix,
             model.eval() #!!!
             val_loss, val_mse, val_mae, val_r2 = validation_loss_regression(model, val_dataloader, criterion)
             
-            print()
-            print(f'Epoch [{epoch+1}/{num_epochs}]')
-            print(f'Training Loss: {train_loss:.4f}, Training MSE: {train_mse:.4f}, Training MAE: {train_mae:.4f}, Training R²: {train_r2:.4f}')
-            print(f'Validation Loss: {val_loss:.4f}, Validation MSE: {val_mse:.4f}, Validation MAE: {val_mae:.4f}, Validation R²: {val_r2:.4f}')
+            if printing:
+                print()
+                print(f'Epoch [{epoch+1}/{num_epochs}]')
+                print(f'Training Loss: {train_loss:.4f}, Training MSE: {train_mse:.4f}, Training MAE: {train_mae:.4f}, Training R²: {train_r2:.4f}')
+                print(f'Validation Loss: {val_loss:.4f}, Validation MSE: {val_mse:.4f}, Validation MAE: {val_mae:.4f}, Validation R²: {val_r2:.4f}')
             
             result_dict["training_loss"].append(train_loss)
             result_dict["training_mse"].append(train_mse)
@@ -220,7 +221,8 @@ def train_model_regression(model, train_dataloader, val_dataloader, save_suffix,
             early_stopping(val_loss, model)
         
             if early_stopping.early_stop:
-                print('Early stopping triggered, stopping training...')
+                if printing:
+                    print('Early stopping triggered, stopping training...')
                 #early_stopping.load_checkpoint(model)
                 break
     except KeyboardInterrupt:
@@ -305,14 +307,15 @@ def calculate_regression_metrics(outputs, labels):
     # print("Output shape:", outputs.shape)
     # print("Label shape:", labels.shape)
     
-    # mse = F.mse_loss(outputs, labels).item()
-    # mae = F.l1_loss(outputs, labels).item()
-    # var_labels = torch.var(labels).item()
-    # if var_labels == 0:
-    #     r2 = 0
-    # else:
-    #     r2 = 1 - mse / var_labels
-    mse, mae, r2 = 0,0,0
+    mse = F.mse_loss(outputs, labels).item()
+    mae = F.l1_loss(outputs, labels).item()
+    var_labels = torch.var(labels).item()
+    if var_labels == 0:
+        r2 = 0
+    else:
+        r2 = 1 - mse / var_labels
+    
+    # mse, mae, r2 = 0,0,0
     return mse, mae, r2
 
 
