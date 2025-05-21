@@ -70,6 +70,30 @@ kernel_size_list = [
     [13],
 ]
 
+######### EXPECTED TRAINING TIME #########
+params_sum = 0
+max_params = 0
+for oc in out_channels_list:
+    for ks in kernel_size_list:
+        model = md.RegressionModel1(
+            data_channels=2,
+            out_channels=oc,
+            kernel_size=ks,
+            batch_norm=True,
+            P_dropout=0.0,
+            max_pool=False,
+        )
+        params = rt.count_parameters(model)
+        if params > max_params:
+            max_params = params
+        params_sum += params
+
+est_time = (params_sum/1700)*(200/150)*(len(train_data)/3000)*695/3600
+
+print(f'\nTotal Trainable Parameters: {params_sum}')
+print(f'Max trainable parameters single model: {max_params}')
+print(f'Estimated Training time: {est_time:.1f}hrs\n')
+
 ######### AUTOMATIC TRAINING #########
 
 save_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/'
