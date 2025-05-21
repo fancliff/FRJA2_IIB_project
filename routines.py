@@ -305,14 +305,14 @@ def calculate_regression_metrics(outputs, labels):
     # print("Output shape:", outputs.shape)
     # print("Label shape:", labels.shape)
     
-    mse = F.mse_loss(outputs, labels).item()
-    mae = F.l1_loss(outputs, labels).item()
-    var_labels = torch.var(labels).item()
-    if var_labels == 0:
-        r2 = 0
-    else:
-        r2 = 1 - mse / var_labels
-    
+    # mse = F.mse_loss(outputs, labels).item()
+    # mae = F.l1_loss(outputs, labels).item()
+    # var_labels = torch.var(labels).item()
+    # if var_labels == 0:
+    #     r2 = 0
+    # else:
+    #     r2 = 1 - mse / var_labels
+    mse, mae, r2 = 0,0,0
     return mse, mae, r2
 
 
