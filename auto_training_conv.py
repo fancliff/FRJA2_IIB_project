@@ -126,7 +126,7 @@ for ks in kernel_size_list:
                 save_suffix=save_suffix,
                 num_epochs=200,
                 plotting=False,
-                patience=30,
+                patience=20,
                 printing=False,
             )
             end = time.process_time()
