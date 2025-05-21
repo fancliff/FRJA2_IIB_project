@@ -12,18 +12,15 @@ import numpy as np
 import scipy
 import matplotlib.pyplot as plt
 from numba import jit
-
-import generators as gen
-import models as md
-import routines as rt 
-
 import csv
 import os
 import time
-
 from typing import List
-
 import h5py
+import datetime
+import generators as gen
+import models as md
+import routines as rt 
 
 print('\nUsing', torch.get_num_threads(), 'threads\n')
 
@@ -89,7 +86,7 @@ error_log = os.path.join(save_path, "training_failures.log")
 if not os.path.exists(output_csv):
     with open(output_csv, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['Model ID', 'Trainable Parameters', 'Receptive Field', 'Mean FRF Error', 'Training Time (s)'])
+        writer.writerow(['Timestamp', 'Model ID', 'Trainable Parameters', 'Receptive Field', 'Mean FRF Error', 'Training Time (s)'])
 
 for ks in kernel_size_list:
     for oc in out_channels_list:
@@ -140,9 +137,11 @@ for ks in kernel_size_list:
             print(f'Finished: {save_suffix}\n')
 
             # Append to CSV after each run
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             with open(output_csv, mode='a', newline='') as file:
                 writer = csv.writer(file)
                 writer.writerow([
+                    timestamp,
                     save_suffix,
                     params,
                     receptive_field,
