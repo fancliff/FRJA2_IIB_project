@@ -239,8 +239,7 @@ def plot_FRF_comparison(model, data, scale_factors, FRF_type=1, norm=True, plot_
         )
 
 
-def resample_linear(data, new_length):
-    """Resample data to new_length using linear interpolation"""
+def resample_linear_scipy(data, new_length):
     original_length = len(data)
     x_original = np.linspace(0, 1, original_length)
     x_new = np.linspace(0, 1, new_length)
@@ -250,4 +249,13 @@ def resample_linear(data, new_length):
     
     # Apply interpolation
     return interp_func(x_new)
+
+
+def resample_linear_numpy(data, new_length):
+    original_length = data.shape[-1]
+    x_old = np.linspace(0, 1, original_length)
+    x_new = np.linspace(0, 1, new_length)
+
+    return np.interp(x_new, x_old, data)
+
 

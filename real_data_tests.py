@@ -26,15 +26,28 @@ import torch
 data = pydvma.load_data()
 # print(data)
 
+
+########### 3C6 ###########
 # 3C6 2s - 1 TF
 # 3C6 30s - 1 TF
 # 3C6 impulse - 1 TF
-
-# 4C6 - 12 TFs
-
 tf_data = data.tf_data_list[0]
+tf_arr = np.array(tf_data.tf_data) 
+tf_arr = tf_arr.squeeze(-1)
+
+########### 4C6 ###########
+# 4C6 - 12 TFs
+a = 1 # 1 - 12 for which TF
+tf_data = data.tf_data_list[a-1]
 tf_arr = np.array(tf_data.tf_data)
 tf_arr = tf_arr.squeeze(-1)
+x = np.linspace(0,1,len(tf_arr))
+x = x[1:] # remove 0 frequency
+tf_arr = tf_arr[1:] # remove 0 frequency
+tf_arr = tf_arr / (1j * x) # convert from acceleration to velocity (divide by iw)
+
+if np.isnan(tf_arr).any():
+    print('\nNAN in tf_arr\n')
 
 # Extract real and imaginary parts
 tf_real = np.real(tf_arr)
@@ -64,8 +77,8 @@ tf_imag = tf_imag[:cut_off_idx]
 # tf_imag_resampled = resample(tf_imag, 1024)
 
 # linear resampling, no wiggles
-tf_real_resampled = rdrt.resample_linear(tf_real, 1024)
-tf_imag_resampled = rdrt.resample_linear(tf_imag, 1024)
+tf_real_resampled = rdrt.resample_linear_scipy(tf_real, 1024)
+tf_imag_resampled = rdrt.resample_linear_scipy(tf_imag, 1024)
 
 x = np.linspace(0,1,1024)
 plt.plot(x,tf_real_resampled,label='Real')
