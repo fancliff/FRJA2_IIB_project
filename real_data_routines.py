@@ -408,3 +408,36 @@ def generate_random_FRFs(num_samples,predicted_omegas,param_means,param_vars,sig
             data[i, 0, :] = real_pt
             data[i, 1, :] = imag_pt
     return data
+
+
+@jit(nopython=True)
+def FRF_loss_for_optim(input, omegas, alphas, phis, log10zetas):
+    signal_length = len(input)
+    H_v = np.zeros(signal_length, dtype=np.complex128)
+    frequencies = np.linspace(0, 1, signal_length)
+    
+    for n in range(len(omegas)):
+        omega_n = omegas[n]
+        alpha_n = alphas[n]
+        phi_n = phis[n]
+        log10zeta_n = log10zetas[n]
+        for j, w in enumerate(frequencies):
+            H_f = 0.0j
+            denominator = omega_n**2 - w**2 + 2j * (log10zeta_n**10) * w
+            numerator = 1j*w*alpha_n*np.exp(1j*phi_n)
+            H_f += numerator/denominator
+            H_v[j] += H_f
+    
+    mag_no_norm = np.abs(H_v)
+    min_mag = np.min(mag_no_norm)
+    max_mag = np.max(mag_no_norm)
+    range_mag = max_mag-min_mag
+    if range_mag > 0:
+        mag = (mag_no_norm - min_mag)/range_mag
+        H_v = H_v * (mag/np.maximum(mag_no_norm, 1e-12))
+    H_v_real = np.real(H_v)
+    H_v_imag = np.imag(H_v)
+    MSE_real = np.mean((input[0]-H_v_real)**2)
+    MSE_imag = np.mean((input[1]-H_v_imag)**2)
+    return (MSE_real+MSE_imag)/2
+
