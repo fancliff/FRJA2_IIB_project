@@ -413,7 +413,7 @@ def generate_random_FRFs(num_samples,predicted_omegas,param_means,param_vars,sig
 
 @jit(nopython=True)
 def FRF_loss_for_optim(input, omegas, alphas, phis, log10zetas):
-    signal_length = len(input)
+    signal_length = len(input[0])
     H_v = np.zeros(signal_length, dtype=np.complex128)
     frequencies = np.linspace(0, 1, signal_length)
     
@@ -473,7 +473,7 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
     result = minimize(loss_function, initial_params, method='L-BFGS-B', bounds=bounds)
 
     if not result.success:
-        print("Warning: Optimization may not have converged:", result.message)
+        print("Warning: Optimisation may not have converged:", result.message)
     
     x_opt = result.x
     return {
@@ -483,3 +483,118 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
         'log10zetas': x_opt[3*N:4*N],
         'loss': result.fun # Includes omega penalties so don't use for comparison to original MSFRFE loss
     }
+
+
+def optimiser_handler(model, data, scale_factors, q=0, window_scale=0.6):
+    '''
+    Only works for if data[0][0], data[0][1] = real part, imaginary part
+    Data must be (batch dimension, input channels, signal length)
+    q=0 for point estimate
+    q=1 for windowed mean with window width = label bandwidth * window_scale
+    use whatever deemed best combination for mean squared FRF loss
+    Outputs symmetric percent change rather than normal percent change
+    As this avoids very large percent changes when initial value ~ 0
+    '''
+    with torch.no_grad():
+        model.eval()
+        output = model(data).squeeze(0)
+        data_copy = data
+        data = data.squeeze(0)[0:2] # just real and imaginary parts minus batch dimension
+        
+        
+        modes_output = output[0].cpu().numpy()
+        b, a = scipy.signal.butter(2,0.2) # only light smoothing for modes
+        smoothed_modes = scipy.signal.filtfilt(b,a,modes_output)
+        omegas_init, predicted_freq_idxs = rt.est_nat_freq_triangle_rise(smoothed_modes)
+        
+        window_scale = window_scale
+        q = q # 0 for point estimate, 1 for mean
+        alphas_init = rt.estimate_parameter(output[1].cpu().numpy(), predicted_freq_idxs, window_scale=window_scale)[q]
+        phis_init = rt.estimate_parameter(output[2].cpu().numpy(), predicted_freq_idxs, window_scale=window_scale)[q]
+        log10zetas_init = rt.estimate_parameter(output[3].cpu().numpy(), predicted_freq_idxs, window_scale=window_scale)[q]
+        
+        a_mag_scale = scale_factors[0]
+        phi_scale = scale_factors[1]
+        log10zeta_scale = scale_factors[2]
+        
+        alphas_init *= a_mag_scale
+        phis_init *= phi_scale
+        log10zetas_init *= log10zeta_scale
+        
+        optim_output = optimise_modes(
+            data,
+            omegas_init,
+            alphas_init,
+            phis_init,
+            log10zetas_init
+        )
+        
+        omegas_out = optim_output['omegas']
+        alphas_out = optim_output['alphas']
+        phis_out = optim_output['phis']
+        log10zetas_out = optim_output['log10zetas']
+        
+        out_FRF_loss = FRF_loss_for_optim(
+            data,
+            omegas_out,
+            alphas_out,
+            phis_out,
+            log10zetas_out
+        )
+        
+        def compute_changes(init, out):
+            init_abs = np.abs(init)
+            out_abs = np.abs(out)
+            denom = (init_abs + out_abs) / 2
+            # Avoid zero denominator:
+            denom = np.where(denom < 1e-12, 1e-12, denom)
+            symmetric_pct_change = 100 * np.abs(out - init) / denom
+            mean_change = np.mean(symmetric_pct_change)
+            return symmetric_pct_change, mean_change
+
+        omegas_pct, omegas_mean = compute_changes(omegas_init, omegas_out)
+        alphas_pct, alphas_mean = compute_changes(alphas_init, alphas_out)
+        phis_pct, phis_mean = compute_changes(phis_init, phis_out)
+        log10zetas_pct, log10zetas_mean = compute_changes(log10zetas_init, log10zetas_out)
+
+        # Print summary
+        print("Optimization Results:")
+        for name, init_arr, out_arr, pct_arr, mean_pct in [
+            ('Omegas', omegas_init, omegas_out, omegas_pct, omegas_mean),
+            ('Alphas', alphas_init, alphas_out, alphas_pct, alphas_mean),
+            ('Phis', phis_init, phis_out, phis_pct, phis_mean),
+            ('log10Zetas', log10zetas_init, log10zetas_out, log10zetas_pct, log10zetas_mean),
+        ]:
+            print(f"\n{name}:")
+            print(f"Initial: {init_arr}")
+            print(f"Optimized: {out_arr}")
+            print(f"% Change per mode: {pct_arr}")
+            print(f"Mean % change: {mean_pct:.3f}%")
+
+        return {
+            'omegas': {
+                'initial': omegas_init,
+                'optimized': omegas_out,
+                'percent_change': omegas_pct,
+                'mean_percent_change': omegas_mean
+            },
+            'alphas': {
+                'initial': alphas_init,
+                'optimized': alphas_out,
+                'percent_change': alphas_pct,
+                'mean_percent_change': alphas_mean
+            },
+            'phis': {
+                'initial': phis_init,
+                'optimized': phis_out,
+                'percent_change': phis_pct,
+                'mean_percent_change': phis_mean
+            },
+            'log10zetas': {
+                'initial': log10zetas_init,
+                'optimized': log10zetas_out,
+                'percent_change': log10zetas_pct,
+                'mean_percent_change': log10zetas_mean
+            },
+            'final_FRF_loss': out_FRF_loss
+        }
