@@ -532,12 +532,24 @@ def optimiser_handler(model, data, data_no_norm, scale_factors, omega_weight=0, 
         phis_init *= phi_scale
         log10zetas_init *= log10zeta_scale
         
+        # optim_output = optimise_modes(
+        #     data,
+        #     omegas_init,
+        #     alphas_init,
+        #     phis_init,
+        #     log10zetas_init,
+        #     omega_weight
+        # )
+        
+        # unconstrained optimisation with only initial omegas
+        # just to see how many iterations saved
+        # Didn't reach the correct solution - probably hit a local minima
         optim_output = optimise_modes(
             data,
             omegas_init,
-            alphas_init,
-            phis_init,
-            log10zetas_init,
+            [0]*len(omegas_init),
+            [0]*len(omegas_init),
+            [0]*len(omegas_init),
             omega_weight
         )
         
@@ -554,7 +566,7 @@ def optimiser_handler(model, data, data_no_norm, scale_factors, omega_weight=0, 
             log10zetas_out
         )
         
-        def compute_changes(init, out):
+        def compute_sym_changes(init, out):
             init_abs = np.abs(init)
             out_abs = np.abs(out)
             denom = (init_abs + out_abs) / 2
@@ -563,6 +575,13 @@ def optimiser_handler(model, data, data_no_norm, scale_factors, omega_weight=0, 
             symmetric_pct_change = 100 * np.abs(out - init) / denom
             mean_change = np.mean(symmetric_pct_change)
             return symmetric_pct_change, mean_change
+        
+        def compute_changes(init, out):
+            # Avoid division by zero, treat zero init as tiny number
+            init_safe = np.where(np.abs(init) < 1e-12, 1e-12, init)
+            percent_change = 100 * (out - init) / np.abs(init_safe)
+            mean_change = np.mean(np.abs(percent_change))
+            return percent_change, mean_change
 
         omegas_pct, omegas_mean = compute_changes(omegas_init, omegas_out)
         alphas_pct, alphas_mean = compute_changes(alphas_init, alphas_out)
@@ -604,8 +623,8 @@ def optimiser_handler(model, data, data_no_norm, scale_factors, omega_weight=0, 
             print(f"\n{name}:")
             print(f"Initial: {init_arr}")
             print(f"Optimized: {out_arr}")
-            print(f"Symmetric % Change per mode: {pct_arr}")
-            print(f"Mean sym. % change: {mean_pct:.3f}%")
+            print(f"% Change per mode: {pct_arr}")
+            print(f"Mean % change: {mean_pct:.3f}%")
 
         return {
             'omegas': {
