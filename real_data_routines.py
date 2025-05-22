@@ -275,7 +275,7 @@ def plot_FRF_cloud_single_sample(model,data,num_cloud_samples,scale_factors,tran
         print('\n', error)
         
         modes_output = output[0].cpu().numpy()
-        b, a = scipy.signal.butter(2,0.25) # only light smoothing for modes
+        b, a = scipy.signal.butter(2,0.2) # only light smoothing for modes
         smoothed_modes = scipy.signal.filtfilt(b,a,modes_output)
         predicted_omegas, predicted_freq_idxs = rt.est_nat_freq_triangle_rise(smoothed_modes)
         
