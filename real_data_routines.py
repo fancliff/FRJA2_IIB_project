@@ -259,7 +259,7 @@ def resample_linear_numpy(data, new_length):
     return np.interp(x_new, x_old, data)
 
 
-def plot_FRF_cloud_single_sample(model,data,num_cloud_samples,scale_factors,FRF_type=1,signal_length=1024,q=1):
+def plot_FRF_cloud_single_sample(model,data,num_cloud_samples,scale_factors,transparency=0.05,FRF_type=1,signal_length=1024,q=1,window_scale=0.6):
     ''' q=0 for point estimate or 1 for mean estimate for parameter estimation'''
     with torch.no_grad():
         model.eval()
@@ -279,7 +279,7 @@ def plot_FRF_cloud_single_sample(model,data,num_cloud_samples,scale_factors,FRF_
         smoothed_modes = scipy.signal.filtfilt(b,a,modes_output)
         predicted_omegas, predicted_freq_idxs = rt.est_nat_freq_triangle_rise(smoothed_modes)
         
-        window_scale = 0.6
+        window_scale = window_scale
         q = q # 0 for point estimate, 1 for mean
         a_mag = rt.estimate_parameter(output[1].cpu().numpy(), predicted_freq_idxs, window_scale=window_scale)
         a_phase = rt.estimate_parameter(output[2].cpu().numpy(), predicted_freq_idxs, window_scale=window_scale)
@@ -312,11 +312,13 @@ def plot_FRF_cloud_single_sample(model,data,num_cloud_samples,scale_factors,FRF_
         frequencies = np.linspace(0, 1, data.shape[-1])
         if FRF_type == 0:
             fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-            ax.plot(frequencies, H_v, label='Predicted FRF', color='orange')
+            ax.plot(frequencies, H_v, label='Normally Distributed Predicted FRFs', color='red')
             ax.plot(frequencies, data, label='True FRF', color='blue')
             for k, omega in enumerate(predicted_omegas):
                 ax.axvline(x=omega, color='cyan', linestyle=':', 
                                 label=r'Predicted $\omega_n$' if k == 0 else '')
+            for i in range(0,num_cloud_samples):
+                ax.plot(frequencies,FRF_clouds[i], color='red', alpha=transparency)
             fig.suptitle('Magnitude FRF Comparison: MSE = {:.4f}'.format(error))
             ax.legend(
                 loc='upper center',
@@ -326,14 +328,17 @@ def plot_FRF_cloud_single_sample(model,data,num_cloud_samples,scale_factors,FRF_
             plt.tight_layout(rect=[0, 0, 1, 1.05])
         else:
             fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
-            ax[0].plot(frequencies, H_v[0], label='Predicted FRF', color='orange')
+            ax[0].plot(frequencies, H_v[0], label='Normally Distributed Predicted FRFs', color='red')
             ax[0].plot(frequencies, data[0], label='True FRF', color='blue')
-            ax[1].plot(frequencies, H_v[1], label='Predicted FRF', color='orange')
+            ax[1].plot(frequencies, H_v[1], label='Predicted FRF', color='red')
             ax[1].plot(frequencies, data[1], label='True FRF', color='blue')
             for k, omega in enumerate(predicted_omegas):
                 ax[0].axvline(x=omega, color='cyan', linestyle=':', 
                                     label=r'Predicted $\omega_n$' if k == 0 else '')
                 ax[1].axvline(x=omega, color='cyan', linestyle=':')
+            for i in range(0,num_cloud_samples):
+                ax[0].plot(frequencies,FRF_clouds[i][0], color='red', alpha=transparency)
+                ax[1].plot(frequencies,FRF_clouds[i][1], color='red', alpha=transparency)
             fig.suptitle('Complex FRF Comparison: MSE = {:.4f}'.format(error))
             ax[0].legend(
                 loc='upper center',
