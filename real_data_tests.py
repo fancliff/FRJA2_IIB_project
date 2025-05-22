@@ -127,7 +127,7 @@ print("Final tensor shape:", tf_tensor.shape)  # Should be (1, n, 1024)
 # model = rt.load_model('05_19_15_22_4488444_9_RegressionModel1_10_modes.pth')
 # model = rt.load_model('05_20_17_18_4488444_9_RegressionModel1_pi_12_phase_001_min_zeta_10_modes_real_imag.pth')
 # model = rt.load_model('05_20_17_37_4488444_9_RegressionModel1_pi_12_phase_0005_min_zeta_10_modes_real_imag.pth')
-model = rt.load_model('05_21_11_06_4488444_9_RegressionModel1_pi_12_phase_001_min_zeta_10_modes_10_max_amplitude_real_imag.pth')
+# model = rt.load_model('05_21_11_06_4488444_9_RegressionModel1_pi_12_phase_001_min_zeta_10_modes_10_max_amplitude_real_imag.pth')
 
 ########### input testing ###########
 
@@ -140,6 +140,7 @@ model = rt.load_model('05_21_11_06_4488444_9_RegressionModel1_pi_12_phase_001_mi
 labels1 = np.array([True, True, True, True])
 
 project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/datasets/'
+data_name = 'final_real_imag.h5'
 
 ######## dataset testing #########
 # data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_001_min_zeta.h5'
@@ -147,7 +148,7 @@ project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_II
 # data_name = 'real_imag_all_labels_0_alpha_phase_scaled.h5'
 # data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_0005_min_zeta_10_modes.h5'
 # data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_001_min_zeta_10_modes_5_max_amplitude.h5'
-data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_001_min_zeta_10_modes_10_max_amplitude.h5'
+# data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_001_min_zeta_10_modes_10_max_amplitude.h5'
 
 ########## phase testing ##########
 # data_name = 'real_imag_all_labels_pi_12_alpha_phase_scaled_001_min_zeta_10_modes.h5'
@@ -160,6 +161,8 @@ data_file = project_path + data_name
 with h5py.File(data_file, 'r') as f:
     scale_factors = f['scale_factors'][:]
 
+model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth')
 
 # rdrt.plot_predictions_all_labels(model, tf_tensor, labels1, scale_factors, N=2, Wn=0.1, plot_phase=True)
-rdrt.plot_FRF_comparison(model, tf_tensor, scale_factors, FRF_type=1, norm=True, plot_phase=True)
+# rdrt.plot_FRF_comparison(model, tf_tensor, scale_factors, FRF_type=1, norm=True, plot_phase=True, q=0)
+rdrt.plot_FRF_cloud_single_sample(model, tf_tensor, 100, scale_factors, 0.05, FRF_type=1, q=0, window_scale=0.7)
