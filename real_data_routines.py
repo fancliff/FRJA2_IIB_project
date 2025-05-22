@@ -98,6 +98,7 @@ def plot_predictions_all_labels(model, data, label_defs, scale_factors = None, N
         plt.show()
         return
 
+
 def subplot_labels(axes_j, x, model_output_i_j, name, N, Wn, predicted_omegas):
     handles, labels = axes_j.get_legend_handles_labels()
 
@@ -120,8 +121,7 @@ def subplot_labels(axes_j, x, model_output_i_j, name, N, Wn, predicted_omegas):
     return handles, labels
 
 
-
-def compare_FRF(input_signal, all_outputs, scale_factors, FRF_type = 0, norm = True):
+def compare_FRF(input_signal, all_outputs, scale_factors, FRF_type = 0, norm = True, q = 1):
     # Assumes model ouputs are modes, a mag, a phase, log10_zeta
     # FRF type: 0 for just magnitude, 1 for real and imaginary
     
@@ -133,7 +133,7 @@ def compare_FRF(input_signal, all_outputs, scale_factors, FRF_type = 0, norm = T
     predicted_freqs,predicted_freq_idxs = rt.est_nat_freq_triangle_rise(mode_channel)
     
     # point estimate [0], mean [1], variance [2]
-    x = 1 # point estimate may be better when many modes which overlap
+    x = q # point estimate may be better when many modes which overlap
     a_mag = rt.estimate_parameter(all_outputs[1], predicted_freq_idxs)[x]
     a_phase = rt.estimate_parameter(all_outputs[2], predicted_freq_idxs)[x]
     log10_zeta = rt.estimate_parameter(all_outputs[3], predicted_freq_idxs)[x]
@@ -175,7 +175,7 @@ def compare_FRF(input_signal, all_outputs, scale_factors, FRF_type = 0, norm = T
         return MSE, output_signal
 
 
-def plot_FRF_comparison(model, data, scale_factors, FRF_type=1, norm=True, plot_phase = True):
+def plot_FRF_comparison(model, data, scale_factors, FRF_type=1, norm=True, plot_phase = True, q = 1):
     with torch.no_grad():
         model.eval()
         output = model(data).squeeze(0)
@@ -186,7 +186,7 @@ def plot_FRF_comparison(model, data, scale_factors, FRF_type=1, norm=True, plot_
             data = np.abs(data[0:2])
         else:
             data = data[0:2]
-        error, H_v = compare_FRF(data, output.cpu().numpy(), scale_factors,FRF_type, norm)
+        error, H_v = compare_FRF(data, output.cpu().numpy(), scale_factors, FRF_type, norm, q=q)
         print('\n', error)
         
         modes_output = output[0].cpu().numpy()
@@ -198,7 +198,7 @@ def plot_FRF_comparison(model, data, scale_factors, FRF_type=1, norm=True, plot_
         if FRF_type == 0:
             fig, ax = plt.subplots(1, 1, figsize=(8, 4))
             ax.plot(frequencies, H_v, label='Predicted FRF', color='orange')
-            ax.plot(frequencies, data, label='True FRF (w/o noise)', color='blue')
+            ax.plot(frequencies, data, label='True FRF', color='blue')
             for k, omega in enumerate(predicted_omegas):
                 ax.axvline(x=omega, color='cyan', linestyle=':', 
                                 label=r'Predicted $\omega_n$' if k == 0 else '')
@@ -259,3 +259,147 @@ def resample_linear_numpy(data, new_length):
     return np.interp(x_new, x_old, data)
 
 
+def plot_FRF_cloud_single_sample(model,data,num_cloud_samples,scale_factors,FRF_type=1,signal_length=1024,q=1):
+    ''' q=0 for point estimate or 1 for mean estimate for parameter estimation'''
+    with torch.no_grad():
+        model.eval()
+        output = model(data).squeeze(0)
+        data_copy = data
+        data = data.squeeze(0)
+        
+        if FRF_type == 0:
+            data = np.abs(data[0:2])
+        else:
+            data = data[0:2]
+        error, H_v = compare_FRF(data, output.cpu().numpy(), scale_factors,FRF_type, norm=True, q=q)
+        print('\n', error)
+        
+        modes_output = output[0].cpu().numpy()
+        b, a = scipy.signal.butter(2,0.25) # only light smoothing for modes
+        smoothed_modes = scipy.signal.filtfilt(b,a,modes_output)
+        predicted_omegas, predicted_freq_idxs = rt.est_nat_freq_triangle_rise(smoothed_modes)
+        
+        window_scale = 0.6
+        q = q # 0 for point estimate, 1 for mean
+        a_mag = rt.estimate_parameter(output[1].cpu().numpy(), predicted_freq_idxs, window_scale=window_scale)
+        a_phase = rt.estimate_parameter(output[2].cpu().numpy(), predicted_freq_idxs, window_scale=window_scale)
+        log10_zeta = rt.estimate_parameter(output[3].cpu().numpy(), predicted_freq_idxs, window_scale=window_scale)
+        
+        a_mag_scale = scale_factors[0]
+        a_phase_scale = scale_factors[1]
+        log10_zeta_scale = scale_factors[2]
+        
+        num_predicted_modes = len(predicted_omegas)
+        a_means = a_mag[q]*a_mag_scale
+        a_vars = a_mag[2]*(a_mag_scale**2) # variance times by scale factor^2
+        phi_means = a_phase[q]*a_phase_scale
+        phi_vars = a_phase[2]*(a_phase_scale**2)
+        log10_zeta_means = log10_zeta[q]*log10_zeta_scale
+        log10_zeta_vars = log10_zeta[2]*(log10_zeta_scale**2)
+        
+        param_means = [a_means, phi_means, log10_zeta_means]
+        param_vars = [a_vars, phi_vars, log10_zeta_vars]
+        
+        FRF_clouds = generate_random_FRFs(
+            num_samples=num_cloud_samples,
+            predicted_omegas=predicted_omegas,
+            param_means=param_means,
+            param_vars=param_vars,
+            signal_length=signal_length,
+            FRF_type=FRF_type,
+        )
+        
+        frequencies = np.linspace(0, 1, data.shape[-1])
+        if FRF_type == 0:
+            fig, ax = plt.subplots(1, 1, figsize=(8, 4))
+            ax.plot(frequencies, H_v, label='Predicted FRF', color='orange')
+            ax.plot(frequencies, data, label='True FRF', color='blue')
+            for k, omega in enumerate(predicted_omegas):
+                ax.axvline(x=omega, color='cyan', linestyle=':', 
+                                label=r'Predicted $\omega_n$' if k == 0 else '')
+            fig.suptitle('Magnitude FRF Comparison: MSE = {:.4f}'.format(error))
+            ax.legend(
+                loc='upper center',
+                ncol = 3,
+                bbox_to_anchor = (0.5,1.15)
+            )
+            plt.tight_layout(rect=[0, 0, 1, 1.05])
+        else:
+            fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+            ax[0].plot(frequencies, H_v[0], label='Predicted FRF', color='orange')
+            ax[0].plot(frequencies, data[0], label='True FRF', color='blue')
+            ax[1].plot(frequencies, H_v[1], label='Predicted FRF', color='orange')
+            ax[1].plot(frequencies, data[1], label='True FRF', color='blue')
+            for k, omega in enumerate(predicted_omegas):
+                ax[0].axvline(x=omega, color='cyan', linestyle=':', 
+                                    label=r'Predicted $\omega_n$' if k == 0 else '')
+                ax[1].axvline(x=omega, color='cyan', linestyle=':')
+            fig.suptitle('Complex FRF Comparison: MSE = {:.4f}'.format(error))
+            ax[0].legend(
+                loc='upper center',
+                ncol = 3,
+                bbox_to_anchor = (0.5,1.15),
+            )
+            plt.tight_layout(rect=[0, 0, 1, 1.02])
+        
+        plt.show(block=False)
+        
+        plot_predictions_all_labels(
+            model, 
+            data_copy, 
+            label_defs=[True, True, True, True],
+            scale_factors=scale_factors,
+            plot_phase=True
+        )
+
+
+@jit(nopython=True)
+def generate_random_FRFs(num_samples,predicted_omegas,param_means,param_vars,signal_length,FRF_type=1):
+    # params in order |a_n|, phase a_n, log10(zeta_n)
+    alpha_means = param_means[0]
+    phi_means = param_means[1]
+    log10zeta_means = param_means[2]
+    alpha_vars = param_vars[0]
+    phi_vars = param_vars[1]
+    log10zeta_vars = param_vars[2]
+    alpha_sigmas = np.sqrt(alpha_vars)
+    phi_sigmas = np.sqrt(phi_vars)
+    log10zeta_sigmas = np.sqrt(log10zeta_vars)
+    if FRF_type == 0:
+        data = np.empty((num_samples, 1, signal_length),dtype=np.float64)
+    else:
+        data = np.empty((num_samples, 2, signal_length),dtype=np.float64)
+    
+    frequencies = np.linspace(0,1,signal_length)
+    num_modes = len(predicted_omegas)
+    for i in range(num_samples):
+        H_v = np.zeros(signal_length, dtype=np.complex128)
+        for n in range(num_modes):
+            omega_n = predicted_omegas[n]
+            alpha_n = np.random.normal(alpha_means[n],alpha_sigmas[n])
+            phi_n = np.random.normal(phi_means[n],phi_sigmas[n])
+            zeta_n = 10**np.random.normal(log10zeta_means[n],log10zeta_sigmas[n])
+            
+            for j, w in enumerate(frequencies):
+                H_f = 0.0j
+                denominator = omega_n**2 - w**2 + 2j * zeta_n * w
+                numerator = 1j*w*alpha_n*np.exp(1j*phi_n)
+                H_f += numerator/denominator
+                H_v[j] += H_f
+
+        mag_no_norm = np.abs(H_v)
+        mag = mag_no_norm
+        real_pt = np.real(H_v)
+        imag_pt = np.imag(H_v)
+        max_mag = np.max(mag_no_norm)
+        min_mag = np.min(mag_no_norm)
+        mag = (mag_no_norm - min_mag)/(max_mag - min_mag)
+        real_pt = real_pt * mag/mag_no_norm
+        imag_pt = imag_pt * mag/mag_no_norm
+        
+        if FRF_type == 0:
+            data[i, 0, :] = mag
+        else:
+            data[i, 0, :] = real_pt
+            data[i, 1, :] = imag_pt
+    return data
