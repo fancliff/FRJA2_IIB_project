@@ -165,4 +165,4 @@ model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth')
 
 # rdrt.plot_predictions_all_labels(model, tf_tensor, labels1, scale_factors, N=2, Wn=0.1, plot_phase=True)
 # rdrt.plot_FRF_comparison(model, tf_tensor, scale_factors, FRF_type=1, norm=True, plot_phase=True, q=0)
-rdrt.plot_FRF_cloud_single_sample(model, tf_tensor, 100, scale_factors, 0.05, FRF_type=1, q=0, window_scale=0.7)
+rdrt.plot_FRF_cloud_single_sample(model, tf_tensor, 100, scale_factors, 0.05, FRF_type=1, q=0, window_scale=0.6)
