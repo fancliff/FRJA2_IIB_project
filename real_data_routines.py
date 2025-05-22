@@ -475,11 +475,15 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
     bounds += [(-6, 1)] * N                 # log10zetas
 
     result = minimize(
-        loss_function,
-        initial_params,
-        method='Powell',
+        loss_function, 
+        initial_params, 
+        method='L-BFGS-B', 
         bounds=bounds,
-        options={'disp': True, 'maxiter': 1000}
+        # options={
+        #     'maxiter': 500,
+        #     'ftol': 1e-9,
+        #     'gtol': 1e-6,
+        # }
     )
 
     if not result.success:
@@ -532,26 +536,26 @@ def optimiser_handler(model, data, data_no_norm, scale_factors, omega_weight=0, 
         phis_init *= phi_scale
         log10zetas_init *= log10zeta_scale
         
-        # optim_output = optimise_modes(
-        #     data,
-        #     omegas_init,
-        #     alphas_init,
-        #     phis_init,
-        #     log10zetas_init,
-        #     omega_weight
-        # )
+        optim_output = optimise_modes(
+            data,
+            omegas_init,
+            alphas_init,
+            phis_init,
+            log10zetas_init,
+            omega_weight
+        )
         
         # unconstrained optimisation with only initial omegas
         # just to see how many iterations saved
         # Didn't reach the correct solution - probably hit a local minima
-        optim_output = optimise_modes(
-            data,
-            omegas_init,
-            [0]*len(omegas_init),
-            [0]*len(omegas_init),
-            [0]*len(omegas_init),
-            omega_weight
-        )
+        # optim_output = optimise_modes(
+        #     data,
+        #     omegas_init,
+        #     [0]*len(omegas_init),
+        #     [0]*len(omegas_init),
+        #     [0]*len(omegas_init),
+        #     omega_weight
+        # )
         
         omegas_out = optim_output['omegas']
         alphas_out = optim_output['alphas']
@@ -625,6 +629,8 @@ def optimiser_handler(model, data, data_no_norm, scale_factors, omega_weight=0, 
             print(f"Optimized: {out_arr}")
             print(f"% Change per mode: {pct_arr}")
             print(f"Mean % change: {mean_pct:.3f}%")
+        print(f'\n Model Prediction MSFRFE: {FRF_loss_for_optim(data,omegas_init,alphas_init,phis_init,log10zetas_init):.6f}')
+        print(f' Post Optimisation MSFRFE: {FRF_loss_for_optim(data,omegas_out,alphas_out,phis_out,log10zetas_out):.6f}')
 
         return {
             'omegas': {
