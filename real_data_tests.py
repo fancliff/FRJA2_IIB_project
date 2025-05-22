@@ -175,6 +175,7 @@ model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth')
 # rdrt.plot_FRF_comparison(model, tf_tensor, scale_factors, FRF_type=1, norm=True, plot_phase=True, q=0)
 # rdrt.plot_FRF_cloud_single_sample(model, tf_tensor, 100, scale_factors, 0.05, FRF_type=1, q=0, window_scale=0.6)
 rdrt.optimiser_handler(model, tf_tensor, tf_tensor_no_norm, scale_factors, omega_weight=0, plot=True, q=0, window_scale=0.6)
-# omega_weight is very helpful for stabilising the model, 
+# omega_weight can be helpful for stabilising the model, 
 # it's a bit of a hack but the model natural frequency estimation 
 # is so much better than the other parameters so it works fine
+# If natural frequencies moving around way more than expected try omega_weight = 1 or more
