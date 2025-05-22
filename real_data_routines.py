@@ -14,6 +14,7 @@ import matplotlib.colors as mcolors #for custom colormap
 import datetime #for timestamping save files
 import routines as rt
 from scipy.interpolate import interp1d
+from scipy.optimize import minimize
 
 def plot_predictions_all_labels(model, data, label_defs, scale_factors = None, N=2, Wn=0.1, plot_phase: bool = True):
     with torch.no_grad():
@@ -441,3 +442,44 @@ def FRF_loss_for_optim(input, omegas, alphas, phis, log10zetas):
     MSE_imag = np.mean((input[1]-H_v_imag)**2)
     return (MSE_real+MSE_imag)/2
 
+
+def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas_init, omega_weight=1.0):
+    N = len(omegas_init)
+    initial_params = np.concatenate([omegas_init, alphas_init, phis_init, log10zetas_init])
+    omegas_init = np.array(omegas_init) # store for use with omega_weight
+
+    def loss_function(x):
+        omegas = x[0:N]
+        alphas = x[N:2*N]
+        phis = x[2*N:3*N]
+        log10zetas = x[3*N:4*N]
+        
+        loss = FRF_loss_for_optim(input_signal, omegas, alphas, phis, log10zetas)
+        loss += omega_weight * np.mean((omegas - omegas_init)**2) 
+        # penalty for large deviations in omega
+        # can set omega_weight to 0 for no penalty at all to compare. 
+        # Would rather omegas are touched less and amplitudes optimised to 0
+        # Test and see which omega weight allows some flexibility if omegas are incorrect
+        # But not too much flexibility given omega estimation appears most accurate
+        return loss
+
+    # Define bounds
+    bounds = []
+    bounds += [(1e-6, 1.0)] * N                  # omegas in (0, 1]
+    bounds += [(None, None)] * N                 # alphas
+    bounds += [(None, None)] * N                 # phis
+    bounds += [(None, None)] * N                 # log10zetas
+
+    result = minimize(loss_function, initial_params, method='L-BFGS-B', bounds=bounds)
+
+    if not result.success:
+        print("Warning: Optimization may not have converged:", result.message)
+    
+    x_opt = result.x
+    return {
+        'omegas': x_opt[0:N],
+        'alphas': x_opt[N:2*N],
+        'phis': x_opt[2*N:3*N],
+        'log10zetas': x_opt[3*N:4*N],
+        'loss': result.fun # Includes omega penalties so don't use for comparison to original MSFRFE loss
+    }
