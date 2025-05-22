@@ -52,20 +52,18 @@ val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 out_channels_list = [
     [4,6,4],
     [4,8,4],
-    [4,8,8,4],
+    [4,6,8,4],
     [4,6,8,6,4],
     [4,8,12,8,4],
-    [4,4,8,8,4,4,4], # BSL
-    [4,6,8,12,8,6,4],
-    [4,4,8,8,12,8,8,4],
-    [4,4,8,8,12,16,12,8,8,4],
-    [4,4,6,6,6,8,8,6,6,6,4,4],
+    [4,6,6,8,6,6,4],
+    [4,6,6,8,8,6,6,4],
+    # [4,8,12,16,12,8,4],
 ]
 
 kernel_size_list = [
     [5],
     [7],
-    [9], # BSL
+    [9],
     [11],
     [13],
 ]
@@ -73,24 +71,34 @@ kernel_size_list = [
 ######### EXPECTED TRAINING TIME #########
 params_sum = 0
 max_params = 0
+num_models = 0
 for oc in out_channels_list:
     for ks in kernel_size_list:
-        model = md.RegressionModel1(
+        # model = md.RegressionModel1(
+        #     data_channels=2,
+        #     out_channels=oc,
+        #     kernel_size=ks,
+        #     batch_norm=True,
+        #     P_dropout=0.0,
+        #     max_pool=False,
+        # )
+        model = md.ResNet1(
             data_channels=2,
             out_channels=oc,
             kernel_size=ks,
-            batch_norm=True,
-            P_dropout=0.0,
-            max_pool=False,
         )
+        num_models += 1
         params = rt.count_parameters(model)
         if params > max_params:
             max_params = params
         params_sum += params
 
 est_time = (params_sum/1700)*(200/150)*(len(train_data)/3000)*695/3600
+avg_params = params_sum/num_models
 
 print(f'\nTotal Trainable Parameters: {params_sum}')
+print(f'Total Number of models: {num_models}')
+print(f'Average parameters per model: {avg_params:.0f}')
 print(f'Max trainable parameters single model: {max_params}')
 print(f'Estimated Training time: {est_time:.1f}hrs\n')
 
@@ -115,13 +123,19 @@ for oc in out_channels_list:
                 print(f'Skipping: kernel sizes {ks} incompatible with out_channels {oc}')
                 continue
 
-            model = md.RegressionModel1(
+            # model = md.RegressionModel1(
+            #     data_channels=int(np.sum(inputs1)),
+            #     out_channels=oc,
+            #     kernel_size=ks,
+            #     batch_norm=True,
+            #     P_dropout=0.0,
+            #     max_pool=False,
+            # )
+            
+            model = md.ResNet1(
                 data_channels=int(np.sum(inputs1)),
                 out_channels=oc,
                 kernel_size=ks,
-                batch_norm=True,
-                P_dropout=0.0,
-                max_pool=False,
             )
 
             save_suffix = '_' + '_'.join([
