@@ -1498,14 +1498,6 @@ def plot_model_predictions_single_sample(model, data, labels, params, label_defs
     plt.show()
 
 
-def plot_FRF_cloud():
-    pass
-
-
-# @jit(nopython=True)
-def generate_random_FRFs():
-    pass
-
 
 def load_model(save_name):
     project_path = 'C:/Users/Freddie/Documents/IIB project repository/myenv/FRJA2_IIB_project/Models/'
