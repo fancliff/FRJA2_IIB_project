@@ -1189,6 +1189,7 @@ def calculate_mean_frequency_error_triangle(model, dataloader, label_defs, up_in
 
 def estimate_parameter(output, predicted_freq_idxs, label_halfwidth=0.02, window_scale=0.6, N=2, Wn=0.1):
     # Smooth output signal
+    output_unsmoothed = output
     b,a = scipy.signal.butter(N,Wn)
     output = scipy.signal.filtfilt(b,a,output)
     
@@ -1206,10 +1207,11 @@ def estimate_parameter(output, predicted_freq_idxs, label_halfwidth=0.02, window
     for freq_idx in predicted_freq_idxs:
         start_idx = max(0, freq_idx - window_halfwidth_idx)
         end_idx = min(len(output), freq_idx + window_halfwidth_idx + 1)
-        window = output[start_idx:end_idx]
+        smooth_window = output[start_idx:end_idx]
+        var_window = output_unsmoothed[start_idx:end_idx]
         
-        means.append(np.mean(window))
-        variances.append(np.var(window))
+        means.append(np.mean(smooth_window))
+        variances.append(np.var(var_window))
     
     return np.array([np.array(point_estimates), np.array(means), np.array(variances)])
 
