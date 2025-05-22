@@ -1,3 +1,5 @@
+import warnings
+warnings.filterwarnings("ignore", message="You are using `torch.load` with `weights_only=False`")
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -110,10 +112,16 @@ tf_processed = np.stack([
     # tf_log_mag,
     ])  
 # Shape (n, 1024)
+tf_processed_no_norm = np.stack([
+    tf_real_resampled,
+    tf_imag_resampled,
+])
 tf_tensor = torch.tensor(tf_processed, dtype=torch.float32)  # Convert to tensor
+tf_tensor_no_norm = torch.tensor(tf_processed_no_norm, dtype=torch.float32)
 
 # Add batch dimension (model expects [batch_size, channels, sequence_length])
 tf_tensor = tf_tensor.unsqueeze(0)  # Now shape (1, n, 1024)
+tf_tensor_no_norm = tf_tensor_no_norm.unsqueeze(0)
 
 # Verify the shape matches model expectations
 print("Final tensor shape:", tf_tensor.shape)  # Should be (1, n, 1024)
@@ -165,4 +173,8 @@ model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth')
 
 # rdrt.plot_predictions_all_labels(model, tf_tensor, labels1, scale_factors, N=2, Wn=0.1, plot_phase=True)
 # rdrt.plot_FRF_comparison(model, tf_tensor, scale_factors, FRF_type=1, norm=True, plot_phase=True, q=0)
-rdrt.plot_FRF_cloud_single_sample(model, tf_tensor, 100, scale_factors, 0.05, FRF_type=1, q=0, window_scale=0.6)
+# rdrt.plot_FRF_cloud_single_sample(model, tf_tensor, 100, scale_factors, 0.05, FRF_type=1, q=0, window_scale=0.6)
+rdrt.optimiser_handler(model, tf_tensor, tf_tensor_no_norm, scale_factors, omega_weight=1, plot=True, q=0, window_scale=0.6)
+# omega_weight is very helpful for stabilising the model, 
+# it's a bit of a hack but the model natural frequency estimation 
+# is so much better than the other parameters so it works fine

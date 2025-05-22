@@ -424,7 +424,8 @@ def FRF_loss_for_optim(input, omegas, alphas, phis, log10zetas):
         log10zeta_n = log10zetas[n]
         for j, w in enumerate(frequencies):
             H_f = 0.0j
-            denominator = omega_n**2 - w**2 + 2j * (log10zeta_n**10) * w
+            denominator = omega_n**2 - w**2 + 2j * (10**log10zeta_n) * w
+            denominator += 1e-8 # stabilise small denominator
             numerator = 1j*w*alpha_n*np.exp(1j*phi_n)
             H_f += numerator/denominator
             H_v[j] += H_f
@@ -433,9 +434,9 @@ def FRF_loss_for_optim(input, omegas, alphas, phis, log10zetas):
     min_mag = np.min(mag_no_norm)
     max_mag = np.max(mag_no_norm)
     range_mag = max_mag-min_mag
-    if range_mag > 0:
-        mag = (mag_no_norm - min_mag)/range_mag
-        H_v = H_v * (mag/np.maximum(mag_no_norm, 1e-12))
+    range_mag = max(max_mag - min_mag, 1e-8)  # avoid div by zero
+    mag = (mag_no_norm - min_mag)/range_mag
+    H_v *= (mag / np.maximum(mag_no_norm, 1e-12))
     H_v_real = np.real(H_v)
     H_v_imag = np.imag(H_v)
     MSE_real = np.mean((input[0]-H_v_real)**2)
@@ -447,6 +448,9 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
     N = len(omegas_init)
     initial_params = np.concatenate([omegas_init, alphas_init, phis_init, log10zetas_init])
     omegas_init = np.array(omegas_init) # store for use with omega_weight
+    
+    # Apply small clamp to avoid optimizer hitting edges
+    omegas_init = np.clip(omegas_init, 1e-3, 0.99)
 
     def loss_function(x):
         omegas = x[0:N]
@@ -465,12 +469,18 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
 
     # Define bounds
     bounds = []
-    bounds += [(1e-6, 1.0)] * N                  # omegas in (0, 1]
-    bounds += [(None, None)] * N                 # alphas
-    bounds += [(None, None)] * N                 # phis
-    bounds += [(None, None)] * N                 # log10zetas
+    bounds += [(1e-3, 0.99)] * N                  # omegas in (0, 1]
+    bounds += [(-10, 10)] * N                 # alphas
+    bounds += [(-1.57, 1.57)] * N                 # phis
+    bounds += [(-6, 1)] * N                 # log10zetas
 
-    result = minimize(loss_function, initial_params, method='L-BFGS-B', bounds=bounds)
+    result = minimize(
+        loss_function,
+        initial_params,
+        method='Powell',
+        bounds=bounds,
+        options={'disp': True, 'maxiter': 1000}
+    )
 
     if not result.success:
         print("Warning: Optimisation may not have converged:", result.message)
@@ -485,7 +495,7 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
     }
 
 
-def optimiser_handler(model, data, scale_factors, q=0, window_scale=0.6):
+def optimiser_handler(model, data, data_no_norm, scale_factors, omega_weight=0, plot=True, q=0, window_scale=0.6):
     '''
     Only works for if data[0][0], data[0][1] = real part, imaginary part
     Data must be (batch dimension, input channels, signal length)
@@ -499,8 +509,9 @@ def optimiser_handler(model, data, scale_factors, q=0, window_scale=0.6):
         model.eval()
         output = model(data).squeeze(0)
         data_copy = data
-        data = data.squeeze(0)[0:2] # just real and imaginary parts minus batch dimension
-        
+        data = data.squeeze(0)[0:2].cpu().numpy() # just real and imaginary parts minus batch dimension
+        data_no_norm_copy = data_no_norm
+        data_no_norm = data_no_norm.squeeze(0).cpu().numpy()
         
         modes_output = output[0].cpu().numpy()
         b, a = scipy.signal.butter(2,0.2) # only light smoothing for modes
@@ -526,7 +537,8 @@ def optimiser_handler(model, data, scale_factors, q=0, window_scale=0.6):
             omegas_init,
             alphas_init,
             phis_init,
-            log10zetas_init
+            log10zetas_init,
+            omega_weight
         )
         
         omegas_out = optim_output['omegas']
@@ -556,6 +568,30 @@ def optimiser_handler(model, data, scale_factors, q=0, window_scale=0.6):
         alphas_pct, alphas_mean = compute_changes(alphas_init, alphas_out)
         phis_pct, phis_mean = compute_changes(phis_init, phis_out)
         log10zetas_pct, log10zetas_mean = compute_changes(log10zetas_init, log10zetas_out)
+        
+        if plot:
+            frequencies = np.linspace(0,1,1024)
+            H_v_init = rt.construct_FRF(omegas_init,alphas_init,phis_init,(10**log10zetas_init),signal_length=1024,min_max=True)
+            H_v_out = rt.construct_FRF(omegas_out,alphas_out,phis_out,(10**log10zetas_out),signal_length=1024,min_max=True)
+
+            fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+            ax[0].plot(frequencies, np.real(H_v_init), label='Model Predicted FRF', color='orange')
+            ax[0].plot(frequencies, np.real(H_v_out), label='Optimised FRF', color='red')
+            ax[0].plot(frequencies, data[0], label='Input Signal', color='blue')
+            ax[1].plot(frequencies, np.imag(H_v_init), label='Model Predicted FRF', color='orange')
+            ax[1].plot(frequencies, np.imag(H_v_out), label='Optimised FRF', color='red')
+            ax[1].plot(frequencies, data[1], label='Input Signal', color='blue')
+            for k, omega in enumerate(omegas_init):
+                ax[0].axvline(x=omega, color='cyan', linestyle=':', 
+                                    label=r'Predicted $\omega_n$' if k == 0 else '')
+                ax[1].axvline(x=omega, color='cyan', linestyle=':')
+            ax[0].legend(
+                loc='upper center',
+                ncol = 4,
+                bbox_to_anchor = (0.5,1.15),
+            )
+            plt.tight_layout(rect=[0, 0, 1, 1.02])
+            plt.show()
 
         # Print summary
         print("Optimization Results:")
@@ -568,8 +604,8 @@ def optimiser_handler(model, data, scale_factors, q=0, window_scale=0.6):
             print(f"\n{name}:")
             print(f"Initial: {init_arr}")
             print(f"Optimized: {out_arr}")
-            print(f"% Change per mode: {pct_arr}")
-            print(f"Mean % change: {mean_pct:.3f}%")
+            print(f"Symmetric % Change per mode: {pct_arr}")
+            print(f"Mean sym. % change: {mean_pct:.3f}%")
 
         return {
             'omegas': {
