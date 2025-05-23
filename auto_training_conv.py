@@ -50,8 +50,9 @@ val_dataset_1 = md.n_channel_dataset(val_data, val_labels, val_params)
 val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 out_channels_list = [
-    [4,6,6,8,8,12,8,8,6,6,4],
-    [4,4,6,6,6,8,8,8,6,6,6,4,4],
+    [4,4,4,6,6,6,8,8,8,8,6,6,6,4,4,4],
+    [4,4,4,6,6,6,8,8,10,10,8,8,6,6,6,4,4,4],
+    [4,4,4,6,6,6,8,8,8,10,12,12,10,8,8,8,6,6,6,4,4,4],
 ]
 kernel_size_list = [
     [9],
@@ -65,19 +66,19 @@ max_params = 0
 num_models = 0
 for oc in out_channels_list:
     for ks in kernel_size_list:
-        # model = md.RegressionModel1(
-        #     data_channels=2,
-        #     out_channels=oc,
-        #     kernel_size=ks,
-        #     batch_norm=True,
-        #     P_dropout=0.0,
-        #     max_pool=False,
-        # )
-        model = md.ResNet1(
+        model = md.RegressionModel1(
             data_channels=2,
             out_channels=oc,
             kernel_size=ks,
+            batch_norm=True,
+            P_dropout=0.0,
+            max_pool=False,
         )
+        # model = md.ResNet1(
+        #     data_channels=2,
+        #     out_channels=oc,
+        #     kernel_size=ks,
+        # )
         num_models += 1
         params = rt.count_parameters(model)
         if params > max_params:
@@ -114,20 +115,20 @@ for oc in out_channels_list:
                 print(f'Skipping: kernel sizes {ks} incompatible with out_channels {oc}')
                 continue
 
-            # model = md.RegressionModel1(
-            #     data_channels=int(np.sum(inputs1)),
-            #     out_channels=oc,
-            #     kernel_size=ks,
-            #     batch_norm=True,
-            #     P_dropout=0.0,
-            #     max_pool=False,
-            # )
-            
-            model = md.ResNet1(
+            model = md.RegressionModel1(
                 data_channels=int(np.sum(inputs1)),
                 out_channels=oc,
                 kernel_size=ks,
+                batch_norm=True,
+                P_dropout=0.0,
+                max_pool=False,
             )
+            
+            # model = md.ResNet1(
+            #     data_channels=int(np.sum(inputs1)),
+            #     out_channels=oc,
+            #     kernel_size=ks,
+            # )
 
             save_suffix = '_' + '_'.join([
                 ''.join(map(str, model.out_channels)),
