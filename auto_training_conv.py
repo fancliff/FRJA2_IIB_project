@@ -39,9 +39,9 @@ with h5py.File(data_file, 'r') as f:
     val_data = f['data'][:5000]
     val_labels = f['labels'][:5000]
     val_params = f['params'][:5000]
-    train_data = f['data'][20000:26000]
-    train_labels = f['labels'][20000:26000]
-    train_params = f['params'][20000:26000]
+    train_data = f['data'][20000:32000]
+    train_labels = f['labels'][20000:32000]
+    train_params = f['params'][20000:32000]
     scale_factors = f['scale_factors'][:]
 
 train_dataset_1 = md.n_channel_dataset(train_data, train_labels, train_params)
@@ -50,19 +50,10 @@ val_dataset_1 = md.n_channel_dataset(val_data, val_labels, val_params)
 val_dataloader_1 = DataLoader(val_dataset_1, batch_size=32, shuffle=True)
 
 out_channels_list = [
-    [4,6,4],
-    [4,8,4],
-    [4,6,8,4],
-    [4,6,8,6,4],
-    [4,8,12,8,4],
-    [4,6,6,8,6,6,4],
-    [4,6,6,8,8,6,6,4],
-    # [4,8,12,16,12,8,4],
+    [4,6,6,8,8,12,8,8,6,6,4],
+    [4,4,6,6,6,8,8,8,6,6,6,4,4],
 ]
-
 kernel_size_list = [
-    [5],
-    [7],
     [9],
     [11],
     [13],

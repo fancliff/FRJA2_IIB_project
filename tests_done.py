@@ -1,5 +1,6 @@
 ###### Regression Test 1 ######
-
+val_data = f['data'][:5000]
+train_data = f['data'][20000:26000]
 out_channels_list = [
     [4,6,4],
     [4,8,4],
@@ -21,3 +22,34 @@ kernel_size_list = [
 ]
 
 ###### Res-Net Test 1 ######
+val_data = f['data'][:5000]
+train_data = f['data'][20000:26000]
+out_channels_list = [
+    [4,6,4],
+    [4,8,4],
+    [4,6,8,4],
+    [4,6,8,6,4],
+    [4,8,12,8,4],
+    [4,6,6,8,6,6,4],
+    [4,6,6,8,8,6,6,4],
+]
+kernel_size_list = [
+    [5],
+    [7],
+    [9],
+    [11],
+    [13],
+]
+
+###### Res-Net Test 2 ######
+val_data = f['data'][:5000]
+train_data = f['data'][20000:32000]
+out_channels_list = [
+    [4,6,6,8,8,12,8,8,6,6,4],
+    [4,4,6,6,6,8,8,8,6,6,6,4,4],
+]
+kernel_size_list = [
+    [9],
+    [11],
+    [13],
+]
