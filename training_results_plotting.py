@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.ticker as mticker
 
 def plot_model_performance(csv_path, x_keys, legend_labels=None):
     """
@@ -17,58 +18,75 @@ def plot_model_performance(csv_path, x_keys, legend_labels=None):
 
     df = pd.read_csv(csv_path)
 
+    is_3d = len(x_keys) == 2
+
     # Extract model class from Model ID
     df['Model Class'] = df['Model ID'].apply(lambda x: x.split('_')[-1])
 
-    # Apply log-safe transformation
     log_scale_cols = ['Trainable Parameters', 'Mean FRF Error', 'Training Time (s)']
-    # Only needed if columns may contain zeros which the above columns should not
-    for col in log_scale_cols:
-        df[col] = df[col].replace(0, np.nan)
 
-    fig = plt.figure(figsize=(10, 7))
+    if is_3d:
+        # Apply log10 to Mean FRF Error (handling zeros/negative values)
+        df['Mean FRF Error'] = df['Mean FRF Error'].apply(lambda x: np.log10(x) if x > 0 else np.nan)
+        df = df.dropna(subset=['Mean FRF Error'])
+        fig = plt.figure(figsize=(10, 6))
+        ax = fig.add_subplot(111, projection='3d')
+        
+        def log_tick_formatter(val, pos=None):
+            # return f"$10^{{{int(val)}}}$"
+            return f"$10^{{{val:g}}}$"
+        
+        for model_class in df['Model Class'].unique():
+            sub_df = df[df['Model Class'] == model_class]
+            label = legend_labels.get(model_class, model_class) if legend_labels else model_class
 
-    if len(x_keys) == 1: # 2D plot
-        x_key = x_keys[0]
-        ax = fig.add_subplot(111)
+            # Get x, y values - apply log if needed
+            x = np.log10(sub_df[x_keys[0]]) if x_keys[0] in log_scale_cols else sub_df[x_keys[0]]
+            y = np.log10(sub_df[x_keys[1]]) if x_keys[1] in log_scale_cols else sub_df[x_keys[1]]
+            z = sub_df['Mean FRF Error']
+            
+            ax.scatter(x, y, z, label=label)
+
+        # Set labels
+        ax.set_xlabel(x_keys[0])
+        ax.set_ylabel(x_keys[1])
+        ax.set_zlabel('Mean FRF Error')
+        
+        # Log format x and y axes if needed
+        if x_keys[0] in log_scale_cols:
+            ax.xaxis.set_major_formatter(mticker.FuncFormatter(log_tick_formatter))
+            ax.xaxis.set_major_locator(mticker.MaxNLocator(integer=True)) 
+            # True will only display 10^int gridlines
+            # False will display many 10^non-int gridlines
+        if x_keys[1] in log_scale_cols:
+            ax.yaxis.set_major_formatter(mticker.FuncFormatter(log_tick_formatter))
+            ax.yaxis.set_major_locator(mticker.MaxNLocator(integer=True)) 
+            # True will only display 10^int gridlines
+            # False will display many 10^non-int gridlines
+        # Log format z-axis
+        ax.zaxis.set_major_formatter(mticker.FuncFormatter(log_tick_formatter))
+        # ax.zaxis.set_major_locator(mticker.MaxNLocator(integer=True)) 
+        # set_major_locator doesn't seem to work on z-axis
+        # Probably another matplotlib z-axis bug/issue/missing-feature
+    else:
+        fig = plt.figure(figsize=(10, 6))
+        ax = plt.gca()
 
         for model_class in df['Model Class'].unique():
             sub_df = df[df['Model Class'] == model_class]
             label = legend_labels.get(model_class, model_class) if legend_labels else model_class
-            ax.scatter(sub_df[x_key], sub_df['Mean FRF Error'], label=label)
+            x = sub_df[x_keys[0]]
+            y = sub_df['Mean FRF Error']
+            ax.scatter(x,y,label=label)
 
-        if x_key in log_scale_cols:
+        if x_keys[0] in log_scale_cols:
             ax.set_xscale('log')
         ax.set_yscale('log')
-        ax.set_xlabel(x_key)
+        ax.set_xlabel(f'{x_keys[0]}')
         ax.set_ylabel('Mean FRF Error')
-        ax.set_title(f'Mean FRF Error vs {x_key}')
         ax.legend()
         ax.grid(which='major', linestyle='-', linewidth='0.5')
         ax.grid(which='minor', linestyle=':', linewidth='0.5')
-
-    ####### 3D plotting not working currently ######
-    # else: # 3D plot
-    #     x_key, y_key = x_keys
-    #     ax = fig.add_subplot(111, projection='3d')
-
-    #     for model_class in df['Model Class'].unique():
-    #         sub_df = df[df['Model Class'] == model_class]
-    #         label = legend_labels.get(model_class, model_class) if legend_labels else model_class
-    #         ax.scatter(
-    #             sub_df[x_key], sub_df[y_key], sub_df['Mean FRF Error'], label=label
-    #         )
-
-    #     if x_key in log_scale_cols:
-    #         ax.set_xscale('log')
-    #     if y_key in log_scale_cols:
-    #         ax.set_yscale('log')
-    #     ax.zaxis._set_scale('log')
-    #     ax.set_xlabel(x_key)
-    #     ax.set_ylabel(y_key)
-    #     ax.zaxis.set_label('Mean FRF Error')
-    #     ax.set_title(f'Mean FRF Error vs {x_key} & {y_key}')
-    #     ax.legend()
 
     plt.tight_layout()
     plt.show()
@@ -100,8 +118,14 @@ plot_model_performance(
 )
 
 
-# plot_model_performance(
-#     r'C:\Users\Freddie\Documents\IIB project repository\myenv\FRJA2_IIB_project\model_training_results.csv',
-#     ['Trainable Parameters', 'Training Time (s)'],
-#     legend_labels=legend_mapping
-# )
+plot_model_performance(
+    r'C:\Users\Freddie\Documents\IIB project repository\myenv\FRJA2_IIB_project\model_training_results.csv',
+    ['Trainable Parameters', 'Training Time (s)'],
+    legend_labels=legend_mapping
+)
+
+plot_model_performance(
+    r'C:\Users\Freddie\Documents\IIB project repository\myenv\FRJA2_IIB_project\model_training_results.csv',
+    ['Trainable Parameters', 'Receptive Field'],
+    legend_labels=legend_mapping
+)
