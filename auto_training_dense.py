@@ -130,9 +130,8 @@ for bc in block_config_list:
                     )
 
                     save_suffix = '_' + '_'.join([
-                        str(model.out_channels),
+                        ''.join(map(str, model.block_config)),
                         str(model.kernel_size),
-                        '.'.join(map(str, model.block_config)),
                         str(model.growth_rate),
                         str(model.transition_channels),
                         str(model.__class__.__name__)
