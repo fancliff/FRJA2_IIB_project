@@ -1,6 +1,6 @@
 ###### Regression Test 1 ######
-val_data = f['data'][:5000]
-train_data = f['data'][20000:26000]
+val_data = ['data'][:5000]
+train_data = ['data'][20000:26000]
 out_channels_list = [
     [4,6,4],
     [4,8,4],
@@ -21,9 +21,23 @@ kernel_size_list = [
     [13],
 ]
 
+###### Regression Test 2 ######
+val_data = ['data'][:5000]
+train_data = ['data'][20000:32000]
+out_channels_list = [
+    [4,4,4,6,6,6,8,8,8,8,6,6,6,4,4,4],
+    [4,4,4,6,6,6,8,8,10,10,8,8,6,6,6,4,4,4],
+    [4,4,4,6,6,6,8,8,8,10,12,12,10,8,8,8,6,6,6,4,4,4],
+]
+kernel_size_list = [
+    [9],
+    [11],
+    [13],
+]
+
 ###### Res-Net Test 1 ######
-val_data = f['data'][:5000]
-train_data = f['data'][20000:26000]
+val_data = ['data'][:5000]
+train_data = ['data'][20000:26000]
 out_channels_list = [
     [4,6,4],
     [4,8,4],
@@ -42,8 +56,8 @@ kernel_size_list = [
 ]
 
 ###### Res-Net Test 2 ######
-val_data = f['data'][:5000]
-train_data = f['data'][20000:32000]
+val_data = ['data'][:5000]
+train_data = ['data'][20000:32000]
 out_channels_list = [
     [4,6,6,8,8,12,8,8,6,6,4],
     [4,4,6,6,6,8,8,8,6,6,6,4,4],
@@ -54,23 +68,9 @@ kernel_size_list = [
     [13],
 ]
 
-###### Regression Test 2 ######
-val_data = f['data'][:5000]
-train_data = f['data'][20000:32000]
-out_channels_list = [
-    [4,4,4,6,6,6,8,8,8,8,6,6,6,4,4,4],
-    [4,4,4,6,6,6,8,8,10,10,8,8,6,6,6,4,4,4],
-    [4,4,4,6,6,6,8,8,8,10,12,12,10,8,8,8,6,6,6,4,4,4],
-]
-kernel_size_list = [
-    [9],
-    [11],
-    [13],
-]
-
 ###### Dense-Net Test 1 ######
-val_data = f['data'][:5000]
-train_data = f['data'][20000:26000]
+val_data = ['data'][:5000]
+train_data = ['data'][20000:26000]
 block_config_list = [
     [4,4],
     [4,4,4],
