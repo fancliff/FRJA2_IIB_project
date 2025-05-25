@@ -91,3 +91,21 @@ transition_channels_list = [
     4,
     6,
 ]
+
+###### Dense-Net Test 2 ######
+val_data = ['data'][:5000]
+train_data = ['data'][20000:32000]
+block_config_list = [
+    [4,4,4,4,4],
+    [4,4,4,4,4,4],
+]
+kernel_size_list = [
+    11,
+    13,
+]
+growth_rate_list = [
+    4,
+]
+transition_channels_list = [
+    8,
+]
