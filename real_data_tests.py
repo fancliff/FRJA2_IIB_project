@@ -191,8 +191,8 @@ optim_results, max_mag_optimised = rdrt.optimiser_handler(
     q=0, 
     window_scale=0.6,
     up_inc=0.35,
-    min_cut_off=0.82,
-    # min_cut_off=0.5,
+    # min_cut_off=0.82,
+    min_cut_off=0.5,
 )
 rdrt.plot_FRF_cloud_single_sample(
     model, 
@@ -204,19 +204,19 @@ rdrt.plot_FRF_cloud_single_sample(
     q=0, 
     window_scale=0.6,
     up_inc=0.35,
-    min_cut_off=0.82, 
-    # min_cut_off=0.5,
+    # min_cut_off=0.82, 
+    min_cut_off=0.5,
 )
 # omega_weight can be helpful for stabilising the model, 
 # it's a bit of a hack but the model natural frequency estimation 
 # is so much better than the other parameters so it works fine
 # If natural frequencies moving around way more than expected try omega_weight = 1 or more
 
-rt.optimiser_and_cloud_synthetic(
-    model,
-    val_dataloader,
-    10,
-    scale_factors,
-    up_inc=0.35,
-    min_cut_off=0.35,
-)
+# rt.optimiser_and_cloud_synthetic(
+#     model,
+#     val_dataloader,
+#     10,
+#     scale_factors,
+#     up_inc=0.35,
+#     min_cut_off=0.35,
+# )

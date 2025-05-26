@@ -424,6 +424,9 @@ def FRF_loss_for_optim(input, omegas, alphas, phis, log10zetas):
     H_v_imag = np.imag(H_v)
     MSE_real = np.mean((input[0]-H_v_real)**2)
     MSE_imag = np.mean((input[1]-H_v_imag)**2)
+    # log mag optimisation did not converge, maybe gradients too discontinuous or zero errors
+    # MSE_real = np.mean((np.log10(input[0])-np.log10(H_v_real))**2)
+    # MSE_imag = np.mean((np.log10(input[1])-np.log10(H_v_imag))**2)
     return (MSE_real+MSE_imag)/2
 
 
