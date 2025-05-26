@@ -246,6 +246,8 @@ def plot_FRF_cloud_single_sample(
     min_cut_off=0.8,
     ):
     ''' q=0 for point estimate or 1 for mean estimate for parameter estimation'''
+    if max_mag_optimised is None: # No modes found
+        return
     with torch.no_grad():
         model.eval()
         output = model(data).squeeze(0)
@@ -327,6 +329,8 @@ def plot_FRF_cloud_single_sample(
             data_copy, 
             label_defs=[True, True, True, True],
             scale_factors=scale_factors,
+            up_inc=up_inc,
+            min_cut_off=min_cut_off,
         )
 
 
@@ -499,6 +503,9 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, plot=True, q=0
         b, a = scipy.signal.butter(2,0.2) # only light smoothing for modes
         smoothed_modes = scipy.signal.filtfilt(b,a,modes_output)
         omegas_init, predicted_freq_idxs = est_nat_freq_triangle_rise(smoothed_modes,up_inc,min_cut_off)
+        if len(omegas_init) == 0:
+            print('No modes found. Exiting...')
+            return None, None
         
         window_scale = window_scale
         q = q # 0 for point estimate, 1 for mean

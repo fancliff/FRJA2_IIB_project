@@ -12,6 +12,7 @@ from models import ResidualBlock
 import matplotlib.patches as mpatches #for legend using masks
 import matplotlib.colors as mcolors #for custom colormap
 import datetime #for timestamping save files
+import real_data_routines as rdrt
 
 
 def train_model_binary(model, train_dataloader, val_dataloader, save_suffix, num_epochs, acceptance, plotting=True, patience=4):
@@ -1778,3 +1779,37 @@ def calculate_resnet_receptive_field(model):
 
 
 
+def optimiser_and_cloud_synthetic(model, dataloader, num_samples, scale_factors, up_inc, min_cut_off):
+    samples_plotted = 0
+    model.eval()
+    with torch.no_grad():
+        for data,_,_ in dataloader:
+            batch_size = len(data)
+            for i in range(min(num_samples,batch_size)):
+                optim_results, max_mag_optimised = rdrt.optimiser_handler(
+                    model, 
+                    data[i].unsqueeze(0),
+                    scale_factors, 
+                    omega_weight=0, 
+                    plot=True, 
+                    q=0, 
+                    window_scale=0.6,
+                    up_inc=up_inc,
+                    min_cut_off=min_cut_off,
+                )
+                rdrt.plot_FRF_cloud_single_sample(
+                    model, 
+                    data[i].unsqueeze(0), 
+                    150, 
+                    scale_factors, 
+                    max_mag_optimised, 
+                    transparency=0.05, 
+                    q=0, 
+                    window_scale=0.6,
+                    up_inc=up_inc,
+                    min_cut_off=min_cut_off,
+                )
+                
+                samples_plotted += 1
+                if samples_plotted >= num_samples:
+                    return

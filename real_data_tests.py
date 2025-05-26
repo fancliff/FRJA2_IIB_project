@@ -169,7 +169,12 @@ data_name = 'final_real_imag.h5'
 data_file = project_path + data_name
 
 with h5py.File(data_file, 'r') as f:
+    val_data = f['data'][:5000]
+    val_labels = f['labels'][:5000]
+    val_params = f['params'][:5000]
     scale_factors = f['scale_factors'][:]
+val_dataset = md.n_channel_dataset(val_data, val_labels, val_params)
+val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=True)
 
 model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth') # Best Standard Conv
 # model = rt.load_model('05_23_20_03_4466688866644_13_ResNet1.pth') # Best Res-Net
@@ -187,6 +192,7 @@ optim_results, max_mag_optimised = rdrt.optimiser_handler(
     window_scale=0.6,
     up_inc=0.35,
     min_cut_off=0.82,
+    # min_cut_off=0.5,
 )
 rdrt.plot_FRF_cloud_single_sample(
     model, 
@@ -198,9 +204,19 @@ rdrt.plot_FRF_cloud_single_sample(
     q=0, 
     window_scale=0.6,
     up_inc=0.35,
-    min_cut_off=0.82,
+    min_cut_off=0.82, 
+    # min_cut_off=0.5,
 )
 # omega_weight can be helpful for stabilising the model, 
 # it's a bit of a hack but the model natural frequency estimation 
 # is so much better than the other parameters so it works fine
 # If natural frequencies moving around way more than expected try omega_weight = 1 or more
+
+rt.optimiser_and_cloud_synthetic(
+    model,
+    val_dataloader,
+    10,
+    scale_factors,
+    up_inc=0.35,
+    min_cut_off=0.35,
+)
