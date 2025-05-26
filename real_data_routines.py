@@ -412,6 +412,30 @@ def generate_random_FRFs(num_samples,predicted_omegas,param_means,param_vars,sig
 
 
 @jit(nopython=True)
+def get_max_mag(input, omegas, alphas, phis, log10zetas):
+    signal_length = len(input[0])
+    H_v = np.zeros(signal_length, dtype=np.complex128)
+    frequencies = np.linspace(0, 1, signal_length)
+    
+    for n in range(len(omegas)):
+        omega_n = omegas[n]
+        alpha_n = alphas[n]
+        phi_n = phis[n]
+        log10zeta_n = log10zetas[n]
+        for j, w in enumerate(frequencies):
+            H_f = 0.0j
+            denominator = omega_n**2 - w**2 + 2j * (10**log10zeta_n) * w
+            denominator += 1e-8 # stabilise small denominator
+            numerator = 1j*w*alpha_n*np.exp(1j*phi_n)
+            H_f += numerator/denominator
+            H_v[j] += H_f
+    
+    mag_no_norm = np.abs(H_v)
+    max_mag = np.max(mag_no_norm)
+    return max_mag
+
+
+@jit(nopython=True)
 def FRF_loss_for_optim(input, omegas, alphas, phis, log10zetas):
     signal_length = len(input[0])
     H_v = np.zeros(signal_length, dtype=np.complex128)
@@ -431,12 +455,8 @@ def FRF_loss_for_optim(input, omegas, alphas, phis, log10zetas):
             H_v[j] += H_f
     
     mag_no_norm = np.abs(H_v)
-    min_mag = np.min(mag_no_norm)
     max_mag = np.max(mag_no_norm)
-    range_mag = max_mag-min_mag
-    range_mag = max(max_mag - min_mag, 1e-8)  # avoid div by zero
-    mag = (mag_no_norm - min_mag)/range_mag
-    H_v *= (mag / np.maximum(mag_no_norm, 1e-12))
+    H_v = H_v/max_mag # normalise just by dividing by max mag
     H_v_real = np.real(H_v)
     H_v_imag = np.imag(H_v)
     MSE_real = np.mean((input[0]-H_v_real)**2)
@@ -450,7 +470,7 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
     omegas_init = np.array(omegas_init) # store for use with omega_weight
     
     # Apply small clamp to avoid optimizer hitting edges
-    omegas_init = np.clip(omegas_init, 1e-3, 0.99)
+    omegas_init = np.clip(omegas_init, 1e-3, 0.999)
 
     def loss_function(x):
         omegas = x[0:N]
@@ -469,10 +489,10 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
 
     # Define bounds
     bounds = []
-    bounds += [(1e-3, 0.99)] * N                  # omegas in (0, 1]
+    bounds += [(1e-3, 0.999)] * N             # omegas in (0, 1]
     bounds += [(-10, 10)] * N                 # alphas
-    bounds += [(-1.57, 1.57)] * N                 # phis
-    bounds += [(-6, 1)] * N                 # log10zetas
+    bounds += [(-1.57, 1.57)] * N             # phis in (-pi/2, pi/2)
+    bounds += [(-6, 1)] * N                   # log10zetas
 
     result = minimize(
         loss_function, 
@@ -562,6 +582,14 @@ def optimiser_handler(model, data, data_no_norm, scale_factors, omega_weight=0, 
         phis_out = optim_output['phis']
         log10zetas_out = optim_output['log10zetas']
         
+        max_mag_optimised = get_max_mag(
+            data,
+            omegas_out,
+            alphas_out,
+            phis_out,
+            log10zetas_out,
+        )
+        
         out_FRF_loss = FRF_loss_for_optim(
             data,
             omegas_out,
@@ -594,8 +622,12 @@ def optimiser_handler(model, data, data_no_norm, scale_factors, omega_weight=0, 
         
         if plot:
             frequencies = np.linspace(0,1,1024)
-            H_v_init = rt.construct_FRF(omegas_init,alphas_init,phis_init,(10**log10zetas_init),signal_length=1024,min_max=True)
-            H_v_out = rt.construct_FRF(omegas_out,alphas_out,phis_out,(10**log10zetas_out),signal_length=1024,min_max=True)
+            H_v_init = rt.construct_FRF(omegas_init,alphas_init,phis_init,(10**log10zetas_init),signal_length=1024,min_max=False) # No norm
+            H_v_out = rt.construct_FRF(omegas_out,alphas_out,phis_out,(10**log10zetas_out),signal_length=1024,min_max=False) # No norm
+            
+            # Normalisation only by max mag and same for initial and optimised signal
+            H_v_init = H_v_init / max_mag_optimised 
+            H_v_out = H_v_out / max_mag_optimised
 
             fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
             ax[0].plot(frequencies, np.real(H_v_init), label='Model Predicted FRF', color='orange')

@@ -95,21 +95,23 @@ plt.show()
 
 # Create magnitude and normalise
 tf_mag = np.abs(tf_real_resampled + 1j * tf_imag_resampled)
-tf_mag_normed = (tf_mag - np.min(tf_mag)) / (np.max(tf_mag) - np.min(tf_mag))
+tf_mag_max = np.max(tf_mag)
+
 
 # Apply magnitude normalisation to real/imag components
-tf_real_normalised = tf_real_resampled * (tf_mag_normed / tf_mag)
-tf_imag_normalised = tf_imag_resampled * (tf_mag_normed / tf_mag)
-tf_phase = np.angle(tf_real_normalised+1j*tf_imag_normalised)
-tf_log_mag = np.log10(tf_mag_normed)
+tf_mag_normalised = tf_mag / tf_mag_max
+tf_real_normalised = tf_real_resampled / tf_mag_max
+tf_imag_normalised = tf_imag_resampled / tf_mag_max
+tf_phase_normalised = np.angle(tf_real_normalised+1j*tf_imag_normalised)
+tf_log_mag_normalised = np.log10(tf_mag_normalised)
 
 # Combine into final array and convert to tensor
 tf_processed = np.stack([
     tf_real_normalised, 
     tf_imag_normalised,
-    # tf_phase,
-    # tf_mag_normed,
-    # tf_log_mag,
+    # tf_phase_normalised,
+    # tf_mag_normalised,
+    # tf_log_mag_normalised,
     ])  
 # Shape (n, 1024)
 tf_processed_no_norm = np.stack([
@@ -175,7 +177,7 @@ model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth') # Best
 
 # rdrt.plot_predictions_all_labels(model, tf_tensor, labels1, scale_factors, N=2, Wn=0.1, plot_phase=True)
 # rdrt.plot_FRF_comparison(model, tf_tensor, scale_factors, FRF_type=1, norm=True, plot_phase=True, q=0)
-rdrt.plot_FRF_cloud_single_sample(model, tf_tensor, 100, scale_factors, 0.05, FRF_type=1, q=0, window_scale=0.6)
+# rdrt.plot_FRF_cloud_single_sample(model, tf_tensor, 100, scale_factors, 0.05, FRF_type=1, q=0, window_scale=0.6)
 rdrt.optimiser_handler(model, tf_tensor, tf_tensor_no_norm, scale_factors, omega_weight=0, plot=True, q=0, window_scale=0.6)
 # omega_weight can be helpful for stabilising the model, 
 # it's a bit of a hack but the model natural frequency estimation 
