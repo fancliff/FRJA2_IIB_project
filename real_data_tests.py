@@ -169,9 +169,9 @@ data_file = project_path + data_name
 with h5py.File(data_file, 'r') as f:
     scale_factors = f['scale_factors'][:]
 
-# model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth') # Best Standard Conv
+model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth') # Best Standard Conv
 # model = rt.load_model('05_23_20_03_4466688866644_13_ResNet1.pth') # Best Res-Net
-model = rt.load_model('05_26_07_55_444444_13_4_8_DenseNet1.pth') # Best Dense-Net and overall
+# model = rt.load_model('05_26_07_55_444444_13_4_8_DenseNet1.pth') # Best Dense-Net
 
 # rdrt.plot_predictions_all_labels(model, tf_tensor, labels1, scale_factors, N=2, Wn=0.1, plot_phase=True)
 # rdrt.plot_FRF_comparison(model, tf_tensor, scale_factors, FRF_type=1, norm=True, plot_phase=True, q=0)
