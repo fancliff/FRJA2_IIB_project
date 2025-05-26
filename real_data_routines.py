@@ -758,4 +758,4 @@ def est_nat_freq_triangle_rise(curve, up_inc=0.35, min_cut_off=0.8):
 
 @jit(nopython=True)
 def quick_log_mag(arr):
-    return np.log10(arr[0]**2 + arr[1]**2)
+    return np.log10(np.sqrt(arr[0]**2 + arr[1]**2))
