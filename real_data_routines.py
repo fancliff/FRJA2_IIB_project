@@ -104,8 +104,8 @@ def plot_predictions_all_labels(
         # Remove duplicate labels
         unique_legend = dict(zip(legend_labels, legend_handles))
         fig.legend(unique_legend.values(), unique_legend.keys(),
-                loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.0))
-        plt.tight_layout(rect=[0, 0, 1, 0.92])
+                loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1))
+        plt.tight_layout(rect=[0, 0, 1, 0.97])
         plt.show()
         return
 
@@ -203,19 +203,19 @@ def plot_FRF_comparison(model, data, scale_factors, norm=True, plot_phase = True
         fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
         ax[0].plot(frequencies, H_v[0], label='Predicted FRF', color='orange')
         ax[0].plot(frequencies, data[0], label='True FRF', color='blue')
-        ax[1].plot(frequencies, H_v[1], label='Predicted FRF', color='orange')
-        ax[1].plot(frequencies, data[1], label='True FRF', color='blue')
+        ax[1].plot(frequencies, H_v[1], color='orange')
+        ax[1].plot(frequencies, data[1], color='blue')
         for k, omega in enumerate(predicted_omegas):
             ax[0].axvline(x=omega, color='cyan', linestyle=':', 
                                 label=r'Predicted $\omega_n$' if k == 0 else '')
             ax[1].axvline(x=omega, color='cyan', linestyle=':')
         fig.suptitle('Complex FRF Comparison: MSE = {:.4f}'.format(error))
-        ax[0].legend(
+        fig.legend(
             loc='upper center',
             ncol = 3,
-            bbox_to_anchor = (0.5,1.15),
+            bbox_to_anchor = (0.5,1),
         )
-        plt.tight_layout(rect=[0, 0, 1, 1.02])
+        plt.tight_layout(rect=[0, 0, 1, 0.97])
         
         
         plt.show(block=False)
@@ -308,11 +308,11 @@ def plot_FRF_cloud_single_sample(
         )
         
         frequencies = np.linspace(0, 1, data.shape[-1])
-        fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+        fig, ax = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         ax[0].plot(frequencies, H_v[0], label='Normally Distributed Predicted FRFs', color='red')
         ax[0].plot(frequencies, data[0], label='True FRF', color='blue')
-        ax[1].plot(frequencies, H_v[1], label='Predicted FRF', color='red')
-        ax[1].plot(frequencies, data[1], label='True FRF', color='blue')
+        ax[1].plot(frequencies, H_v[1], color='red')
+        ax[1].plot(frequencies, data[1], color='blue')
         for k, omega in enumerate(predicted_omegas):
             ax[0].axvline(x=omega, color='cyan', linestyle=':', 
                                 label=r'Predicted $\omega_n$' if k == 0 else '')
@@ -320,12 +320,15 @@ def plot_FRF_cloud_single_sample(
         for i in range(0,num_cloud_samples):
             ax[0].plot(frequencies,FRF_clouds[i][0], color='red', alpha=transparency)
             ax[1].plot(frequencies,FRF_clouds[i][1], color='red', alpha=transparency)
-        ax[0].legend(
+        fig.legend(
             loc='upper center',
             ncol = 3,
-            bbox_to_anchor = (0.5,1.15),
+            bbox_to_anchor = (0.5,1),
         )
-        plt.tight_layout(rect=[0, 0, 1, 1.02])
+        ax[0].set_ylabel('Real Part')
+        ax[1].set_ylabel('Imaginary Part')
+        ax[-1].set_xlabel('Normalised Frequency')
+        plt.tight_layout(rect=[0, 0, 1, 0.97])
         
         plt.show(block=False)
         
@@ -594,23 +597,26 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, plot=True, q=0
             H_v_init = H_v_init / max_mag_optimised 
             H_v_out = H_v_out / max_mag_optimised
 
-            fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+            fig, ax = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
             ax[0].plot(frequencies, np.real(H_v_init), label='Model Predicted FRF', color='orange')
             ax[0].plot(frequencies, np.real(H_v_out), label='Optimised FRF', color='red')
             ax[0].plot(frequencies, data[0], label='Input Signal', color='blue')
-            ax[1].plot(frequencies, np.imag(H_v_init), label='Model Predicted FRF', color='orange')
-            ax[1].plot(frequencies, np.imag(H_v_out), label='Optimised FRF', color='red')
-            ax[1].plot(frequencies, data[1], label='Input Signal', color='blue')
+            ax[1].plot(frequencies, np.imag(H_v_init), color='orange')
+            ax[1].plot(frequencies, np.imag(H_v_out), color='red')
+            ax[1].plot(frequencies, data[1], color='blue')
             for k, omega in enumerate(omegas_init):
                 ax[0].axvline(x=omega, color='cyan', linestyle=':', 
                                     label=r'Predicted $\omega_n$' if k == 0 else '')
                 ax[1].axvline(x=omega, color='cyan', linestyle=':')
-            ax[0].legend(
+            fig.legend(
                 loc='upper center',
                 ncol = 4,
-                bbox_to_anchor = (0.5,1.15),
+                bbox_to_anchor = (0.5,1),
             )
-            plt.tight_layout(rect=[0, 0, 1, 1.02])
+            ax[0].set_ylabel('Real Part')
+            ax[1].set_ylabel('Imaginary Part')
+            ax[-1].set_xlabel('Normalised Frequency')
+            plt.tight_layout(rect=[0, 0, 1, 0.97])
             plt.show()
 
         # Print summary
