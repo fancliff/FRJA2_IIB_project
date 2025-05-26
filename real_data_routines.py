@@ -132,7 +132,7 @@ def subplot_labels(axes_j, x, model_output_i_j, name, N, Wn, predicted_omegas):
     return handles, labels
 
 
-def compare_FRF(input_signal, all_outputs, scale_factors, max_mag_optimised, FRF_type = 0, q = 1):
+def compare_FRF(input_signal, all_outputs, scale_factors, max_mag_optimised, q = 1):
     # Assumes model ouputs are modes, a mag, a phase, log10_zeta
     # FRF type: 0 for just magnitude, 1 for real and imaginary
     
@@ -176,29 +176,22 @@ def compare_FRF(input_signal, all_outputs, scale_factors, max_mag_optimised, FRF
 
     # Compare the FRFs
     input_signal = input_signal.cpu().numpy()
-    if FRF_type == 0:
-        output = np.abs(H_v)
-        return rt.quick_ms_diff(input_signal, output), output
-    else:
-        output_signal = np.array([np.real(H_v),np.imag(H_v)])
-        MSE_real = rt.quick_ms_diff(input_signal, output_signal[0], signal_length)
-        MSE_imag = rt.quick_ms_diff(input_signal, output_signal[1], signal_length)
-        MSE = (MSE_real + MSE_imag)/2
-        return MSE, output_signal
+    output_signal = np.array([np.real(H_v),np.imag(H_v)])
+    MSE_real = rt.quick_ms_diff(input_signal, output_signal[0], signal_length)
+    MSE_imag = rt.quick_ms_diff(input_signal, output_signal[1], signal_length)
+    MSE = (MSE_real + MSE_imag)/2
+    return MSE, output_signal
 
 
-def plot_FRF_comparison(model, data, scale_factors, FRF_type=1, norm=True, plot_phase = True, q = 1):
+def plot_FRF_comparison(model, data, scale_factors, norm=True, plot_phase = True, q = 1):
     with torch.no_grad():
         model.eval()
         output = model(data).squeeze(0)
         data_copy = data
         data = data.squeeze(0)
         
-        if FRF_type == 0:
-            data = np.abs(data[0:2])
-        else:
-            data = data[0:2]
-        error, H_v = compare_FRF(data, output.cpu().numpy(), scale_factors, FRF_type, norm, q=q)
+        data = data[0:2]
+        error, H_v = compare_FRF(data, output.cpu().numpy(), scale_factors, norm, q=q)
         print('\n', error)
         
         modes_output = output[0].cpu().numpy()
@@ -207,37 +200,22 @@ def plot_FRF_comparison(model, data, scale_factors, FRF_type=1, norm=True, plot_
         predicted_omegas, _ = rt.est_nat_freq_triangle_rise(smoothed_modes)
         
         frequencies = np.linspace(0, 1, data.shape[-1])
-        if FRF_type == 0:
-            fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-            ax.plot(frequencies, H_v, label='Predicted FRF', color='orange')
-            ax.plot(frequencies, data, label='True FRF', color='blue')
-            for k, omega in enumerate(predicted_omegas):
-                ax.axvline(x=omega, color='cyan', linestyle=':', 
+        fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+        ax[0].plot(frequencies, H_v[0], label='Predicted FRF', color='orange')
+        ax[0].plot(frequencies, data[0], label='True FRF', color='blue')
+        ax[1].plot(frequencies, H_v[1], label='Predicted FRF', color='orange')
+        ax[1].plot(frequencies, data[1], label='True FRF', color='blue')
+        for k, omega in enumerate(predicted_omegas):
+            ax[0].axvline(x=omega, color='cyan', linestyle=':', 
                                 label=r'Predicted $\omega_n$' if k == 0 else '')
-            fig.suptitle('Magnitude FRF Comparison: MSE = {:.4f}'.format(error))
-            ax.legend(
-                loc='upper center',
-                ncol = 3,
-                bbox_to_anchor = (0.5,1.15)
-            )
-            plt.tight_layout(rect=[0, 0, 1, 1.05])
-        else:
-            fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
-            ax[0].plot(frequencies, H_v[0], label='Predicted FRF', color='orange')
-            ax[0].plot(frequencies, data[0], label='True FRF', color='blue')
-            ax[1].plot(frequencies, H_v[1], label='Predicted FRF', color='orange')
-            ax[1].plot(frequencies, data[1], label='True FRF', color='blue')
-            for k, omega in enumerate(predicted_omegas):
-                ax[0].axvline(x=omega, color='cyan', linestyle=':', 
-                                    label=r'Predicted $\omega_n$' if k == 0 else '')
-                ax[1].axvline(x=omega, color='cyan', linestyle=':')
-            fig.suptitle('Complex FRF Comparison: MSE = {:.4f}'.format(error))
-            ax[0].legend(
-                loc='upper center',
-                ncol = 3,
-                bbox_to_anchor = (0.5,1.15),
-            )
-            plt.tight_layout(rect=[0, 0, 1, 1.02])
+            ax[1].axvline(x=omega, color='cyan', linestyle=':')
+        fig.suptitle('Complex FRF Comparison: MSE = {:.4f}'.format(error))
+        ax[0].legend(
+            loc='upper center',
+            ncol = 3,
+            bbox_to_anchor = (0.5,1.15),
+        )
+        plt.tight_layout(rect=[0, 0, 1, 1.02])
         
         
         plt.show(block=False)
@@ -278,7 +256,6 @@ def plot_FRF_cloud_single_sample(
     scale_factors,
     max_mag_optimised,
     transparency=0.05,
-    FRF_type=1,
     signal_length=1024,
     q=1,
     window_scale=0.6,
@@ -292,11 +269,8 @@ def plot_FRF_cloud_single_sample(
         data_copy = data
         data = data.squeeze(0)
         
-        if FRF_type == 0:
-            data = np.abs(data[0:2])
-        else:
-            data = data[0:2]
-        _, H_v = compare_FRF(data, output.cpu().numpy(), scale_factors, max_mag_optimised, FRF_type, q=q)
+        data = data[0:2]
+        _, H_v = compare_FRF(data, output.cpu().numpy(), scale_factors, max_mag_optimised, q=q)
         
         modes_output = output[0].cpu().numpy()
         b, a = scipy.signal.butter(2,0.2) # only light smoothing for modes
@@ -331,44 +305,27 @@ def plot_FRF_cloud_single_sample(
             param_vars=param_vars,
             signal_length=signal_length,
             max_mag_optimised=max_mag_optimised,
-            FRF_type=FRF_type,
         )
         
         frequencies = np.linspace(0, 1, data.shape[-1])
-        if FRF_type == 0:
-            fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-            ax.plot(frequencies, H_v, label='Normally Distributed Predicted FRFs', color='red')
-            ax.plot(frequencies, data, label='True FRF', color='blue')
-            for k, omega in enumerate(predicted_omegas):
-                ax.axvline(x=omega, color='cyan', linestyle=':', 
+        fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+        ax[0].plot(frequencies, H_v[0], label='Normally Distributed Predicted FRFs', color='red')
+        ax[0].plot(frequencies, data[0], label='True FRF', color='blue')
+        ax[1].plot(frequencies, H_v[1], label='Predicted FRF', color='red')
+        ax[1].plot(frequencies, data[1], label='True FRF', color='blue')
+        for k, omega in enumerate(predicted_omegas):
+            ax[0].axvline(x=omega, color='cyan', linestyle=':', 
                                 label=r'Predicted $\omega_n$' if k == 0 else '')
-            for i in range(0,num_cloud_samples):
-                ax.plot(frequencies,FRF_clouds[i], color='red', alpha=transparency)
-            ax.legend(
-                loc='upper center',
-                ncol = 3,
-                bbox_to_anchor = (0.5,1.15)
-            )
-            plt.tight_layout(rect=[0, 0, 1, 1.05])
-        else:
-            fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
-            ax[0].plot(frequencies, H_v[0], label='Normally Distributed Predicted FRFs', color='red')
-            ax[0].plot(frequencies, data[0], label='True FRF', color='blue')
-            ax[1].plot(frequencies, H_v[1], label='Predicted FRF', color='red')
-            ax[1].plot(frequencies, data[1], label='True FRF', color='blue')
-            for k, omega in enumerate(predicted_omegas):
-                ax[0].axvline(x=omega, color='cyan', linestyle=':', 
-                                    label=r'Predicted $\omega_n$' if k == 0 else '')
-                ax[1].axvline(x=omega, color='cyan', linestyle=':')
-            for i in range(0,num_cloud_samples):
-                ax[0].plot(frequencies,FRF_clouds[i][0], color='red', alpha=transparency)
-                ax[1].plot(frequencies,FRF_clouds[i][1], color='red', alpha=transparency)
-            ax[0].legend(
-                loc='upper center',
-                ncol = 3,
-                bbox_to_anchor = (0.5,1.15),
-            )
-            plt.tight_layout(rect=[0, 0, 1, 1.02])
+            ax[1].axvline(x=omega, color='cyan', linestyle=':')
+        for i in range(0,num_cloud_samples):
+            ax[0].plot(frequencies,FRF_clouds[i][0], color='red', alpha=transparency)
+            ax[1].plot(frequencies,FRF_clouds[i][1], color='red', alpha=transparency)
+        ax[0].legend(
+            loc='upper center',
+            ncol = 3,
+            bbox_to_anchor = (0.5,1.15),
+        )
+        plt.tight_layout(rect=[0, 0, 1, 1.02])
         
         plt.show(block=False)
         
@@ -382,7 +339,7 @@ def plot_FRF_cloud_single_sample(
 
 
 @jit(nopython=True)
-def generate_random_FRFs(num_samples,predicted_omegas,param_means,param_vars,signal_length,max_mag_optimised,FRF_type=1):
+def generate_random_FRFs(num_samples,predicted_omegas,param_means,param_vars,signal_length,max_mag_optimised):
     # params in order |a_n|, phase a_n, log10(zeta_n)
     alpha_means = param_means[0]
     phi_means = param_means[1]
@@ -393,10 +350,7 @@ def generate_random_FRFs(num_samples,predicted_omegas,param_means,param_vars,sig
     alpha_sigmas = np.sqrt(alpha_vars)
     phi_sigmas = np.sqrt(phi_vars)
     log10zeta_sigmas = np.sqrt(log10zeta_vars)
-    if FRF_type == 0:
-        data = np.empty((num_samples, 1, signal_length),dtype=np.float64)
-    else:
-        data = np.empty((num_samples, 2, signal_length),dtype=np.float64)
+    data = np.empty((num_samples, 2, signal_length),dtype=np.float64)
     
     frequencies = np.linspace(0,1,signal_length)
     num_modes = len(predicted_omegas)
@@ -419,12 +373,8 @@ def generate_random_FRFs(num_samples,predicted_omegas,param_means,param_vars,sig
         mag = np.abs(H_v)
         real_pt = np.real(H_v)
         imag_pt = np.imag(H_v)
-        
-        if FRF_type == 0:
-            data[i, 0, :] = mag
-        else:
-            data[i, 0, :] = real_pt
-            data[i, 1, :] = imag_pt
+        data[i, 0, :] = real_pt
+        data[i, 1, :] = imag_pt
     return data
 
 

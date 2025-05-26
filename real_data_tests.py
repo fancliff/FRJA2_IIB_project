@@ -176,7 +176,7 @@ model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth') # Best
 # model = rt.load_model('05_26_07_55_444444_13_4_8_DenseNet1.pth') # Best Dense-Net
 
 # rdrt.plot_predictions_all_labels(model, tf_tensor, labels1, scale_factors, N=2, Wn=0.1, plot_phase=True)
-# rdrt.plot_FRF_comparison(model, tf_tensor, scale_factors, FRF_type=1, norm=True, plot_phase=True, q=0)
+# rdrt.plot_FRF_comparison(model, tf_tensor, scale_factors, norm=True, plot_phase=True, q=0)
 optim_results, max_mag_optimised = rdrt.optimiser_handler(
     model, 
     tf_tensor,
@@ -195,7 +195,6 @@ rdrt.plot_FRF_cloud_single_sample(
     scale_factors, 
     max_mag_optimised, 
     transparency=0.05, 
-    FRF_type=1, 
     q=0, 
     window_scale=0.6,
     up_inc=0.35,
