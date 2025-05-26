@@ -23,7 +23,6 @@ def plot_predictions_all_labels(
     scale_factors=None,
     N=2,
     Wn=0.1,
-    plot_phase=True,
     up_inc=0.35,
     min_cut_off=0.8,
     ):
@@ -36,10 +35,7 @@ def plot_predictions_all_labels(
         num_label_channels = np.sum(label_defs)
         num_channels = num_data_channels + num_label_channels
         
-        if plot_phase:
-            fig, axes = plt.subplots(num_channels, 1, figsize=(10, 2 * num_channels), sharex=True)
-        else:
-            fig, axes = plt.subplots(num_channels - 1, 1, figsize=(10, 2 * num_channels), sharex=True)
+        fig, axes = plt.subplots(num_channels, 1, figsize=(10, 2 * num_channels), sharex=True)
 
         # Ensure axes is always iterable
         if num_channels == 1:
@@ -58,7 +54,7 @@ def plot_predictions_all_labels(
         axes[1].set_ylabel('Imaginary Part')
 
         j = 0
-        label_names = ["Modes", r"$|\alpha_n|$", r"$\angle \alpha_n$", r"$\log_{10}(\zeta_n)$"]
+        label_names = ["Modes", r"$|\alpha_n|$", r"$\phi_n$", r"$\log_{10}(\zeta_n)$"]
         label_keys = [0, 1, 2, 3]
         
         modes_curve = model_output[0].cpu().numpy()
@@ -66,39 +62,20 @@ def plot_predictions_all_labels(
         smoothed_modes = scipy.signal.filtfilt(b, a, modes_curve)
         predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes,up_inc,min_cut_off)
 
-        if plot_phase:
-            for idx, label_name in zip(label_keys, label_names):
-                if label_defs[idx]:
-                    ax = axes[num_data_channels + j]
-                    if scale_factors is None or idx == 0: # no scaling for mode labels
-                        # ax.set_ylabel(f"{label_name}: Target")
-                        ax.set_ylabel(f"{label_name}")
-                    else:
-                        scale = scale_factors[j-1]
-                        # ax.set_ylabel(f"{label_name} / {scale:.2f} : Target")
-                        ax.set_ylabel(f"{label_name} / {scale:.2f}")
-                    h, l = subplot_labels(ax, x, model_output[j], label_name, N, Wn, predicted_omegas)
-                    legend_handles.extend(h)
-                    legend_labels.extend(l)
-                    j += 1
-        else:
-            ax = axes[2]
-            ax.set_ylabel(f"{label_names[0]}")
-            h,l = subplot_labels(ax,x,model_output[0], label_names[0], N, Wn, predicted_omegas)
-            legend_handles.extend(h)
-            legend_labels.extend(l)
-            
-            ax = axes[3]
-            ax.set_ylabel(f"{label_names[1]} / {scale_factors[0]:.2f}")
-            h,l = subplot_labels(ax,x,model_output[1], label_names[1], N, Wn, predicted_omegas)
-            legend_handles.extend(h)
-            legend_labels.extend(l)
-            
-            ax = axes[4]
-            ax.set_ylabel(f"{label_names[3]} / {scale_factors[2]:.2f}")
-            h,l = subplot_labels(ax,x,model_output[3], label_names[3], N, Wn, predicted_omegas)
-            legend_handles.extend(h)
-            legend_labels.extend(l)
+        for idx, label_name in zip(label_keys, label_names):
+            if label_defs[idx]:
+                ax = axes[num_data_channels + j]
+                if scale_factors is None or idx == 0: # no scaling for mode labels
+                    # ax.set_ylabel(f"{label_name}: Target")
+                    ax.set_ylabel(f"{label_name}")
+                else:
+                    scale = scale_factors[j-1]
+                    # ax.set_ylabel(f"{label_name} / {scale:.2f} : Target")
+                    ax.set_ylabel(f"{label_name} / {scale:.2f}")
+                h, l = subplot_labels(ax, x, model_output[j], label_name, N, Wn, predicted_omegas)
+                legend_handles.extend(h)
+                legend_labels.extend(l)
+                j += 1
 
         axes[-1].set_xlabel("Normalised Frequency")
         # Remove duplicate labels
@@ -183,7 +160,7 @@ def compare_FRF(input_signal, all_outputs, scale_factors, max_mag_optimised, q =
     return MSE, output_signal
 
 
-def plot_FRF_comparison(model, data, scale_factors, norm=True, plot_phase = True, q = 1):
+def plot_FRF_comparison(model, data, scale_factors, norm=True, q = 1):
     with torch.no_grad():
         model.eval()
         output = model(data).squeeze(0)
@@ -200,24 +177,31 @@ def plot_FRF_comparison(model, data, scale_factors, norm=True, plot_phase = True
         predicted_omegas, _ = rt.est_nat_freq_triangle_rise(smoothed_modes)
         
         frequencies = np.linspace(0, 1, data.shape[-1])
-        fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
-        ax[0].plot(frequencies, H_v[0], label='Predicted FRF', color='orange')
-        ax[0].plot(frequencies, data[0], label='True FRF', color='blue')
-        ax[1].plot(frequencies, H_v[1], color='orange')
-        ax[1].plot(frequencies, data[1], color='blue')
+        fig, ax = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
+        predic_log_mag = quick_log_mag(H_v)
+        data_log_mag = quick_log_mag(data.cpu().numpy())
+        ax[0].plot(frequencies, predic_log_mag, label='Predicted FRF', color='orange')
+        ax[0].plot(frequencies, data_log_mag, label='True FRF', color='blue')
+        ax[1].plot(frequencies, H_v[0], color='orange')
+        ax[1].plot(frequencies, data[0], color='blue')
+        ax[2].plot(frequencies, H_v[1], color='orange')
+        ax[2].plot(frequencies, data[1], color='blue')
         for k, omega in enumerate(predicted_omegas):
             ax[0].axvline(x=omega, color='cyan', linestyle=':', 
                                 label=r'Predicted $\omega_n$' if k == 0 else '')
             ax[1].axvline(x=omega, color='cyan', linestyle=':')
-        fig.suptitle('Complex FRF Comparison: MSE = {:.4f}'.format(error))
+            ax[2].axvline(x=omega, color='cyan', linestyle=':')
+
+        ax[0].set_ylabel('Log10 Magnitude')
+        ax[1].set_ylabel('Real Part')
+        ax[2].set_ylabel('Imaginary Part')
+        ax[-1].set_xlabel('Normalised Frequency')
         fig.legend(
             loc='upper center',
             ncol = 3,
             bbox_to_anchor = (0.5,1),
         )
         plt.tight_layout(rect=[0, 0, 1, 0.97])
-        
-        
         plt.show(block=False)
         
         plot_predictions_all_labels(
@@ -225,7 +209,6 @@ def plot_FRF_comparison(model, data, scale_factors, norm=True, plot_phase = True
             data_copy, 
             label_defs=[True, True, True, True],
             scale_factors=scale_factors,
-            plot_phase=plot_phase
         )
 
 
@@ -308,28 +291,35 @@ def plot_FRF_cloud_single_sample(
         )
         
         frequencies = np.linspace(0, 1, data.shape[-1])
-        fig, ax = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
-        ax[0].plot(frequencies, H_v[0], label='Normally Distributed Predicted FRFs', color='red')
-        ax[0].plot(frequencies, data[0], label='True FRF', color='blue')
-        ax[1].plot(frequencies, H_v[1], color='red')
-        ax[1].plot(frequencies, data[1], color='blue')
+        fig, ax = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
+        data_log_mag = quick_log_mag(data.cpu().numpy())
+        pred_log_mag = quick_log_mag(H_v)
+        ax[0].plot(frequencies, pred_log_mag, label='Normally Distributed Predicted FRFs', color='red')
+        ax[0].plot(frequencies, data_log_mag, label='True FRF', color='blue')
+        ax[1].plot(frequencies, H_v[0], color='red')
+        ax[1].plot(frequencies, data[0], color='blue')
+        ax[2].plot(frequencies, H_v[1], color='red')
+        ax[2].plot(frequencies, data[1], color='blue')
         for k, omega in enumerate(predicted_omegas):
             ax[0].axvline(x=omega, color='cyan', linestyle=':', 
                                 label=r'Predicted $\omega_n$' if k == 0 else '')
             ax[1].axvline(x=omega, color='cyan', linestyle=':')
+            ax[2].axvline(x=omega, color='cyan', linestyle=':')
         for i in range(0,num_cloud_samples):
-            ax[0].plot(frequencies,FRF_clouds[i][0], color='red', alpha=transparency)
-            ax[1].plot(frequencies,FRF_clouds[i][1], color='red', alpha=transparency)
+            FRF_cloud_log_mag = quick_log_mag(FRF_clouds[i])
+            ax[0].plot(frequencies,FRF_cloud_log_mag, color='red', alpha=transparency)
+            ax[1].plot(frequencies,FRF_clouds[i][0], color='red', alpha=transparency)
+            ax[2].plot(frequencies,FRF_clouds[i][1], color='red', alpha=transparency)
         fig.legend(
             loc='upper center',
             ncol = 3,
             bbox_to_anchor = (0.5,1),
         )
-        ax[0].set_ylabel('Real Part')
-        ax[1].set_ylabel('Imaginary Part')
+        ax[0].set_ylabel('Log10 Magnitude')
+        ax[1].set_ylabel('Real Part')
+        ax[2].set_ylabel('Imaginary Part')
         ax[-1].set_xlabel('Normalised Frequency')
         plt.tight_layout(rect=[0, 0, 1, 0.97])
-        
         plt.show(block=False)
         
         plot_predictions_all_labels(
@@ -337,7 +327,6 @@ def plot_FRF_cloud_single_sample(
             data_copy, 
             label_defs=[True, True, True, True],
             scale_factors=scale_factors,
-            plot_phase=True
         )
 
 
@@ -497,8 +486,9 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, plot=True, q=0
     q=0 for point estimate
     q=1 for windowed mean with window width = label bandwidth * window_scale
     use whatever deemed best combination for mean squared FRF loss
-    Outputs symmetric percent change rather than normal percent change
+    Can output symmetric percent change rather than normal percent change
     As this avoids very large percent changes when initial value ~ 0
+    Needs the symmetric percent block uncommenting and called for this.
     '''
     with torch.no_grad():
         model.eval()
@@ -592,31 +582,42 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, plot=True, q=0
         
         if plot:
             frequencies = np.linspace(0,1,1024)
-            H_v_init = rt.construct_FRF(omegas_init,alphas_init,phis_init,(10**log10zetas_init),signal_length=1024,min_max=False) # No norm
-            H_v_out = rt.construct_FRF(omegas_out,alphas_out,phis_out,(10**log10zetas_out),signal_length=1024,min_max=False) # No norm
+            H_v_i = rt.construct_FRF(omegas_init,alphas_init,phis_init,(10**log10zetas_init),signal_length=1024,min_max=False) # No norm
+            H_v_o = rt.construct_FRF(omegas_out,alphas_out,phis_out,(10**log10zetas_out),signal_length=1024,min_max=False) # No norm
             
             # Normalisation only by max mag and same for initial and optimised signal
-            H_v_init = H_v_init / max_mag_optimised 
-            H_v_out = H_v_out / max_mag_optimised
+            H_v_i = H_v_i / max_mag_optimised 
+            H_v_o = H_v_o / max_mag_optimised
+            
+            H_v_init = np.array([np.real(H_v_i),np.imag(H_v_i)])
+            H_v_out = np.array([np.real(H_v_o),np.imag(H_v_o)])
 
-            fig, ax = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
-            ax[0].plot(frequencies, np.real(H_v_init), label='Model Predicted FRF', color='orange')
-            ax[0].plot(frequencies, np.real(H_v_out), label='Optimised FRF', color='red')
-            ax[0].plot(frequencies, data[0], label='Input Signal', color='blue')
-            ax[1].plot(frequencies, np.imag(H_v_init), color='orange')
-            ax[1].plot(frequencies, np.imag(H_v_out), color='red')
-            ax[1].plot(frequencies, data[1], color='blue')
+            fig, ax = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
+            predic_logmag = quick_log_mag(H_v_init)
+            optim_logmag = quick_log_mag(H_v_out)
+            data_logmag = quick_log_mag(data)
+            ax[0].plot(frequencies, predic_logmag, label='Model Predicted FRF', color='orange')
+            ax[0].plot(frequencies, optim_logmag, label='Optimised FRF', color='red')
+            ax[0].plot(frequencies, data_logmag, label='Input Signal', color='blue')
+            ax[1].plot(frequencies, H_v_init[0], color='orange')
+            ax[1].plot(frequencies, H_v_out[0], color='red')
+            ax[1].plot(frequencies, data[0], color='blue')
+            ax[2].plot(frequencies, H_v_init[1], color='orange')
+            ax[2].plot(frequencies, H_v_out[1], color='red')
+            ax[2].plot(frequencies, data[1], color='blue')
             for k, omega in enumerate(omegas_init):
                 ax[0].axvline(x=omega, color='cyan', linestyle=':', 
                                     label=r'Predicted $\omega_n$' if k == 0 else '')
                 ax[1].axvline(x=omega, color='cyan', linestyle=':')
+                ax[2].axvline(x=omega, color='cyan', linestyle=':')
             fig.legend(
                 loc='upper center',
                 ncol = 4,
                 bbox_to_anchor = (0.5,1),
             )
-            ax[0].set_ylabel('Real Part')
-            ax[1].set_ylabel('Imaginary Part')
+            ax[0].set_ylabel('Log10 Magnitude')
+            ax[1].set_ylabel('Real Part')
+            ax[2].set_ylabel('Imaginary Part')
             ax[-1].set_xlabel('Normalised Frequency')
             plt.tight_layout(rect=[0, 0, 1, 0.97])
             plt.show()
@@ -744,3 +745,7 @@ def est_nat_freq_triangle_rise(curve, up_inc=0.35, min_cut_off=0.8):
 
     return freq_estimates, np.array(max_dy_indices)
 
+
+@jit(nopython=True)
+def quick_log_mag(arr):
+    return np.log10(arr[0]**2 + arr[1]**2)
