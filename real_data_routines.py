@@ -122,7 +122,7 @@ def subplot_labels(axes_j, x, model_output_i_j, name, N, Wn, predicted_omegas):
     return handles, labels
 
 
-def compare_FRF(input_signal, all_outputs, scale_factors, FRF_type = 0, norm = True, q = 1):
+def compare_FRF(input_signal, all_outputs, scale_factors, max_mag_optimised, FRF_type = 0, q = 1):
     # Assumes model ouputs are modes, a mag, a phase, log10_zeta
     # FRF type: 0 for just magnitude, 1 for real and imaginary
     
@@ -152,8 +152,9 @@ def compare_FRF(input_signal, all_outputs, scale_factors, FRF_type = 0, norm = T
             a_phase*a_phase_scale,
             10**(log10_zeta*log10_zeta_scale),
             signal_length,
-            min_max=norm
+            min_max=False
         )
+        H_v = H_v / max_mag_optimised
     except Exception as e:
         print('Exception: ', e)
         print(
@@ -260,7 +261,7 @@ def resample_linear_numpy(data, new_length):
     return np.interp(x_new, x_old, data)
 
 
-def plot_FRF_cloud_single_sample(model,data,num_cloud_samples,scale_factors,transparency=0.05,FRF_type=1,signal_length=1024,q=1,window_scale=0.6):
+def plot_FRF_cloud_single_sample(model,data,num_cloud_samples,scale_factors,max_mag_optimised,transparency=0.05,FRF_type=1,signal_length=1024,q=1,window_scale=0.6):
     ''' q=0 for point estimate or 1 for mean estimate for parameter estimation'''
     with torch.no_grad():
         model.eval()
@@ -272,8 +273,7 @@ def plot_FRF_cloud_single_sample(model,data,num_cloud_samples,scale_factors,tran
             data = np.abs(data[0:2])
         else:
             data = data[0:2]
-        error, H_v = compare_FRF(data, output.cpu().numpy(), scale_factors,FRF_type, norm=True, q=q)
-        print('\n', error)
+        _, H_v = compare_FRF(data, output.cpu().numpy(), scale_factors, max_mag_optimised, FRF_type, q=q)
         
         modes_output = output[0].cpu().numpy()
         b, a = scipy.signal.butter(2,0.2) # only light smoothing for modes
@@ -307,6 +307,7 @@ def plot_FRF_cloud_single_sample(model,data,num_cloud_samples,scale_factors,tran
             param_means=param_means,
             param_vars=param_vars,
             signal_length=signal_length,
+            max_mag_optimised=max_mag_optimised,
             FRF_type=FRF_type,
         )
         
@@ -320,7 +321,6 @@ def plot_FRF_cloud_single_sample(model,data,num_cloud_samples,scale_factors,tran
                                 label=r'Predicted $\omega_n$' if k == 0 else '')
             for i in range(0,num_cloud_samples):
                 ax.plot(frequencies,FRF_clouds[i], color='red', alpha=transparency)
-            fig.suptitle('Magnitude FRF Comparison: MSE = {:.4f}'.format(error))
             ax.legend(
                 loc='upper center',
                 ncol = 3,
@@ -340,7 +340,6 @@ def plot_FRF_cloud_single_sample(model,data,num_cloud_samples,scale_factors,tran
             for i in range(0,num_cloud_samples):
                 ax[0].plot(frequencies,FRF_clouds[i][0], color='red', alpha=transparency)
                 ax[1].plot(frequencies,FRF_clouds[i][1], color='red', alpha=transparency)
-            fig.suptitle('Complex FRF Comparison: MSE = {:.4f}'.format(error))
             ax[0].legend(
                 loc='upper center',
                 ncol = 3,
@@ -360,7 +359,7 @@ def plot_FRF_cloud_single_sample(model,data,num_cloud_samples,scale_factors,tran
 
 
 @jit(nopython=True)
-def generate_random_FRFs(num_samples,predicted_omegas,param_means,param_vars,signal_length,FRF_type=1):
+def generate_random_FRFs(num_samples,predicted_omegas,param_means,param_vars,signal_length,max_mag_optimised,FRF_type=1):
     # params in order |a_n|, phase a_n, log10(zeta_n)
     alpha_means = param_means[0]
     phi_means = param_means[1]
@@ -393,15 +392,10 @@ def generate_random_FRFs(num_samples,predicted_omegas,param_means,param_vars,sig
                 H_f += numerator/denominator
                 H_v[j] += H_f
 
-        mag_no_norm = np.abs(H_v)
-        mag = mag_no_norm
+        H_v = H_v / max_mag_optimised
+        mag = np.abs(H_v)
         real_pt = np.real(H_v)
         imag_pt = np.imag(H_v)
-        max_mag = np.max(mag_no_norm)
-        min_mag = np.min(mag_no_norm)
-        mag = (mag_no_norm - min_mag)/(max_mag - min_mag)
-        real_pt = real_pt * mag/mag_no_norm
-        imag_pt = imag_pt * mag/mag_no_norm
         
         if FRF_type == 0:
             data[i, 0, :] = mag
@@ -499,11 +493,12 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
         initial_params, 
         method='L-BFGS-B', 
         bounds=bounds,
-        # options={
-        #     'maxiter': 500,
-        #     'ftol': 1e-9,
-        #     'gtol': 1e-6,
-        # }
+        options={
+            'maxiter': 1000,
+            'ftol': 1e-12,
+            'gtol': 1e-9,
+            # 'disp': True,
+        }
     )
 
     if not result.success:
@@ -571,7 +566,7 @@ def optimiser_handler(model, data, data_no_norm, scale_factors, omega_weight=0, 
         # optim_output = optimise_modes(
         #     data,
         #     omegas_init,
-        #     [0]*len(omegas_init),
+        #     np.linspace(0,1,len(omegas_init)+2)[1:-1].tolist(),
         #     [0]*len(omegas_init),
         #     [0]*len(omegas_init),
         #     omega_weight
@@ -657,10 +652,10 @@ def optimiser_handler(model, data, data_no_norm, scale_factors, omega_weight=0, 
             ('log10Zetas', log10zetas_init, log10zetas_out, log10zetas_pct, log10zetas_mean),
         ]:
             print(f"\n{name}:")
-            print(f"Initial: {init_arr}")
-            print(f"Optimized: {out_arr}")
-            print(f"% Change per mode: {pct_arr}")
-            print(f"Mean % change: {mean_pct:.3f}%")
+            print("Initial:   ", np.array2string(init_arr, precision=3, separator=', '))
+            print("Optimized: ", np.array2string(out_arr, precision=3, separator=', '))
+            print("% Change:  ", np.array2string(pct_arr, precision=1, separator=', '))
+            print(f"Mean % change: {mean_pct:.1f}%")
         print(f'\n Model Prediction MSFRFE: {FRF_loss_for_optim(data,omegas_init,alphas_init,phis_init,log10zetas_init):.6f}')
         print(f' Post Optimisation MSFRFE: {FRF_loss_for_optim(data,omegas_out,alphas_out,phis_out,log10zetas_out):.6f}')
 
@@ -690,4 +685,4 @@ def optimiser_handler(model, data, data_no_norm, scale_factors, omega_weight=0, 
                 'mean_percent_change': log10zetas_mean
             },
             'final_FRF_loss': out_FRF_loss
-        }
+        }, max_mag_optimised
