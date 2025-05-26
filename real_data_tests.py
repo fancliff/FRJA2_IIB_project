@@ -34,21 +34,21 @@ data = pydvma.load_data()
 # 3C6 30s - 1 TF
 # 3C6 impulse - 1 TF
 
-tf_data = data.tf_data_list[0]
-tf_arr = np.array(tf_data.tf_data) 
-tf_arr = tf_arr.squeeze(-1)
+# tf_data = data.tf_data_list[0]
+# tf_arr = np.array(tf_data.tf_data) 
+# tf_arr = tf_arr.squeeze(-1)
 
 ########### 4C6 ###########
 # 4C6 - 12 TFs
 
-# a = 1 # 1 - 12 for which TF
-# tf_data = data.tf_data_list[a-1]
-# tf_arr = np.array(tf_data.tf_data)
-# tf_arr = tf_arr.squeeze(-1)
-# x = np.linspace(0,1,len(tf_arr))
-# x = x[1:] # remove 0 frequency
-# tf_arr = tf_arr[1:] # remove 0 frequency
-# tf_arr = tf_arr / (1j * x) # convert from acceleration to velocity (divide by iw)
+a = 1 # 1 - 12 for which TF
+tf_data = data.tf_data_list[a-1]
+tf_arr = np.array(tf_data.tf_data)
+tf_arr = tf_arr.squeeze(-1)
+x = np.linspace(0,1,len(tf_arr))
+x = x[10:] # remove 0 frequency and close to
+tf_arr = tf_arr[10:] # remove 0 frequency and close to
+tf_arr = tf_arr / (1j * x) # convert from acceleration to velocity (divide by iw)
 
 ###########     ###########
 
@@ -177,8 +177,30 @@ model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth') # Best
 
 # rdrt.plot_predictions_all_labels(model, tf_tensor, labels1, scale_factors, N=2, Wn=0.1, plot_phase=True)
 # rdrt.plot_FRF_comparison(model, tf_tensor, scale_factors, FRF_type=1, norm=True, plot_phase=True, q=0)
-optim_results, max_mag_optimised = rdrt.optimiser_handler(model, tf_tensor, tf_tensor_no_norm, scale_factors, omega_weight=0, plot=True, q=0, window_scale=0.6)
-rdrt.plot_FRF_cloud_single_sample(model, tf_tensor, 150, scale_factors, max_mag_optimised, 0.05, FRF_type=1, q=0, window_scale=0.6)
+optim_results, max_mag_optimised = rdrt.optimiser_handler(
+    model, 
+    tf_tensor,
+    scale_factors, 
+    omega_weight=0, 
+    plot=True, 
+    q=0, 
+    window_scale=0.6,
+    up_inc=0.35,
+    min_cut_off=0.82,
+)
+rdrt.plot_FRF_cloud_single_sample(
+    model, 
+    tf_tensor, 
+    150, 
+    scale_factors, 
+    max_mag_optimised, 
+    transparency=0.05, 
+    FRF_type=1, 
+    q=0, 
+    window_scale=0.6,
+    up_inc=0.35,
+    min_cut_off=0.82,
+)
 # omega_weight can be helpful for stabilising the model, 
 # it's a bit of a hack but the model natural frequency estimation 
 # is so much better than the other parameters so it works fine
