@@ -16,7 +16,17 @@ import routines as rt
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize
 
-def plot_predictions_all_labels(model, data, label_defs, scale_factors = None, N=2, Wn=0.1, plot_phase: bool = True):
+def plot_predictions_all_labels(
+    model,
+    data, 
+    label_defs, 
+    scale_factors=None,
+    N=2,
+    Wn=0.1,
+    plot_phase=True,
+    up_inc=0.35,
+    min_cut_off=0.8,
+    ):
     with torch.no_grad():
         model.eval()
         model_output = model(data).squeeze(0) # remove batch dimension for single sample
@@ -54,7 +64,7 @@ def plot_predictions_all_labels(model, data, label_defs, scale_factors = None, N
         modes_curve = model_output[0].cpu().numpy()
         b, a = scipy.signal.butter(2, 0.25) # only light smoothing for mode curve
         smoothed_modes = scipy.signal.filtfilt(b, a, modes_curve)
-        predicted_omegas, _ = rt.est_nat_freq_triangle_rise(smoothed_modes)
+        predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes,up_inc,min_cut_off)
 
         if plot_phase:
             for idx, label_name in zip(label_keys, label_names):
@@ -261,7 +271,20 @@ def resample_linear_numpy(data, new_length):
     return np.interp(x_new, x_old, data)
 
 
-def plot_FRF_cloud_single_sample(model,data,num_cloud_samples,scale_factors,max_mag_optimised,transparency=0.05,FRF_type=1,signal_length=1024,q=1,window_scale=0.6):
+def plot_FRF_cloud_single_sample(
+    model,
+    data,
+    num_cloud_samples,
+    scale_factors,
+    max_mag_optimised,
+    transparency=0.05,
+    FRF_type=1,
+    signal_length=1024,
+    q=1,
+    window_scale=0.6,
+    up_inc=0.35,
+    min_cut_off=0.8,
+    ):
     ''' q=0 for point estimate or 1 for mean estimate for parameter estimation'''
     with torch.no_grad():
         model.eval()
@@ -278,7 +301,7 @@ def plot_FRF_cloud_single_sample(model,data,num_cloud_samples,scale_factors,max_
         modes_output = output[0].cpu().numpy()
         b, a = scipy.signal.butter(2,0.2) # only light smoothing for modes
         smoothed_modes = scipy.signal.filtfilt(b,a,modes_output)
-        predicted_omegas, predicted_freq_idxs = rt.est_nat_freq_triangle_rise(smoothed_modes)
+        predicted_omegas, predicted_freq_idxs = est_nat_freq_triangle_rise(smoothed_modes,up_inc,min_cut_off)
         
         window_scale = window_scale
         q = q # 0 for point estimate, 1 for mean
@@ -494,7 +517,7 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
         method='L-BFGS-B', 
         bounds=bounds,
         options={
-            'maxiter': 1000,
+            'maxiter': 10000,
             'ftol': 1e-12,
             'gtol': 1e-9,
             # 'disp': True,
@@ -514,7 +537,7 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
     }
 
 
-def optimiser_handler(model, data, data_no_norm, scale_factors, omega_weight=0, plot=True, q=0, window_scale=0.6):
+def optimiser_handler(model, data, scale_factors, omega_weight=0, plot=True, q=0, window_scale=0.6, up_inc=0.35, min_cut_off=0.8):
     '''
     Only works for if data[0][0], data[0][1] = real part, imaginary part
     Data must be (batch dimension, input channels, signal length)
@@ -527,15 +550,12 @@ def optimiser_handler(model, data, data_no_norm, scale_factors, omega_weight=0, 
     with torch.no_grad():
         model.eval()
         output = model(data).squeeze(0)
-        data_copy = data
         data = data.squeeze(0)[0:2].cpu().numpy() # just real and imaginary parts minus batch dimension
-        data_no_norm_copy = data_no_norm
-        data_no_norm = data_no_norm.squeeze(0).cpu().numpy()
         
         modes_output = output[0].cpu().numpy()
         b, a = scipy.signal.butter(2,0.2) # only light smoothing for modes
         smoothed_modes = scipy.signal.filtfilt(b,a,modes_output)
-        omegas_init, predicted_freq_idxs = rt.est_nat_freq_triangle_rise(smoothed_modes)
+        omegas_init, predicted_freq_idxs = est_nat_freq_triangle_rise(smoothed_modes,up_inc,min_cut_off)
         
         window_scale = window_scale
         q = q # 0 for point estimate, 1 for mean
@@ -686,3 +706,83 @@ def optimiser_handler(model, data, data_no_norm, scale_factors, omega_weight=0, 
             },
             'final_FRF_loss': out_FRF_loss
         }, max_mag_optimised
+
+
+@jit(nopython=True)
+def est_nat_freq_triangle_rise(curve, up_inc=0.35, min_cut_off=0.8):
+    length = len(curve)
+    x = np.linspace(0, 1, length)
+
+    # Finite difference approximation of gradient
+    dY = np.zeros(length)
+    d2Y = np.zeros(length)
+    for i in range(1, length-1):
+        dY[i] = (curve[i+1] - curve[i-1]) / (x[i+1] - x[i-1])
+    dY[0] = dY[1]
+    dY[-1] = dY[-2]
+
+    for i in range(1, length-1):
+        d2Y[i] = (dY[i+1] - dY[i-1]) / (x[i+1] - x[i-1])
+    d2Y[0] = d2Y[1]
+    d2Y[-1] = d2Y[-2]
+
+    # Find zero crossings in dY
+    zero_crossings = []
+    for i in range(1, length):
+        if dY[i-1] * dY[i] < 0:
+            zero_crossings.append(i-1)
+
+    # Peaks and troughs
+    peak_indices = []
+    trough_indices = []
+    for i in zero_crossings:
+        if d2Y[i] < 0:
+            peak_indices.append(i)
+        elif d2Y[i] > 0:
+            trough_indices.append(i)
+
+    # Always include last index
+    peak_indices.append(length - 1)
+
+    # Filter out small peaks
+    filtered_peak_indices = []
+    for i in peak_indices:
+        if curve[i] >= min_cut_off:
+            filtered_peak_indices.append(i)
+    peak_indices = filtered_peak_indices
+
+    # Extract mode frequency estimates
+    max_dy_indices = []
+    prev_peak_idx = 0
+    for peak_idx in peak_indices:
+        # Min value to the left of this peak
+        min_left_value = curve[prev_peak_idx]
+        for i in range(prev_peak_idx, peak_idx):
+            if curve[i] < min_left_value:
+                min_left_value = curve[i]
+
+        if curve[peak_idx] - min_left_value > up_inc:
+            # Find nearest left trough
+            nearest_left_trough_idx = 0
+            for idx in trough_indices:
+                if idx < peak_idx and idx > nearest_left_trough_idx:
+                    nearest_left_trough_idx = idx
+
+            # Find index of max dY in region
+            max_dy = dY[nearest_left_trough_idx]
+            max_idx = nearest_left_trough_idx
+            for i in range(nearest_left_trough_idx, peak_idx):
+                if dY[i] > max_dy:
+                    max_dy = dY[i]
+                    max_idx = i
+
+            if max_idx != 0:
+                max_dy_indices.append(max_idx)
+                prev_peak_idx = peak_idx
+    
+    freq_estimates = np.zeros(len(max_dy_indices))
+    for i in range(len(max_dy_indices)):
+        freq_estimates[i] = x[max_dy_indices[i]]
+
+    return freq_estimates, np.array(max_dy_indices)
+
