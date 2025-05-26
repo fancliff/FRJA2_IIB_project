@@ -566,15 +566,17 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, plot=True, q=0
             log10zetas_out
         )
         
-        def compute_sym_changes(init, out):
-            init_abs = np.abs(init)
-            out_abs = np.abs(out)
-            denom = (init_abs + out_abs) / 2
-            # Avoid zero denominator:
-            denom = np.where(denom < 1e-12, 1e-12, denom)
-            symmetric_pct_change = 100 * np.abs(out - init) / denom
-            mean_change = np.mean(symmetric_pct_change)
-            return symmetric_pct_change, mean_change
+        # # Symmetyric percentage changes for if initial values are small 
+        # # Making normal percentage changes look very large
+        # def compute_sym_changes(init, out):
+        #     init_abs = np.abs(init)
+        #     out_abs = np.abs(out)
+        #     denom = (init_abs + out_abs) / 2
+        #     # Avoid zero denominator:
+        #     denom = np.where(denom < 1e-12, 1e-12, denom)
+        #     symmetric_pct_change = 100 * np.abs(out - init) / denom
+        #     mean_change = np.mean(symmetric_pct_change)
+        #     return symmetric_pct_change, mean_change
         
         def compute_changes(init, out):
             # Avoid division by zero, treat zero init as tiny number
