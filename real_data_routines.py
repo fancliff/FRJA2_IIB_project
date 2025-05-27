@@ -296,11 +296,11 @@ def plot_FRF_cloud_single_sample(
         fig, ax = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
         data_log_mag = quick_log_mag(data.cpu().numpy())
         pred_log_mag = quick_log_mag(H_v)
-        ax[0].plot(frequencies, pred_log_mag, label='Normally Distributed Predicted FRFs', color='red')
+        # ax[0].plot(frequencies, pred_log_mag, label='Normally Distributed Predicted FRFs', color='red')
         ax[0].plot(frequencies, data_log_mag, label='True FRF', color='blue')
-        ax[1].plot(frequencies, H_v[0], color='red')
+        # ax[1].plot(frequencies, H_v[0], color='red')
         ax[1].plot(frequencies, data[0], color='blue')
-        ax[2].plot(frequencies, H_v[1], color='red')
+        # ax[2].plot(frequencies, H_v[1], color='red')
         ax[2].plot(frequencies, data[1], color='blue')
         for k, omega in enumerate(predicted_omegas):
             ax[0].axvline(x=omega, color='cyan', linestyle=':', 
@@ -309,7 +309,7 @@ def plot_FRF_cloud_single_sample(
             ax[2].axvline(x=omega, color='cyan', linestyle=':')
         for i in range(0,num_cloud_samples):
             FRF_cloud_log_mag = quick_log_mag(FRF_clouds[i])
-            ax[0].plot(frequencies,FRF_cloud_log_mag, color='red', alpha=transparency)
+            ax[0].plot(frequencies,FRF_cloud_log_mag, color='red', alpha=transparency, label='Normally Distributed Predicted FRFs' if i==0 else None)
             ax[1].plot(frequencies,FRF_clouds[i][0], color='red', alpha=transparency)
             ax[2].plot(frequencies,FRF_clouds[i][1], color='red', alpha=transparency)
         fig.legend(
