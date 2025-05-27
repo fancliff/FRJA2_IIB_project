@@ -176,7 +176,7 @@ with h5py.File(data_file, 'r') as f:
 val_dataset = md.n_channel_dataset(val_data, val_labels, val_params)
 val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=True)
 
-model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth') # Best Standard Conv
+model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth') # Best Standard Conv and best on 3C6
 # model = rt.load_model('05_23_20_03_4466688866644_13_ResNet1.pth') # Best Res-Net
 # model = rt.load_model('05_26_07_55_444444_13_4_8_DenseNet1.pth') # Best Dense-Net
 
