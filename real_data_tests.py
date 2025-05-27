@@ -176,19 +176,20 @@ with h5py.File(data_file, 'r') as f:
 val_dataset = md.n_channel_dataset(val_data, val_labels, val_params)
 val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=True)
 
-# model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth') # Best Standard Conv
+model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth') # Best Standard Conv
 # model = rt.load_model('05_23_20_03_4466688866644_13_ResNet1.pth') # Best Res-Net
-model = rt.load_model('05_26_07_55_444444_13_4_8_DenseNet1.pth') # Best Dense-Net
+# model = rt.load_model('05_26_07_55_444444_13_4_8_DenseNet1.pth') # Best Dense-Net
 
 # rdrt.plot_predictions_all_labels(model, tf_tensor, labels1, scale_factors, N=2, Wn=0.1)
 # rdrt.plot_FRF_comparison(model, tf_tensor, scale_factors, norm=True, q=0)
 
-cut_off = 0.6
+cut_off = 0.5
 optim_results, max_mag_optimised = rdrt.optimiser_handler(
     model, 
     tf_tensor,
     scale_factors, 
     omega_weight=0,
+    beta=1, # weighting on logmag in optimiser MSE_FRF
     plot=True, 
     q=0, 
     window_scale=0.6,

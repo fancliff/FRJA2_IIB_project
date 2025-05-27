@@ -399,7 +399,7 @@ def get_max_mag(input, omegas, alphas, phis, log10zetas):
 
 
 @jit(nopython=True)
-def FRF_loss_for_optim(input, omegas, alphas, phis, log10zetas):
+def FRF_loss_for_optim(input, omegas, alphas, phis, log10zetas, beta=0):
     signal_length = len(input[0])
     H_v = np.zeros(signal_length, dtype=np.complex128)
     frequencies = np.linspace(0, 1, signal_length)
@@ -424,10 +424,17 @@ def FRF_loss_for_optim(input, omegas, alphas, phis, log10zetas):
     H_v_imag = np.imag(H_v)
     MSE_real = np.mean((input[0]-H_v_real)**2)
     MSE_imag = np.mean((input[1]-H_v_imag)**2)
-    return (MSE_real+MSE_imag)/2
+    eps = 1e-12
+    mag=mag_no_norm/max_mag
+    H_v_logmag = np.log10(np.clip(mag,eps,None))
+    input_mag = np.sqrt(input[0]**2+input[1]**2)
+    input_logmag = np.log10(np.clip(input_mag,eps,None))
+    MSE_logmag = np.mean((H_v_logmag-input_logmag)**2)
+    MSE_out = (MSE_real + MSE_imag + beta*MSE_logmag)/(2+beta)
+    return MSE_out
 
 
-def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas_init, omega_weight=0.0):
+def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas_init, omega_weight=0.0, beta=0):
     N = len(omegas_init)
     initial_params = np.concatenate([omegas_init, alphas_init, phis_init, log10zetas_init])
     omegas_init = np.array(omegas_init) # store for use with omega_weight
@@ -441,7 +448,7 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
         phis = x[2*N:3*N]
         log10zetas = x[3*N:4*N]
         
-        loss = FRF_loss_for_optim(input_signal, omegas, alphas, phis, log10zetas)
+        loss = FRF_loss_for_optim(input_signal, omegas, alphas, phis, log10zetas, beta)
         loss += omega_weight * np.mean((omegas - omegas_init)**2) 
         # penalty for large deviations in omega
         # can set omega_weight to 0 for no penalty at all to compare. 
@@ -483,7 +490,7 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
     }
 
 
-def optimiser_handler(model, data, scale_factors, omega_weight=0, plot=True, q=0, window_scale=0.6, up_inc=0.35, min_cut_off=0.8):
+def optimiser_handler(model, data, scale_factors, omega_weight=0, beta=0, plot=True, q=0, window_scale=0.6, up_inc=0.35, min_cut_off=0.8):
     '''
     Only works for if data[0][0], data[0][1] = real part, imaginary part
     Data must be (batch dimension, input channels, signal length)
@@ -527,7 +534,8 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, plot=True, q=0
             alphas_init,
             phis_init,
             log10zetas_init,
-            omega_weight
+            omega_weight,
+            beta
         )
         
         # unconstrained optimisation with only initial omegas
@@ -560,7 +568,8 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, plot=True, q=0
             omegas_out,
             alphas_out,
             phis_out,
-            log10zetas_out
+            log10zetas_out,
+            beta=0
         )
         
         # # Symmetyric percentage changes for if initial values are small 
@@ -642,8 +651,8 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, plot=True, q=0
             print("Optimized: ", np.array2string(out_arr, precision=3, separator=', '))
             print("% Change:  ", np.array2string(pct_arr, precision=1, separator=', '))
             print(f"Mean % change: {mean_pct:.1f}%")
-        print(f'\n Model Prediction MSFRFE: {FRF_loss_for_optim(data,omegas_init,alphas_init,phis_init,log10zetas_init):.6f}')
-        print(f' Post Optimisation MSFRFE: {FRF_loss_for_optim(data,omegas_out,alphas_out,phis_out,log10zetas_out):.6f}')
+        print(f'\n Model Prediction MSFRFE: {FRF_loss_for_optim(data,omegas_init,alphas_init,phis_init,log10zetas_init,beta=0):.6f}')
+        print(f' Post Optimisation MSFRFE: {FRF_loss_for_optim(data,omegas_out,alphas_out,phis_out,log10zetas_out,beta=0):.6f}')
 
         return {
             'omegas': {
