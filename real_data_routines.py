@@ -424,13 +424,10 @@ def FRF_loss_for_optim(input, omegas, alphas, phis, log10zetas):
     H_v_imag = np.imag(H_v)
     MSE_real = np.mean((input[0]-H_v_real)**2)
     MSE_imag = np.mean((input[1]-H_v_imag)**2)
-    # log mag optimisation did not converge, maybe gradients too discontinuous or zero errors
-    # MSE_real = np.mean((np.log10(input[0])-np.log10(H_v_real))**2)
-    # MSE_imag = np.mean((np.log10(input[1])-np.log10(H_v_imag))**2)
     return (MSE_real+MSE_imag)/2
 
 
-def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas_init, omega_weight=1.0):
+def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas_init, omega_weight=0.0):
     N = len(omegas_init)
     initial_params = np.concatenate([omegas_init, alphas_init, phis_init, log10zetas_init])
     omegas_init = np.array(omegas_init) # store for use with omega_weight
