@@ -34,21 +34,21 @@ data = pydvma.load_data()
 # 3C6 30s - 1 TF
 # 3C6 impulse - 1 TF
 
-# tf_data = data.tf_data_list[0]
-# tf_arr = np.array(tf_data.tf_data) 
-# tf_arr = tf_arr.squeeze(-1)
+tf_data = data.tf_data_list[0]
+tf_arr = np.array(tf_data.tf_data) 
+tf_arr = tf_arr.squeeze(-1)
 
 ########### 4C6 ###########
 # 4C6 - 12 TFs
 
-a = 1 # 1 - 12 for which TF
-tf_data = data.tf_data_list[a-1]
-tf_arr = np.array(tf_data.tf_data)
-tf_arr = tf_arr.squeeze(-1)
-x = np.linspace(0,1,len(tf_arr))
-x = x[10:] # remove 0 frequency and close to
-tf_arr = tf_arr[10:] # remove 0 frequency and close to
-tf_arr = tf_arr / (1j * x) # convert from acceleration to velocity (divide by iw)
+# a = 1 # 1 - 12 for which TF
+# tf_data = data.tf_data_list[a-1]
+# tf_arr = np.array(tf_data.tf_data)
+# tf_arr = tf_arr.squeeze(-1)
+# x = np.linspace(0,1,len(tf_arr))
+# x = x[10:] # remove 0 frequency and close to
+# tf_arr = tf_arr[10:] # remove 0 frequency and close to
+# tf_arr = tf_arr / (1j * x) # convert from acceleration to velocity (divide by iw)
 
 ###########     ###########
 
@@ -183,13 +183,13 @@ model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth') # Best
 # rdrt.plot_predictions_all_labels(model, tf_tensor, labels1, scale_factors, N=2, Wn=0.1)
 # rdrt.plot_FRF_comparison(model, tf_tensor, scale_factors, norm=True, q=0)
 
-cut_off = 0.6
+cut_off = 0.5
 optim_results, max_mag_optimised = rdrt.optimiser_handler(
     model, 
     tf_tensor,
     scale_factors, 
     omega_weight=0,
-    beta=0, # weighting on logmag in optimiser MSE_FRF
+    beta=1, # weighting on logmag in optimiser MSE_FRF
     plot=True, 
     q=0, 
     window_scale=0.6,
