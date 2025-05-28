@@ -727,7 +727,7 @@ def plot_predictions_all_labels(models, dataloader, num_samples, label_defs, sca
                             legend_labels.append("Signal")
 
                         j = 0
-                        label_names = ["Modes", r"$|\alpha_n|$", r"$\angle \alpha_n$", r"$\log_{10}(\zeta_n)$"]
+                        label_names = ["Modes", r"$\alpha_n$", r"$\phi_n$", r"$\log_{10}(\zeta_n)$"]
                         label_keys = [0, 1, 2, 3]
                         
                         modes_curve = model_output[i][0].cpu().numpy()
@@ -1456,7 +1456,7 @@ def plot_model_predictions_single_sample(model, data, labels, params, label_defs
         legend_handles.append(h_signal)
         legend_labels.append("Signal")
 
-    label_names = ["Modes", r"$|\alpha_n|$", r"$\angle \alpha_n$", r"$\log_{10}(\zeta_n)$"]
+    label_names = ["Modes", r"$\alpha_n$", r"$\phi_n$", r"$\log_{10}(\zeta_n)$"]
     label_keys = [0, 1, 2, 3]
     
     modes_curve = model_output[0][0].cpu().numpy() # shape has batch size

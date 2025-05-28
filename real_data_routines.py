@@ -54,7 +54,7 @@ def plot_predictions_all_labels(
         axes[1].set_ylabel('Imaginary Part')
 
         j = 0
-        label_names = ["Modes", r"$|\alpha_n|$", r"$\phi_n$", r"$\log_{10}(\zeta_n)$"]
+        label_names = ["Modes", r"$\alpha_n$", r"$\phi_n$", r"$\log_{10}(\zeta_n)$"]
         label_keys = [0, 1, 2, 3]
         
         modes_curve = model_output[0].cpu().numpy()
@@ -336,7 +336,7 @@ def plot_FRF_cloud_single_sample(
 
 @jit(nopython=True)
 def generate_random_FRFs(num_samples,predicted_omegas,param_means,param_vars,signal_length,max_mag_optimised):
-    # params in order |a_n|, phase a_n, log10(zeta_n)
+    # params in order a_n, phi_n, log10(zeta_n)
     alpha_means = param_means[0]
     phi_means = param_means[1]
     log10zeta_means = param_means[2]
