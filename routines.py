@@ -1405,6 +1405,7 @@ def plot_FRF_comparison(model, dataloader, num_samples, scale_factors, FRF_type=
                         ncol = 4,
                         bbox_to_anchor = (0.5,1.15),
                     )
+                    ax[-1].set_xlabel('Normalised Frequency')
                     plt.tight_layout(rect=[0, 0, 1, 1.02])
                 
                 

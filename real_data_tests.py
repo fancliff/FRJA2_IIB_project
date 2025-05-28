@@ -221,3 +221,5 @@ rdrt.plot_FRF_cloud_single_sample(
 #     up_inc=0.35,
 #     min_cut_off=0.35,
 # )
+
+# rt.plot_FRF_comparison(model, val_dataloader, num_samples=15, scale_factors=scale_factors, FRF_type=1)
