@@ -3,8 +3,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.ticker as mticker
+from scipy.stats import linregress
 
-def plot_model_performance(csv_path, ax_keys, legend_labels=None):
+def plot_model_performance(csv_path, ax_keys, legend_labels=None, trendline=False):
     """
     Plot model performance (Mean FRF Error) from a training results CSV.
 
@@ -13,6 +14,7 @@ def plot_model_performance(csv_path, ax_keys, legend_labels=None):
         x_keys (list): One or two column names to plot against performance.
         legend_labels (dict): Optional mapping from model class names to custom legend labels.
                             Example: {'RegressionModel1': 'Pure Convolutional CNN'}
+        trendline (bool): Display trend line for 2D plots (for all model classes)
     """
     assert 2 <= len(ax_keys) <= 3, "Please provide two or three axis keys."
 
@@ -85,6 +87,34 @@ def plot_model_performance(csv_path, ax_keys, legend_labels=None):
             ax.set_xscale('log')
         if y_key in log_scale_cols:
             ax.set_yscale('log')
+        if trendline:
+            x_all = df[x_key]
+            y_all = df[y_key]
+
+            if x_key in log_scale_cols:
+                x_all = np.log10(x_all)
+            if y_key in log_scale_cols:
+                y_all = np.log10(y_all)
+
+            slope, intercept, r_value, p_value, std_err = linregress(x_all, y_all)
+            x_fit = np.linspace(x_all.min(), x_all.max(), 100)
+            y_fit = slope * x_fit + intercept
+            ax.plot(x_fit if x_key not in log_scale_cols else 10**x_fit,
+                    y_fit if y_key not in log_scale_cols else 10**y_fit,
+                    color='black', linestyle='--', label='Best Fit')
+
+            if x_key in log_scale_cols and y_key in log_scale_cols:
+                eq_label = f'log-log fit: log(y) = {slope:.3f} log(x) + {intercept:.3f}'
+            elif x_key in log_scale_cols:
+                eq_label = f'log-x fit: y = {slope:.3f} log(x) + {intercept:.3f}'
+            elif y_key in log_scale_cols:
+                eq_label = f'log-y fit: log(y) = {slope:.3f} x + {intercept:.3f}'
+            else:
+                eq_label = f'y = {slope:.3f}x + {intercept:.3f}'
+
+            ax.text(0.05, 0.95, eq_label, transform=ax.transAxes, fontsize=9,
+                    verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.5))
+
         ax.set_xlabel(x_key)
         ax.set_ylabel(y_key)
         ax.legend()
@@ -104,7 +134,8 @@ legend_mapping = {
 plot_model_performance(
     r'C:\Users\Freddie\Documents\IIB project repository\myenv\FRJA2_IIB_project\model_training_results.csv',
     ['Trainable Parameters', 'Mean FRF Error'],
-    legend_labels=legend_mapping
+    legend_labels=legend_mapping,
+    trendline=True
 )
 
 plot_model_performance(
@@ -116,29 +147,31 @@ plot_model_performance(
 plot_model_performance(
     r'C:\Users\Freddie\Documents\IIB project repository\myenv\FRJA2_IIB_project\model_training_results.csv',
     ['Training Time (s)', 'Mean FRF Error'],
-    legend_labels=legend_mapping
+    legend_labels=legend_mapping,
+    trendline=True,
 )
 
 plot_model_performance(
     r'C:\Users\Freddie\Documents\IIB project repository\myenv\FRJA2_IIB_project\model_training_results.csv',
     ['Trainable Parameters', 'Training Time (s)'],
-    legend_labels=legend_mapping
+    legend_labels=legend_mapping,
+    trendline=True
 )
 
-plot_model_performance(
-    r'C:\Users\Freddie\Documents\IIB project repository\myenv\FRJA2_IIB_project\model_training_results.csv',
-    ['Trainable Parameters', 'Receptive Field'],
-    legend_labels=legend_mapping
-)
+# plot_model_performance(
+#     r'C:\Users\Freddie\Documents\IIB project repository\myenv\FRJA2_IIB_project\model_training_results.csv',
+#     ['Trainable Parameters', 'Receptive Field'],
+#     legend_labels=legend_mapping
+# )
 
-plot_model_performance(
-    r'C:\Users\Freddie\Documents\IIB project repository\myenv\FRJA2_IIB_project\model_training_results.csv',
-    ['Trainable Parameters', 'Training Time (s)', 'Mean FRF Error'],
-    legend_labels=legend_mapping
-)
+# plot_model_performance(
+#     r'C:\Users\Freddie\Documents\IIB project repository\myenv\FRJA2_IIB_project\model_training_results.csv',
+#     ['Trainable Parameters', 'Training Time (s)', 'Mean FRF Error'],
+#     legend_labels=legend_mapping
+# )
 
-plot_model_performance(
-    r'C:\Users\Freddie\Documents\IIB project repository\myenv\FRJA2_IIB_project\model_training_results.csv',
-    ['Trainable Parameters', 'Receptive Field', 'Mean FRF Error'],
-    legend_labels=legend_mapping
-)
+# plot_model_performance(
+#     r'C:\Users\Freddie\Documents\IIB project repository\myenv\FRJA2_IIB_project\model_training_results.csv',
+#     ['Trainable Parameters', 'Receptive Field', 'Mean FRF Error'],
+#     legend_labels=legend_mapping
+# )
