@@ -467,16 +467,11 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
     result = minimize(
         loss_function, 
         initial_params, 
-        # method='L-BFGS-B', 
         method = 'SLSQP',
-        # method = 'trust-constr',
         bounds=bounds,
         options={
             'maxiter': 1000,
-            # 'maxfun': 20000,
             'ftol': 1e-10,
-            # 'gtol': 1e-7,
-            # 'disp': True,
         }
     )
 
