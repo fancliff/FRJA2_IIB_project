@@ -310,8 +310,8 @@ def plot_FRF_cloud_single_sample(
         for i in range(0,num_cloud_samples):
             FRF_cloud_log_mag = quick_log_mag(FRF_clouds[i])
             ax[0].plot(frequencies,FRF_cloud_log_mag, color='red', alpha=transparency, label='Normally Distributed Predicted FRFs' if i==0 else None)
-            ax[1].plot(frequencies,FRF_clouds[i][0], color='red', alpha=transparency)
-            ax[2].plot(frequencies,FRF_clouds[i][1], color='red', alpha=transparency)
+            ax[1].plot(frequencies,FRF_clouds[i][0], color='red', alpha=0.04)
+            ax[2].plot(frequencies,FRF_clouds[i][1], color='red', alpha=0.04)
         fig.legend(
             loc='upper center',
             ncol = 3,
@@ -459,20 +459,23 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
 
     # Define bounds
     bounds = []
-    bounds += [(1e-3, 0.999)] * N             # omegas in (0, 1]
-    bounds += [(-10, 10)] * N                 # alphas
-    bounds += [(-1.57, 1.57)] * N             # phis in (-pi/2, pi/2)
-    bounds += [(-6, 1)] * N                   # log10zetas
+    bounds += [(1e-2, 0.99)] * N             # omegas in (0, 1]
+    bounds += [(-10, 10)] * N                 # alphas in training data range
+    bounds += [(-0.785, 0.785)] * N             # phis in (-pi/4, pi/4)
+    bounds += [(-3.5, -0.501)] * N                   # log10zetas in training data range plus a little slack
 
     result = minimize(
         loss_function, 
         initial_params, 
-        method='L-BFGS-B', 
+        # method='L-BFGS-B', 
+        method = 'SLSQP',
+        # method = 'trust-constr',
         bounds=bounds,
         options={
-            'maxiter': 10000,
-            'ftol': 1e-12,
-            'gtol': 1e-9,
+            'maxiter': 1000,
+            # 'maxfun': 20000,
+            'ftol': 1e-10,
+            # 'gtol': 1e-7,
             # 'disp': True,
         }
     )
@@ -584,10 +587,10 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, beta=0, plot=T
         #     mean_change = np.mean(symmetric_pct_change)
         #     return symmetric_pct_change, mean_change
         
-        def compute_changes(init, out):
+        def compute_changes(b, a):
             # Avoid division by zero, treat zero init as tiny number
-            init_safe = np.where(np.abs(init) < 1e-12, 1e-12, init)
-            percent_change = 100 * (out - init) / np.abs(init_safe)
+            a_safe = np.where(np.abs(a) < 1e-12, 1e-12, a)
+            percent_change = 100 * (b - a) / np.abs(a_safe)
             mean_change = np.mean(np.abs(percent_change))
             return percent_change, mean_change
 
@@ -639,7 +642,7 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, beta=0, plot=T
             plt.show()
 
         # Print summary
-        print("Optimization Results:")
+        print('Optimisation Results:')
         for name, init_arr, out_arr, pct_arr, mean_pct in [
             ('Omegas', omegas_init, omegas_out, omegas_pct, omegas_mean),
             ('Alphas', alphas_init, alphas_out, alphas_pct, alphas_mean),
@@ -648,7 +651,7 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, beta=0, plot=T
         ]:
             print(f"\n{name}:")
             print("Initial:   ", np.array2string(init_arr, precision=3, separator=', '))
-            print("Optimized: ", np.array2string(out_arr, precision=3, separator=', '))
+            print("Optimised: ", np.array2string(out_arr, precision=3, separator=', '))
             print("% Change:  ", np.array2string(pct_arr, precision=1, separator=', '))
             print(f"Mean % change: {mean_pct:.1f}%")
         print(f'\n Model Prediction MSFRFE: {FRF_loss_for_optim(data,omegas_init,alphas_init,phis_init,log10zetas_init,beta=0):.6f}')
@@ -657,25 +660,25 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, beta=0, plot=T
         return {
             'omegas': {
                 'initial': omegas_init,
-                'optimized': omegas_out,
+                'optimised': omegas_out,
                 'percent_change': omegas_pct,
                 'mean_percent_change': omegas_mean
             },
             'alphas': {
                 'initial': alphas_init,
-                'optimized': alphas_out,
+                'optimised': alphas_out,
                 'percent_change': alphas_pct,
                 'mean_percent_change': alphas_mean
             },
             'phis': {
                 'initial': phis_init,
-                'optimized': phis_out,
+                'optimised': phis_out,
                 'percent_change': phis_pct,
                 'mean_percent_change': phis_mean
             },
             'log10zetas': {
                 'initial': log10zetas_init,
-                'optimized': log10zetas_out,
+                'optimised': log10zetas_out,
                 'percent_change': log10zetas_pct,
                 'mean_percent_change': log10zetas_mean
             },

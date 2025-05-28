@@ -34,21 +34,21 @@ data = pydvma.load_data()
 # 3C6 30s - 1 TF
 # 3C6 impulse - 1 TF
 
-tf_data = data.tf_data_list[0]
-tf_arr = np.array(tf_data.tf_data) 
-tf_arr = tf_arr.squeeze(-1)
+# tf_data = data.tf_data_list[0]
+# tf_arr = np.array(tf_data.tf_data) 
+# tf_arr = tf_arr.squeeze(-1)
 
 ########### 4C6 ###########
 # 4C6 - 12 TFs
 
-# a = 1 # 1 - 12 for which TF
-# tf_data = data.tf_data_list[a-1]
-# tf_arr = np.array(tf_data.tf_data)
-# tf_arr = tf_arr.squeeze(-1)
-# x = np.linspace(0,1,len(tf_arr))
-# x = x[10:] # remove 0 frequency and close to
-# tf_arr = tf_arr[10:] # remove 0 frequency and close to
-# tf_arr = tf_arr / (1j * x) # convert from acceleration to velocity (divide by iw)
+a = 1 # 1 - 12 for which TF
+tf_data = data.tf_data_list[a-1]
+tf_arr = np.array(tf_data.tf_data)
+tf_arr = tf_arr.squeeze(-1)
+x = np.linspace(0,1,len(tf_arr))
+x = x[10:] # remove 0 frequency and close to
+tf_arr = tf_arr[10:] # remove 0 frequency and close to
+tf_arr = tf_arr / (1j * x) # convert from acceleration to velocity (divide by iw)
 
 ###########     ###########
 
@@ -176,38 +176,40 @@ with h5py.File(data_file, 'r') as f:
 val_dataset = md.n_channel_dataset(val_data, val_labels, val_params)
 val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=True)
 
-# model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth') # Best Standard Conv and best on 3C6
+# model = rt.load_model('05_22_02_34_446668866644_11_RegressionModel1.pth')
+
+# model = rt.load_model('05_24_06_39_44466688810121210888666444_13_RegressionModel1.pth') # Best Standard Conv
 # model = rt.load_model('05_23_20_03_4466688866644_13_ResNet1.pth') # Best Res-Net
-# model = rt.load_model('05_26_07_55_444444_13_4_8_DenseNet1.pth') # Best Dense-Net
+model = rt.load_model('05_26_07_55_444444_13_4_8_DenseNet1.pth') # Best Dense-Net
 
 # rdrt.plot_predictions_all_labels(model, tf_tensor, labels1, scale_factors, N=2, Wn=0.1)
 # rdrt.plot_FRF_comparison(model, tf_tensor, scale_factors, norm=True, q=0)
 
-# cut_off = 0.5
-# optim_results, max_mag_optimised = rdrt.optimiser_handler(
-#     model, 
-#     tf_tensor,
-#     scale_factors, 
-#     omega_weight=0,
-#     beta=1, # weighting on logmag in optimiser MSE_FRF
-#     plot=True, 
-#     q=0, 
-#     window_scale=0.6,
-#     up_inc=0.35,
-#     min_cut_off=cut_off,
-# )
-# rdrt.plot_FRF_cloud_single_sample(
-#     model, 
-#     tf_tensor, 
-#     100, 
-#     scale_factors, 
-#     max_mag_optimised, 
-#     transparency=0.08, 
-#     q=0, 
-#     window_scale=0.6,
-#     up_inc=0.35,
-#     min_cut_off=cut_off,
-# )
+cut_off = 0.63
+optim_results, max_mag_optimised = rdrt.optimiser_handler(
+    model, 
+    tf_tensor,
+    scale_factors, 
+    omega_weight=1,
+    beta=1, # weighting on logmag in optimiser MSE_FRF
+    plot=True, 
+    q=0, 
+    window_scale=0.6,
+    up_inc=0.35,
+    min_cut_off=cut_off,
+)
+rdrt.plot_FRF_cloud_single_sample(
+    model, 
+    tf_tensor, 
+    100, 
+    scale_factors, 
+    max_mag_optimised, 
+    transparency=0.08, 
+    q=0, 
+    window_scale=0.6,
+    up_inc=0.35,
+    min_cut_off=cut_off,
+)
 # omega_weight can be helpful for stabilising the model, 
 # it's a bit of a hack but the model natural frequency estimation 
 # is so much better than the other parameters so it works fine
