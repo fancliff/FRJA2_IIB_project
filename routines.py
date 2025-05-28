@@ -1815,3 +1815,98 @@ def optimiser_and_cloud_synthetic(model, dataloader, num_samples, scale_factors,
                 samples_plotted += 1
                 if samples_plotted >= num_samples:
                     return
+
+
+
+def plot_FRF_comparison_w_logmag(model, dataloader, num_samples, scale_factors, FRF_type=1, signal_length=1024, norm=True):
+    samples_plotted = 0
+    with torch.no_grad():
+        for data, labels, params in dataloader:
+            batch_size = len(data)
+            for i in range(min(num_samples,batch_size)):
+                output = model(data).squeeze()
+                # input_signal = data[i].cpu().numpy()
+                true_omegas = params[i, :, 0].cpu().numpy()
+                mask = ~np.isnan(true_omegas)
+                true_omegas = true_omegas[mask]
+                true_alpha_mags = params[i, :, 1].cpu().numpy()[mask]
+                true_alpha_phases = params[i, :, 2].cpu().numpy()[mask]
+                true_zetas = params[i, :, 3].cpu().numpy()[mask]
+                
+                reconstructed_input = construct_FRF(true_omegas, true_alpha_mags, true_alpha_phases, true_zetas, signal_length, min_max=norm)
+                if FRF_type == 0:
+                    reconstructed_input = np.abs(reconstructed_input)
+                else:
+                    reconstructed_input = np.array([np.real(reconstructed_input), np.imag(reconstructed_input)])
+                error, H_v = compare_FRF(reconstructed_input, output[i].cpu().numpy(), scale_factors,FRF_type, signal_length, norm)
+                
+                modes_output = output[i][0].cpu().numpy()
+                b, a = scipy.signal.butter(2,0.3) # only light smoothing for modes
+                smoothed_modes = scipy.signal.filtfilt(b,a,modes_output)
+                predicted_omegas, _ = est_nat_freq_triangle_rise(smoothed_modes)
+                
+                frequencies = np.linspace(0, 1, signal_length)
+                if FRF_type == 0:
+                    fig, ax = plt.subplots(1, 1, figsize=(8, 4))
+                    ax.plot(frequencies, H_v, label='Predicted FRF', color='orange')
+                    ax.plot(frequencies, reconstructed_input, label='True FRF (w/o noise)', color='blue')
+                    for k, omega in enumerate(true_omegas):
+                        ax.axvline(x=omega, color='black', linestyle='--',
+                                                label=r'True $\omega_n$' if k == 0 else '')
+                    for k, omega in enumerate(predicted_omegas):
+                        ax.axvline(x=omega, color='cyan', linestyle=':', 
+                                        label=r'Predicted $\omega_n$' if k == 0 else '')
+                    fig.suptitle('Magnitude FRF Comparison: MSE = {:.4f}'.format(error))
+                    ax.legend(
+                        loc='upper center',
+                        ncol = 4,
+                        bbox_to_anchor = (0.5,1)
+                    )
+                    plt.tight_layout(rect=[0, 0, 1, 0.97])
+                else:
+                    out_logmag = rdrt.quick_log_mag(H_v)
+                    in_logmag = rdrt.quick_log_mag(reconstructed_input)
+                    fig, ax = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
+                    ax[0].plot(frequencies, out_logmag, label='Predicted FRF', color='orange')
+                    ax[0].plot(frequencies, in_logmag, label='True FRF', color='blue')
+                    ax[1].plot(frequencies, H_v[0], color='orange')
+                    ax[1].plot(frequencies, reconstructed_input[0], color='blue')
+                    ax[2].plot(frequencies, H_v[1], color='orange')
+                    ax[2].plot(frequencies, reconstructed_input[1], color='blue')
+                    for k, omega in enumerate(true_omegas):
+                        ax[0].axvline(x=omega, color='black', linestyle='--',
+                                                label=r'True $\omega_n$' if k == 0 else '')
+                        ax[1].axvline(x=omega, color='black', linestyle='--')
+                        ax[2].axvline(x=omega, color='black', linestyle='--')
+                    for k, omega in enumerate(predicted_omegas):
+                        ax[0].axvline(x=omega, color='cyan', linestyle=':', 
+                                            label=r'Predicted $\omega_n$' if k == 0 else '')
+                        ax[1].axvline(x=omega, color='cyan', linestyle=':')
+                        ax[2].axvline(x=omega, color='cyan', linestyle=':')
+                    # fig.suptitle('Complex FRF Comparison: MSE = {:.4f}'.format(error))
+                    fig.legend(
+                        loc='upper center',
+                        ncol = 4,
+                        bbox_to_anchor = (0.5,1),
+                    )
+                    ax[0].set_ylabel('Log10 Magnitude')
+                    ax[1].set_ylabel('Real Part')
+                    ax[2].set_ylabel('Imaginary Part')
+                    ax[-1].set_xlabel('Normalised Frequency')
+                    plt.tight_layout(rect=[0, 0, 1, 0.97])
+                
+                
+                plt.show(block=False)
+                
+                plot_model_predictions_single_sample(
+                    model, 
+                    data[i], 
+                    labels[i], 
+                    params[i], 
+                    label_defs=[True, True, True, True],
+                    scale_factors=scale_factors
+                )
+                
+                samples_plotted += 1
+                if samples_plotted >= num_samples:
+                    return

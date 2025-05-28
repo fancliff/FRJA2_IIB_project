@@ -49,4 +49,4 @@ val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=True)
 #     min_cut_off=0.35,
 # )
 model = rt.load_model('05_21_20_57_4488444_9_RegressionModel1.pth')
-rt.plot_FRF_comparison(model, val_dataloader, num_samples=15, scale_factors=scale_factors, FRF_type=1)
+rt.plot_FRF_comparison_w_logmag(model, val_dataloader, num_samples=15, scale_factors=scale_factors, FRF_type=1)
