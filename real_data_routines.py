@@ -15,6 +15,7 @@ import datetime #for timestamping save files
 import routines as rt
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize
+import pandas as pd
 
 def plot_predictions_all_labels(
     model,
@@ -763,3 +764,24 @@ def est_nat_freq_triangle_rise(curve, up_inc=0.35, min_cut_off=0.8):
 @jit(nopython=True)
 def quick_log_mag(arr):
     return np.log10(np.sqrt(arr[0]**2 + arr[1]**2))
+
+
+def format_optimisation_results_to_csv(results_dict, output_path):
+    rows = []
+    
+    for param in ['omegas', 'alphas', 'phis', 'log10zetas']:
+        data = results_dict[param]
+        n_modes = len(data['initial'])
+        mode_headers = [f"{i+1}" for i in range(n_modes)]
+        
+        # Format each row (Initial, Optimised, Percent Change)
+        rows.append([f"{param} - Initial"] + list(data['initial']) + [""])
+        rows.append([f"{param} - Optimised"] + list(data['optimised']) + [""])
+        rows.append([f"{param} - % Error in initial"] + list(data['percent_change']) + [data['mean_percent_change']])
+        rows.append([])
+
+    df = pd.DataFrame(rows)
+
+    # Set column names (Mode 1 ... N, Mean)
+    df.columns = [""] + mode_headers + [""]
+    df.to_csv(output_path, index=False)
