@@ -636,6 +636,26 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, beta=0, plot=T
             ax[-1].set_xlabel('Normalised Frequency')
             plt.tight_layout(rect=[0, 0, 1, 0.97])
             plt.show()
+            
+            # only log mag channel for report!!
+            # fig, ax = plt.subplots(1, 1, figsize=(8, 5), sharex=True)
+            # predic_logmag = quick_log_mag(H_v_init)
+            # optim_logmag = quick_log_mag(H_v_out)
+            # data_logmag = quick_log_mag(data)
+            # ax.plot(frequencies, optim_logmag, label='Optimised FRF', color='red')
+            # ax.plot(frequencies, data_logmag, label='Input Signal', color='blue')
+            # for k, omega in enumerate(omegas_init):
+            #     ax.axvline(x=omega, color='cyan', linestyle=':', 
+            #                         label=r'Predicted $\omega_n$' if k == 0 else '')
+            # fig.legend(
+            #     loc='upper center',
+            #     ncol = 3,
+            #     bbox_to_anchor = (0.52,1),
+            # )
+            # ax.set_ylabel('Log10 Magnitude')
+            # ax.set_xlabel('Normalised Frequency')
+            # plt.tight_layout(rect=[0, 0, 1, 0.95])
+            # plt.show()
 
         # Print summary
         print('Optimisation Results:')
