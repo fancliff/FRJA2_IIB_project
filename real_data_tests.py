@@ -192,7 +192,6 @@ optim_results, max_mag_optimised = rdrt.optimiser_handler(
     scale_factors, 
     omega_weight=0,
     beta=1, # weighting on logmag in optimiser MSE_FRF
-    omega_percent_bound=0, # 0 for only 0 to 1 bound, else give percentage bound on initial omegas
     plot=True, 
     q=0, 
     window_scale=0.6,
