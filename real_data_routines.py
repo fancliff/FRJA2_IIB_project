@@ -435,7 +435,7 @@ def FRF_loss_for_optim(input, omegas, alphas, phis, log10zetas, beta=0):
     return MSE_out
 
 
-def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas_init, omega_weight=0.0, beta=0):
+def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas_init, omega_weight=0.0, beta=0, omega_percent_bound = 0):
     N = len(omegas_init)
     initial_params = np.concatenate([omegas_init, alphas_init, phis_init, log10zetas_init])
     omegas_init = np.array(omegas_init) # store for use with omega_weight
@@ -459,11 +459,18 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
         return loss
 
     # Define bounds
-    bounds = []
-    bounds += [(1e-2, 0.99)] * N             # omegas in (0, 1]
+    if omega_percent_bound == 0:
+        bounds = [(1e-2, 0.99)] * N             # omegas in (0, 1]
+    else: # percentage bound around initial omegas from model prediction, probably shouldn't be used with omega_weight
+        x = omega_percent_bound / 100
+        omega_lower_bounds = np.clip(omegas_init * (1 - x), 0.01, 0.99)
+        omega_upper_bounds = np.clip(omegas_init * (1 + x), 0.01, 0.99)
+        bounds = list(zip(omega_lower_bounds, omega_upper_bounds))
     bounds += [(-10, 10)] * N                 # alphas in training data range
-    bounds += [(-0.785, 0.785)] * N             # phis in (-pi/4, pi/4)
-    bounds += [(-3.5, -0.501)] * N                   # log10zetas in training data range plus a little slack
+    # bounds += [(-0.785, 0.785)] * N             # phis in (-pi/4, pi/4)
+    bounds += [(-1.57, 1.57)] * N
+    # bounds += [(-3.5, -0.501)] * N                   # log10zetas in training data range plus a little slack
+    bounds += [(-4, 0.01)] * N
 
     result = minimize(
         loss_function, 
@@ -489,7 +496,7 @@ def optimise_modes(input_signal, omegas_init, alphas_init, phis_init, log10zetas
     }
 
 
-def optimiser_handler(model, data, scale_factors, omega_weight=0, beta=0, plot=True, q=0, window_scale=0.6, up_inc=0.35, min_cut_off=0.8):
+def optimiser_handler(model, data, scale_factors, omega_weight=0, beta=0, omega_percent_bound=0, plot=True, q=0, window_scale=0.6, up_inc=0.35, min_cut_off=0.8):
     '''
     Only works for if data[0][0], data[0][1] = real part, imaginary part
     Data must be (batch dimension, input channels, signal length)
@@ -499,6 +506,8 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, beta=0, plot=T
     Can output symmetric percent change rather than normal percent change
     As this avoids very large percent changes when initial value ~ 0
     Needs the symmetric percent block uncommenting and called for this.
+    Omega_percent_bound probably shouldn't be used with omega_weight
+    If omega_percent_bound = 0 then omegas are only bounded between 0 and 1
     '''
     with torch.no_grad():
         model.eval()
@@ -534,7 +543,8 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, beta=0, plot=T
             phis_init,
             log10zetas_init,
             omega_weight,
-            beta
+            beta,
+            omega_percent_bound
         )
         
         # unconstrained optimisation with only initial omegas
