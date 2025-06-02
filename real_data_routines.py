@@ -530,18 +530,7 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, beta=0, plot=T
         phis_init *= phi_scale
         log10zetas_init *= log10zeta_scale
         
-        # optim_output = optimise_modes(
-        #     data,
-        #     omegas_init,
-        #     alphas_init,
-        #     phis_init,
-        #     log10zetas_init,
-        #     omega_weight,
-        #     beta
-        # )
-        
-        # Omegas excluded from optimiser
-        optim_output = optimise_modes_no_omegas(
+        optim_output = optimise_modes(
             data,
             omegas_init,
             alphas_init,
@@ -550,6 +539,17 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, beta=0, plot=T
             omega_weight,
             beta
         )
+        
+        # Omegas excluded from optimiser
+        # optim_output = optimise_modes_no_omegas(
+        #     data,
+        #     omegas_init,
+        #     alphas_init,
+        #     phis_init,
+        #     log10zetas_init,
+        #     omega_weight,
+        #     beta
+        # )
         
         # unconstrained optimisation with only initial omegas
         # just to see how many iterations saved
