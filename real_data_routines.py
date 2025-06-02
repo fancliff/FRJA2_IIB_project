@@ -530,7 +530,18 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, beta=0, plot=T
         phis_init *= phi_scale
         log10zetas_init *= log10zeta_scale
         
-        optim_output = optimise_modes(
+        # optim_output = optimise_modes(
+        #     data,
+        #     omegas_init,
+        #     alphas_init,
+        #     phis_init,
+        #     log10zetas_init,
+        #     omega_weight,
+        #     beta
+        # )
+        
+        # Omegas excluded from optimiser
+        optim_output = optimise_modes_no_omegas(
             data,
             omegas_init,
             alphas_init,
@@ -808,3 +819,47 @@ def format_optimisation_results_to_csv(results_dict, output_path):
     # Set column names (Mode 1 ... N, Mean)
     df.columns = [""] + mode_headers + [""]
     df.to_csv(output_path, index=False)
+
+
+def optimise_modes_no_omegas(input_signal, omegas_init, alphas_init, phis_init, log10zetas_init, omega_weight=0.0, beta=0):
+    N = len(omegas_init)
+    initial_params = np.concatenate([alphas_init, phis_init, log10zetas_init])
+    omegas_init = np.clip(np.array(omegas_init), 1e-3, 0.999)
+
+    def loss_function(x):
+        alphas = x[0:N]
+        phis = x[N:2*N]
+        log10zetas = x[2*N:3*N]
+        
+        loss = FRF_loss_for_optim(input_signal, omegas_init, alphas, phis, log10zetas, beta)
+        return loss
+
+    # Define bounds
+    bounds = [(-10, 10)] * N                 # alphas in training data range
+    # bounds += [(-0.785, 0.785)] * N             # phis in (-pi/4, pi/4)
+    bounds += [(-1.57, 1.57)] * N              # looser bounds on phi if needed
+    # bounds += [(-3.5, -0.501)] * N                   # log10zetas in training data range plus a little slack
+    bounds += [(-4, 1)] * N                # looser bounds on log10zeta if needed
+
+    result = minimize(
+        loss_function, 
+        initial_params, 
+        method = 'SLSQP',
+        bounds=bounds,
+        options={
+            'maxiter': 10000,
+            'ftol': 1e-11,
+        }
+    )
+
+    if not result.success:
+        print("Warning: Optimisation may not have converged:", result.message)
+    
+    x_opt = result.x
+    return {
+        'omegas': omegas_init, # unchanged
+        'alphas': x_opt[0:N],
+        'phis': x_opt[N:2*N],
+        'log10zetas': x_opt[2*N:3*N],
+        'loss': result.fun # Includes omega penalties so don't use for comparison to original MSFRFE loss
+    }
