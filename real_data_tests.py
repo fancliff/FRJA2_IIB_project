@@ -34,21 +34,21 @@ data = pydvma.load_data()
 # 3C6 30s - 1 TF
 # 3C6 impulse - 1 TF
 
-tf_data = data.tf_data_list[0]
-tf_arr = np.array(tf_data.tf_data) 
-tf_arr = tf_arr.squeeze(-1)
+# tf_data = data.tf_data_list[0]
+# tf_arr = np.array(tf_data.tf_data) 
+# tf_arr = tf_arr.squeeze(-1)
 
 ########### 4C6 ###########
 # 4C6 - 12 TFs
 
-# a = 1 # 1 - 12 for which TF
-# tf_data = data.tf_data_list[a-1]
-# tf_arr = np.array(tf_data.tf_data)
-# tf_arr = tf_arr.squeeze(-1)
-# x = np.linspace(0,1,len(tf_arr))
-# x = x[10:] # remove 0 frequency and close to
-# tf_arr = tf_arr[10:] # remove 0 frequency and close to
-# tf_arr = tf_arr / (1j * x) # convert from acceleration to velocity (divide by iw)
+a = 1 # 1 - 12 for which TF
+tf_data = data.tf_data_list[a-1]
+tf_arr = np.array(tf_data.tf_data)
+tf_arr = tf_arr.squeeze(-1)
+x = np.linspace(0,1,len(tf_arr))
+x = x[10:] # remove 0 frequency and close to
+tf_arr = tf_arr[10:] # remove 0 frequency and close to
+tf_arr = tf_arr / (1j * x) # convert from acceleration to velocity (divide by iw)
 
 ###########     ###########
 
