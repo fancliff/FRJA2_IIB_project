@@ -643,56 +643,57 @@ def optimiser_handler(model, data, scale_factors, omega_weight=0, beta=0, plot=T
             H_v_init = np.array([np.real(H_v_i),np.imag(H_v_i)])
             H_v_out = np.array([np.real(H_v_o),np.imag(H_v_o)])
 
-            fig, ax = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
-            predic_logmag = quick_log_mag(H_v_init)
-            optim_logmag = quick_log_mag(H_v_out)
-            data_logmag = quick_log_mag(data)
-            ax[0].plot(frequencies, predic_logmag, label='Model Predicted FRF', color='orange')
-            ax[0].plot(frequencies, optim_logmag, label='Optimised FRF', color='red')
-            ax[0].plot(frequencies, data_logmag, label='Input Signal', color='blue')
-            ax[1].plot(frequencies, H_v_init[0], color='orange')
-            ax[1].plot(frequencies, H_v_out[0], color='red')
-            ax[1].plot(frequencies, data[0], color='blue')
-            ax[2].plot(frequencies, H_v_init[1], color='orange')
-            ax[2].plot(frequencies, H_v_out[1], color='red')
-            ax[2].plot(frequencies, data[1], color='blue')
-            for k, omega in enumerate(omegas_init):
-                ax[0].axvline(x=omega, color='cyan', linestyle=':', 
-                                    label=r'Predicted $\omega_n$' if k == 0 else '')
-                ax[1].axvline(x=omega, color='cyan', linestyle=':')
-                ax[2].axvline(x=omega, color='cyan', linestyle=':')
-            fig.legend(
-                loc='upper center',
-                ncol = 4,
-                bbox_to_anchor = (0.5,1),
-            )
-            ax[0].set_ylabel('Log10 Magnitude')
-            ax[1].set_ylabel('Real Part')
-            ax[2].set_ylabel('Imaginary Part')
-            ax[-1].set_xlabel('Normalised Frequency')
-            plt.tight_layout(rect=[0, 0, 1, 0.97])
-            plt.show()
-            
-            # only log mag channel for report!!
-            # fig, ax = plt.subplots(1, 1, figsize=(8, 5), sharex=True)
+            # fig, ax = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
             # predic_logmag = quick_log_mag(H_v_init)
             # optim_logmag = quick_log_mag(H_v_out)
             # data_logmag = quick_log_mag(data)
-            # # ax.plot(frequencies, predic_logmag, label='Model Predicted FRF', color='orange')
-            # ax.plot(frequencies, optim_logmag, label='Optimised FRF', color='red')
-            # ax.plot(frequencies, data_logmag, label='Input Signal', color='blue')
+            # ax[0].plot(frequencies, predic_logmag, label='Model Predicted FRF', color='orange')
+            # ax[0].plot(frequencies, optim_logmag, label='Optimised FRF', color='red')
+            # ax[0].plot(frequencies, data_logmag, label='Input Signal', color='blue')
+            # ax[1].plot(frequencies, H_v_init[0], color='orange')
+            # ax[1].plot(frequencies, H_v_out[0], color='red')
+            # ax[1].plot(frequencies, data[0], color='blue')
+            # ax[2].plot(frequencies, H_v_init[1], color='orange')
+            # ax[2].plot(frequencies, H_v_out[1], color='red')
+            # ax[2].plot(frequencies, data[1], color='blue')
             # for k, omega in enumerate(omegas_init):
-            #     ax.axvline(x=omega, color='cyan', linestyle=':', 
+            #     ax[0].axvline(x=omega, color='cyan', linestyle=':', 
             #                         label=r'Predicted $\omega_n$' if k == 0 else '')
+            #     ax[1].axvline(x=omega, color='cyan', linestyle=':')
+            #     ax[2].axvline(x=omega, color='cyan', linestyle=':')
             # fig.legend(
             #     loc='upper center',
-            #     ncol = 3,
-            #     bbox_to_anchor = (0.52,1),
+            #     ncol = 4,
+            #     bbox_to_anchor = (0.5,1),
             # )
-            # ax.set_ylabel('Log10 Magnitude')
-            # ax.set_xlabel('Normalised Frequency')
-            # plt.tight_layout(rect=[0, 0, 1, 0.95])
+            # ax[0].set_ylabel('Log10 Magnitude')
+            # ax[1].set_ylabel('Real Part')
+            # ax[2].set_ylabel('Imaginary Part')
+            # ax[-1].set_xlabel('Normalised Frequency')
+            # plt.tight_layout(rect=[0, 0, 1, 0.97])
             # plt.show()
+            
+            # only log mag channel for report!!
+            fig, ax = plt.subplots(1, 1, figsize=(8, 5), sharex=True)
+            predic_logmag = quick_log_mag(H_v_init)
+            optim_logmag = quick_log_mag(H_v_out)
+            data_logmag = quick_log_mag(data)
+            # ax.plot(frequencies, predic_logmag, label='Model Predicted FRF', color='orange')
+            ax.plot(frequencies, predic_logmag, color='orange', alpha = 0)
+            ax.plot(frequencies, optim_logmag, label='Optimised FRF', color='red')
+            ax.plot(frequencies, data_logmag, label='Input Signal', color='blue')
+            for k, omega in enumerate(omegas_init):
+                ax.axvline(x=omega, color='cyan', linestyle=':', 
+                                    label=r'Predicted $\omega_n$' if k == 0 else '')
+            fig.legend(
+                loc='upper center',
+                ncol = 3,
+                bbox_to_anchor = (0.52,1),
+            )
+            ax.set_ylabel('Log10 Magnitude')
+            ax.set_xlabel('Normalised Frequency')
+            plt.tight_layout(rect=[0, 0, 1, 0.95])
+            plt.show()
 
         # Print summary
         print('Optimisation Results:')
