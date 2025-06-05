@@ -34,21 +34,21 @@ data = pydvma.load_data()
 # 3C6 30s - 1 TF
 # 3C6 impulse - 1 TF
 
-# tf_data = data.tf_data_list[0]
-# tf_arr = np.array(tf_data.tf_data) 
-# tf_arr = tf_arr.squeeze(-1)
+tf_data = data.tf_data_list[0]
+tf_arr = np.array(tf_data.tf_data) 
+tf_arr = tf_arr.squeeze(-1)
 
 ########### 4C6 ###########
 # 4C6 - 12 TFs
 
-a = 1 # 1 - 12 for which TF
-tf_data = data.tf_data_list[a-1]
-tf_arr = np.array(tf_data.tf_data)
-tf_arr = tf_arr.squeeze(-1)
-x = np.linspace(0,1,len(tf_arr))
-x = x[10:] # remove 0 frequency and close to
-tf_arr = tf_arr[10:] # remove 0 frequency and close to
-tf_arr = tf_arr / (1j * x) # convert from acceleration to velocity (divide by iw)
+# a = 1 # 1 - 12 for which TF
+# tf_data = data.tf_data_list[a-1]
+# tf_arr = np.array(tf_data.tf_data)
+# tf_arr = tf_arr.squeeze(-1)
+# x = np.linspace(0,1,len(tf_arr))
+# x = x[10:] # remove 0 frequency and close to
+# tf_arr = tf_arr[10:] # remove 0 frequency and close to
+# tf_arr = tf_arr / (1j * x) # convert from acceleration to velocity (divide by iw)
 
 ###########     ###########
 
@@ -190,7 +190,7 @@ optim_results, max_mag_optimised = rdrt.optimiser_handler(
     model, 
     tf_tensor,
     scale_factors, 
-    omega_weight=0,
+    omega_weight=1,
     beta=1, # weighting on logmag in optimiser MSE_FRF
     plot=True, 
     q=0, 
@@ -198,18 +198,18 @@ optim_results, max_mag_optimised = rdrt.optimiser_handler(
     up_inc=0.35,
     min_cut_off=cut_off,
 )
-# rdrt.plot_FRF_cloud_single_sample(
-#     model, 
-#     tf_tensor, 
-#     100, 
-#     scale_factors, 
-#     max_mag_optimised, 
-#     transparency=0.08, 
-#     q=0, 
-#     window_scale=0.6,
-#     up_inc=0.35,
-#     min_cut_off=cut_off,
-# )
+rdrt.plot_FRF_cloud_single_sample(
+    model, 
+    tf_tensor, 
+    100, 
+    scale_factors, 
+    max_mag_optimised, 
+    transparency=0.08, 
+    q=0, 
+    window_scale=0.6,
+    up_inc=0.35,
+    min_cut_off=cut_off,
+)
 # rdrt.format_optimisation_results_to_csv(optim_results,'3C6_results.csv')
 # omega_weight can be helpful for stabilising the model, 
 # it's a bit of a hack but the model natural frequency estimation 
